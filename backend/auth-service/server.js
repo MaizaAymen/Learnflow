@@ -1,0 +1,14 @@
+const express = require("express");
+const sequelize = require("./config");
+const User = require("./models/userModel");
+const authRoutes = require("./routes/authRoutes");
+
+
+const app = express();
+app.use(express.json());
+
+app.use("/api/auth", authRoutes);
+sequelize.sync({ alter: true }).then(() => {
+  console.log("✅ Models synced with DB");
+  app.listen(4000, () => console.log("Auth service running on port 4000"));
+});
