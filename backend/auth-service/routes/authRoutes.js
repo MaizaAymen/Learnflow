@@ -22,7 +22,6 @@ catch (error) {
     res.status(500).json({ error: "Erreur lors de l'enregistrement de l'utilisateur" });
 
 }})
-
 router.post("/login", async (req, res) => {
     try {
       const { login, mdp } = req.body;
@@ -44,8 +43,30 @@ router.post("/login", async (req, res) => {
       res.status(500).json({ error: "Erreur lors de la connexion de l'utilisateur" });
     }
   });
+router.get("/profile", async (req, res) => {
+    try {
+      const authHeader = req.headers.authorization;
+      if (!authHeader) {
+        return res.status(401).json({ error: "Token d'authentification manquant" });
+      }
 
+      const token = authHeader.split(" ")[1];
+      jwt.verify(token, secretKey, async (err, decoded) => {
+        if (err) {
+          return res.status(403).json({ error: "Token invalide" });
+        }
+
+        const user = await utilisateur.findByPk(decoded.id);//hiya nafsha findById Difference:findByPk = the current and correct method (works with any column defined as primary key, not just id).//findById = deprecated old alias for findByPk, only used for backward compatibility in old Sequelize projects.
+        if (!user) {
+          return res.status(404).json({ error: "Utilisateur non trouvé" });
+        }
+
+        res.status(200).json({ user });
+      });
+    } catch (error) {
+      res.status(500).json({ error: "Erreur lors de la récupération du profil" });
+    }
+  });
 module.exports = router;
-
 
 
