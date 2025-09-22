@@ -26,8 +26,8 @@ catch (error) {
 }})
 router.post("/login", async (req, res) => {
     try {
-      const { login, mdp } = req.body;
-      const user = await utilisateur.findOne({where: { login }});
+      const { email, mdp } = req.body;
+      const user = await utilisateur.findOne({where: { email }});
       if (!user) {
         return res.status(404).json({ error: "Utilisateur non trouvé" });
       }
@@ -73,6 +73,10 @@ router.get("/profile", async (req, res) => {
       res.status(500).json({ error: "Erreur lors de la récupération du profil" });
     }
   });
+router.post("/logout", (req, res) => {
+  res.clearCookie("token");
+  res.status(200).json({ message: "Déconnexion réussie" });
+});
 module.exports = router;
 
 
