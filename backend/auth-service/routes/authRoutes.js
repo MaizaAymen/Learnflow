@@ -6,6 +6,8 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const router = express.Router();
 const secretKey = "alex";
+const cookieParser = require("cookie-parser");
+
 
 router.post("/register", async (req, res) => {
     try
@@ -38,19 +40,23 @@ router.post("/login", async (req, res) => {
       const token = jwt.sign({ id: user.id, role: user.role }, secretKey, {
         expiresIn: "1h",
       });
-      res.status(200).json({ token });
+      res.cookie("token",token,{httpOnly:true,secure:false,maxAge:1000*60*60}); //1h
+      //res.status(200).json({ token }); without cookie
+
+      return res.status(200).json({ message: "Connexion réussie" });
+
     } catch (error) {
       res.status(500).json({ error: "Erreur lors de la connexion de l'utilisateur" });
     }
   });
 router.get("/profile", async (req, res) => {
     try {
-      const authHeader = req.headers.authorization;
+      const authHeader = req.cookies.token;
       if (!authHeader) {
         return res.status(401).json({ error: "Token d'authentification manquant" });
       }
-
-      const token = authHeader.split(" ")[1];
+      //const token = authHeader.split(" ")[1]; //Since you’re using cookies, you don’t need authHeader[1] — that’s only for Authorization: Bearer <token> headers. You can read the token directly from req.cookies.token.
+      const token = authHeader;
       jwt.verify(token, secretKey, async (err, decoded) => {
         if (err) {
           return res.status(403).json({ error: "Token invalide" });

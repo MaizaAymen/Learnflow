@@ -2,10 +2,11 @@ const express = require("express");
 const sequelize = require("./config");
 const User = require("./models/userModel");
 const authRoutes = require("./routes/authRoutes");
-
+const cookieParser = require("cookie-parser");
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/api/auth", authRoutes);
 sequelize.sync({ alter: true }).then(() => {
