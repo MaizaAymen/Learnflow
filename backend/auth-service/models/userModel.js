@@ -16,7 +16,7 @@ const User =sequelize.define('User',{
   phone: { type: DataTypes.STRING, allowNull: true },
   bio: { type: DataTypes.TEXT, allowNull: true }
 }, {
-  schema: "auth",
+  schema: "auth_service",
   tableName: "utilisateur"
 });
 

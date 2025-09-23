@@ -1,7 +1,8 @@
 const {Sequelize} = require('sequelize');
 
-const sequelize = new Sequelize('auth_service','postgres','aymen',{
-    host:'localhost',
+const sequelize = new Sequelize(
+     'auth_service','postgres','aymen',{
+    host: process.env.DB_HOST || 'db',
     dialect:'postgres'
 });
 
