@@ -4,20 +4,34 @@ const utilisateur = require("../models/userModel");
 const bodyParser = require("body-parser");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
+const sendEmail = require("../config/mail");
 const router = express.Router();
 const secretKey = "alex";
-const cookieParser = require("cookie-parser");
 
 
 router.post("/register", async (req, res) => {
     try
 {   
   const { nom, prenom, email, login, mdp, role, image, phone, bio } = req.body;
+  if (!nom || !prenom || !email || !login || !mdp || !role) {
+    return res.status(400).json({ error: "Champs obligatoires manquants" });
+  }
+  const mawjoud =utilisateur.findOne({where: {email}})
+  if (mawjoud) {
+    return res.status(409).json({ error: "Email déjà utilisé" });}
    const mdp_hash = await bcrypt.hash(mdp, 10);
   const newUser =await utilisateur.create({
     nom, prenom, email, login, mdp_hash, role, image, phone, bio
   });
+  sendEmail({
+    to: email,
+    subject: "Bienvenue sur Learnflow!",
+    text: `Bonjour ${prenom},\n\nMerci de vous être inscrit sur Learnflow en tant que ${role}.\n\nCordialement,\nL'équipe Learnflow`,
+    html: `<p>Bonjour ${prenom},</p><p>Merci de vous être inscrit sur Learnflow en tant que <strong>${role}</strong>.</p><p>Cordialement,<br>L'équipe Learnflow</p>`,
+  }).catch((err) => console.error("Erreur lors de l'envoi de l'email:", err));
+  //
   res.status(201).json(newUser);
+  
 }
  
 catch (error) {
