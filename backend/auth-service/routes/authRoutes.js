@@ -50,7 +50,13 @@ router.post("/login", async (req, res) => {
       if (!isPasswordValid) {
         return res.status(401).json({ error: "Mot de passe incorrect" });
       }
-
+      sendEmail({
+        to: email,
+        subject: "Nouvelle connexion à votre compte Learnflow",
+        text: `Bonjour ${user.prenom},\n\nNous avons détecté une nouvelle connexion à votre compte Learnflow.\n\nSi 
+        c'était vous, vous pouvez ignorer cet email. Sinon, veuillez sécuriser votre compte immédiatement.
+        \n\nCordialement,\nL'équipe Learnflow`,
+      }).catch((err) => console.error("Erreur lors de l'envoi de l'email:", err));
       const token = jwt.sign({ id: user.id, role: user.role }, secretKey, {
         expiresIn: "1h",
       });
@@ -87,10 +93,34 @@ router.get("/profile", async (req, res) => {
       res.status(500).json({ error: "Erreur lors de la récupération du profil" });
     }
   });
+router.get("/getAllUsers", async (req, res) => {
+    try {
+      const user = await utilisateur.findAll();
+      res.status(200).json(user);
+    }catch (error) {
+      res.status(500).json({ error: "Erreur lors de la récupération du profil" });
+    }});
 router.post("/logout", (req, res) => {
   res.clearCookie("token");
   res.status(200).json({ message: "Déconnexion réussie" });
 });
+router.get("/getallstudents", async (req, res) => {{
+  try
+  {
+    const students = await utilisateur.findAll({where:{role:'etudiant'}})
+    res.status(200).json(students);
+  }catch (error) {
+    res.status(500).json({ error: "Erreur lors de la récupération des étudiants" });
+  }
+}});
+router.get("/getallenseignants", async (req, res) => {{
+    try{
+      const masters= await utilisateur.findAll({where:{role:'enseignant'}})
+      res.status(200).json(masters);  
+    
+    }catch (error) {
+      res.status(500).json({ error: "Erreur lors de la récupération des enseignants" });
+    }}});
 module.exports = router;
 
 

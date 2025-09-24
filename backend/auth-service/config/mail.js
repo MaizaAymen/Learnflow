@@ -1,13 +1,14 @@
 // ...existing code...
 const nodemailer = require("nodemailer");
-
+const dotenv = require("dotenv");
+dotenv.config();  
 const transport = nodemailer.createTransport({
     host: "smtp.gmail.com",
     port: 587,
     secure: false,
     auth: {
-        user:  "maizaaymena@gmail.com",
-        pass: "llde fpxv gbui lgtr" // replace with env var in production
+        user:  process.env.user, 
+        pass: process.env.pass
     },
     tls: { rejectUnauthorized: false },
 });
@@ -15,7 +16,7 @@ const transport = nodemailer.createTransport({
 const sendEmail = async ({ to, subject, text, html }) => {
   try {
     const info = await transport.sendMail({
-      from: '"Aymen Maiza" <' + (process.env.EMAIL_USER || "maizaaymena@gmail.com") + ">",
+      from: '"Aymen Maiza" <' + (process.env.user ) + ">",
       to,
       subject,
       text,
