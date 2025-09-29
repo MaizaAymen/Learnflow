@@ -14,7 +14,8 @@ const User =sequelize.define('User',{
   role: { type: DataTypes.ENUM('etudiant','enseignant','directeur','admin'), allowNull: false },
   image: { type: DataTypes.STRING, allowNull: true }, // url ou chemin
   phone: { type: DataTypes.STRING, allowNull: true },
-  bio: { type: DataTypes.TEXT, allowNull: true }
+  bio: { type: DataTypes.TEXT, allowNull: true },
+  cin:{type: DataTypes.STRING, allowNull: true}
 }, {
   schema: "auth",
   tableName: "utilisateur"
