@@ -15,7 +15,8 @@ const User =sequelize.define('User',{
   image: { type: DataTypes.STRING, allowNull: true }, // url ou chemin
   phone: { type: DataTypes.STRING, allowNull: true },
   bio: { type: DataTypes.TEXT, allowNull: true },
-  cin:{type: DataTypes.STRING, allowNull: true}
+  cin:{type: DataTypes.STRING, allowNull: true},
+  
 }, {
   schema: "auth",
   tableName: "utilisateur"
