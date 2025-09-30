@@ -34,7 +34,6 @@ router.get('/specialites', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
-
 router.get('/specialites/:id', async (req, res) => {
     try 
     {
@@ -48,3 +47,131 @@ router.get('/specialites/:id', async (req, res) => {
         res.status(500).json({ error: 'Internal server error' });
     }
 });
+//kan y7ib ybadel esm w description
+router.put('/specialites/:id', async (req, res) => {
+  try{
+      const {nom,description}=req.body;
+      const spes = await specialite.findByPK({where:{id:req.params.id}});///specialites/:id <---- //
+      if(!spes){
+        return res.status(404).json({message:"Spécialité introuvable"})
+      }
+      await spes.update({nom,description})
+      return re
+  }catch(error){
+    return res.status(500).json({ error: 'Internal server error' });
+  }})
+router.delete('/specialites/:id', async (req, res) => {
+    try{
+  const spes = await specialite.findByPK({where:{id:req.params.id}});
+
+  if (!spes){
+    return res.status(404).json({message:"Spécialité introuvable"})
+  }
+  await spes.delete();
+  return res.status(200).json({message:"Spécialité supprimée avec succès"})
+    }catch(error){
+      return res.status(500).json({ error: 'Internal server error' });
+    }})
+// CRUD Département
+router.post('/departements', async (req, res) => {
+  try {
+    const { nom, description } = req.body;
+    if (!nom) {
+      return res.status(400).json({ error: 'Le nom du département est requis' });
+    }
+    const newdepartment = await departement.create({ nom, description });
+    res.status(201).json(newdepartment);
+  }catch (error) {
+    console.error('Error creating departement:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }})
+router.get('/departements', async (req, res) => {
+    try {
+      const dep = await departement.findAll();
+      if (!dep){
+          return res.json({message:"Aucun département n'est disponible pour le moment"})
+      }
+      return res.status(200).json(dep);
+    }catch(error){
+      return res.status(500).json({
+        error: 'Internal server error'
+      })
+    }})
+
+router.get('/departements/:id',async (req,res)=>{
+    try {
+      const id = req.params.id;
+      if (!id){
+        return res.status(400).json({error:"ID manquant"})
+      }
+       return await departement.findByPK({where:{id:id}})
+    } catch (error) {
+      return res.status(500).json({ error: 'Internal server error' });
+      
+    }
+    })
+//update
+router.put('/departements/:id', async (req, res) => {
+  try{
+      const {nom,description}=req.body;
+      const dep = await departement.findByPK({where:{id:req.params.id}});///departements/:id <---- //
+      if(!dep){
+        return res.status(404).json({message:"Département introuvable"})
+      }
+      await dep.update({nom,description})
+      return res.status(200).json({message:"Département mis à jour avec succès"})
+  }catch(error){
+    return res.status(500).json({ error: 'Internal server error' });
+  }})
+router.delete('/departements/:id', async (req, res) => {
+    try{
+  const id = req.params.id;
+  const dep = await departement.findByPK({where:{id:id}});
+  if (!dep){
+    return res.status(404).json({message:"Département introuvable"})
+  }
+  await dep.delete();
+  return res.status(200).json({message:"Département supprimé avec succès"})
+    }catch(error){
+      return res.status(500).json({ error: 'Internal server error' });
+    }})
+// CRUD Niveau
+router.post('/niveaux', async (req, res) => {
+  try {
+    const { nom, description } = req.body;
+    if (!nom) {
+      return res.status(400).json({ error: 'Le nom du niveau est requis' });
+    }
+    const newNiveau = await niveau.create({ nom, description });
+    res.status(201).json(newNiveau);
+  } catch (error) {
+    console.error('Error creating niveau:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }})
+router.get('/niveaux', async (req, res) => {
+    try {
+      const niv = await niveau.findAll();  
+      if (!niv) {
+        return res.json({ message: "Aucun niveau n'est disponible pour le moment" });
+      }
+      return res.status(200).json(niv);
+    } catch (error) {
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+
+router.get('/niveaux/:id',async (req,res)=>{
+    try {
+      const id = req.params.id;
+      if (!id){
+        return res.status(400).json({error:"ID manquant"})
+      }
+      const niveau = await niveau.findByPK({where:{id:id}});
+      if (!niveau){
+        return res.status(404).json({error:"Niveau introuvable"})
+      }
+      return res.status(200).json(niveau);
+    } catch (error) {
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
