@@ -16,7 +16,30 @@ const User =sequelize.define('User',{
   phone: { type: DataTypes.STRING, allowNull: true },
   bio: { type: DataTypes.TEXT, allowNull: true },
   cin:{type: DataTypes.STRING, allowNull: true},
-  
+  certification:{type: DataTypes.STRING, allowNull: true},
+  date_naissance: { type: DataTypes.DATE, allowNull: true },
+
+  // pour les enseignants
+  classes: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true }, // pour les enseignants //les classes qu'il enseigne eli 3indah 
+  specialite: { type: DataTypes.STRING, allowNull: true }, // pour les enseignants
+  departement: { type: DataTypes.STRING, allowNull: true }, // pour les enseignants
+  etablissement: { type: DataTypes.STRING, allowNull: true }, // pour les enseignants //momken austad jay min bara y9ri fi tozeur   
+
+
+  // Informations spécifiques aux étudiants
+  adresse: { type: DataTypes.STRING, allowNull: true }, // pour les étudiants
+  ville: { type: DataTypes.STRING, allowNull: true }, // pour les étudiants
+  pays: { type: DataTypes.STRING, allowNull: true }, // pour les étudiants
+  niveau_etude: { type: DataTypes.STRING, allowNull: true }, // pour les étudiants
+  parcours: { type: DataTypes.STRING, allowNull: true }, // pour les étudiants
+
+
+  //
+  interets: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true }, // pour les étudiants // hedi zidtha fi 7alit inha letudiant kan 3indah interets mo3ayana jima club 
+  competences: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true }, // pour les étudiants // hedi zidtha fi 7alit inha letudiant kan 3indah competences mo3ayana kima programmation wou 3indha relation m3a champ interets
+  //
+
+
 }, {
   schema: "auth",
   tableName: "utilisateur"

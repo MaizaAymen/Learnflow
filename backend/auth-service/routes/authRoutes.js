@@ -38,6 +38,37 @@ catch (error) {
     res.status(500).json({ error: "Erreur lors de l'enregistrement de l'utilisateur" });
 
 }})
+router.post("/completeprofile", async (req, res) => {
+  try { 
+    const { id, cin, certification, date_naissance, classes, specialite, departement, etablissement, adresse, ville, pays, niveau_etude, parcours, interets, competences } = req.body;
+    if (!id) {
+      return res.status(400).json({ error: "ID utilisateur manquant" });
+    }
+    const user = await utilisateur.findByPk(id);
+    if (!user) {
+      return res.status(404).json({ error: "Utilisateur non trouvé" });
+    }
+    await user.update({
+      cin,
+      certification,
+      date_naissance,
+      classes,
+      specialite,
+      departement,
+      etablissement,
+      adresse,
+      ville,
+      pays,
+      niveau_etude,
+      parcours,
+      interets,
+      competences
+    });
+    res.status(200).json({ message: "Profil complété avec succès" });
+  } catch (error) {
+    res.status(500).json({ error: "Erreur lors de la complétion du profil" });
+  }
+});
 router.post("/login", async (req, res) => {
     try {
       const { email, mdp } = req.body;
