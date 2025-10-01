@@ -8,7 +8,6 @@ const matiere = require('../models/Matiere');
 const matiereClasse = require('../models/MatiereClasse');
 const matiereEnseignant = require('../models/MatiereEnseignant');
 // CRUD Specialite
-
 router.post('/specialites', async (req, res) => {
   try {
     const { nom, description } = req.body;
@@ -72,6 +71,10 @@ router.delete('/specialites/:id', async (req, res) => {
     }catch(error){
       return res.status(500).json({ error: 'Internal server error' });
     }})
+
+
+
+
 // CRUD Département
 router.post('/departements', async (req, res) => {
   try {
@@ -135,6 +138,10 @@ router.delete('/departements/:id', async (req, res) => {
     }catch(error){
       return res.status(500).json({ error: 'Internal server error' });
     }})
+
+
+
+
 // CRUD Niveau
 router.post('/niveaux', async (req, res) => {
   try {
@@ -175,3 +182,100 @@ router.get('/niveaux/:id',async (req,res)=>{
       return res.status(500).json({ error: 'Internal server error' });
     }
   });
+//update
+router.put('/niveaux/:id', async (req, res) => {
+  try{
+      const {nom,description}=req.body;
+      const niv = await niveau.findByPK({where:{id:req.params.id}});
+      if(!niv){
+        return res.status(404).json({message:"Niveau introuvable"})
+      }
+      await niv.update({nom,description})
+      return res.status(200).json({message:"Niveau mis à jour avec succès"})
+  }catch(error){
+    return res.status(500).json({ error: 'Internal server error' });
+  }})
+router.delete('/niveaux/:id', async (req, res) => {
+    try{
+  const id = req.params.id;
+  const niv = await niveau.findByPK({where:{id:id}});
+  if (!niv){
+    return res.status(404).json({message:"Niveau introuvable"})
+  }
+  await niv.destroy();
+  return res.status(200).json({message:"Niveau supprimé avec succès"})
+    }catch(error){
+      return res.status(500).json({ error: 'Internal server error' });
+    }})
+
+
+
+
+
+// CRUD Classe
+router.post('/classes', async (req, res) => {
+  try {
+    const { nom, description } = req.body;
+    if (!nom) {
+      return res.status(400).json({ error: 'Le nom de la classe est requis' });
+    }
+    const newClasse = await classe.create({ nom, description });
+    res.status(201).json(newClasse);
+  } catch (error) {
+    console.error('Error creating classe:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+})
+router.get('/classes', async (req, res) => {
+    try {
+      const classes = await classe.findAll();
+      if (!classes) {
+        return res.json({ message: "Aucune classe n'est disponible pour le moment" });
+      }
+      return res.status(200).json(classes);
+    } catch (error) {
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+router.get('/classes/:id',async (req,res)=>{
+    try {
+      const id = req.params.id;
+      if (!id){
+        return res.status(400).json({error:"ID manquant"})
+      }
+      const classe = await classe.findByPK({where:{id:id}});
+      if (!classe){
+        return res.status(404).json({error:"Classe introuvable"})
+      }
+      return res.status(200).json(classe);
+    } catch (error) {
+      return res.status(500).json({ error: 'Internal server error' });
+    }
+  });
+//update
+router.put('/classes/:id', async (req, res) => {
+  try{
+      const {nom,description}=req.body;
+      const classe = await classe.findByPK({where:{id:req.params.id}});
+      if(!classe){
+        return res.status(404).json({message:"Classe introuvable"})
+      }
+      await classe.update({nom,description})
+      return res.status(200).json({message:"Classe mise à jour avec succès"})
+  }catch(error){
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+})
+router.delete('/classes/:id', async (req, res) => {
+    try{
+  const id = req.params.id;
+  const classe = await classe.findByPK({where:{id:id}});
+  if (!classe){
+    return res.status(404).json({message:"Classe introuvable"})
+  }
+  await classe.destroy();
+  return res.status(200).json({message:"Classe supprimée avec succès"})
+    }catch(error){
+      return res.status(500).json({ error: 'Internal server error' });
+    }})
+
