@@ -38,8 +38,6 @@ const Auth = () => {
             }
         });
     }
-
-    
     return (
         <div>
             <h2>{isLogin ? "Login" : "Register"}</h2>
