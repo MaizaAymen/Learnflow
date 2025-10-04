@@ -12,16 +12,41 @@ const secretKey = "alex";
 router.post("/register", async (req, res) => {
     try
 {   
-  const { nom, prenom, email, login, mdp, role, image, phone, bio } = req.body;
-  if (!nom || !prenom || !email || !login || !mdp || !role) {
-    return res.status(400).json({ error: "Champs obligatoires manquants" });
-  }
-  const mawjoud =utilisateur.findOne({where: {email}})
+  const { nom, prenom, email, mdp, role, image, phone, bio ,specialite, ville} = req.body;
+if (!nom) {
+  return res.status(400).json({ error: "Le champ 'nom' est obligatoire" });
+}
+
+if (!prenom) {
+  return res.status(400).json({ error: "Le champ 'prenom' est obligatoire" });
+}
+
+if (!email) {
+  return res.status(400).json({ error: "Le champ 'email' est obligatoire" });
+}
+
+if (!mdp) {
+  return res.status(400).json({ error: "Le champ 'mot de passe' est obligatoire" });
+}
+
+if (!role) {
+  return res.status(400).json({ error: "Le champ 'role' est obligatoire" });
+}
+
+if (!specialite) {
+  return res.status(400).json({ error: "Le champ 'spécialité' est obligatoire" });
+}
+
+if (!ville) {
+  return res.status(400).json({ error: "Le champ 'ville' est obligatoire" });
+}
+
+  const mawjoud = await utilisateur.findOne({where: {email}})
   if (mawjoud) {
     return res.status(409).json({ error: "Email déjà utilisé" });}
    const mdp_hash = await bcrypt.hash(mdp, 10);
   const newUser =await utilisateur.create({
-    nom, prenom, email, login, mdp_hash, role, image, phone, bio
+    nom, prenom, email,  mdp_hash, role, image, phone, bio, specialite, ville
   });
   sendEmail({
     to: email,
@@ -93,8 +118,8 @@ router.post("/login", async (req, res) => {
       });
       res.cookie("token",token,{httpOnly:true,secure:false,maxAge:1000*60*60}); //1h
       //res.status(200).json({ token }); without cookie
-
-      return res.status(200).json({ message: "Connexion réussie" });
+      console.log(token)
+      return res.status(200).json({ message: "Connexion réussie " });
 
     } catch (error) {
       res.status(500).json({ error: "Erreur lors de la connexion de l'utilisateur" });

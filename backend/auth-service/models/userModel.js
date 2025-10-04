@@ -9,7 +9,7 @@ const User =sequelize.define('User',{
    nom: { type: DataTypes.STRING, allowNull: false },
   prenom: { type: DataTypes.STRING, allowNull: false },
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
-  login: { type: DataTypes.STRING, allowNull: false, unique: true },
+  login: { type: DataTypes.STRING, allowNull: true, unique: true },
   mdp_hash: { type: DataTypes.TEXT, allowNull: false },
   role: { type: DataTypes.ENUM('etudiant','enseignant','directeur','admin'), allowNull: false },
   image: { type: DataTypes.STRING, allowNull: true }, // url ou chemin
@@ -20,8 +20,8 @@ const User =sequelize.define('User',{
   date_naissance: { type: DataTypes.DATE, allowNull: true },
 
   // pour les enseignants
-  classes: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true }, // pour les enseignants //les classes qu'il enseigne eli 3indah 
-  specialite: { type: DataTypes.STRING, allowNull: true }, // pour les enseignants
+  classes: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true }, // pour les enseignants //les classes qu'il enseigne eli 3indah
+  specialite: { type: DataTypes.ENUM('informatique', 'mecanique', 'electrique', 'civil'), allowNull: true }, // pour les enseignants
   departement: { type: DataTypes.STRING, allowNull: true }, // pour les enseignants
   etablissement: { type: DataTypes.STRING, allowNull: true }, // pour les enseignants //momken austad jay min bara y9ri fi tozeur   
 

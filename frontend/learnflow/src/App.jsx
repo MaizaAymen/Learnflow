@@ -1,14 +1,18 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
 import Auth from './auth/auth.jsx'
+import ShowUsers from './admin/showusers.jsx'
+import { Route, Routes } from "react-router-dom"
+import Profile from './user/Profile.jsx'
 function App() {
-  const [count, setCount] = useState(0)
-
   return (
     <>
-     <Auth />
+      <div id="app">
+      <Routes>
+        <Route path="/" element={<ShowUsers />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/profile" element={<Profile />} />
+      </Routes>
+    </div>
     </>
   )
 }
