@@ -49,10 +49,29 @@ if (!ville) {
     nom, prenom, email,  mdp_hash, role, image, phone, bio, specialite, ville
   });
   sendEmail({
-    to: email,
-    subject: "Bienvenue sur Learnflow!",
-    text: `Bonjour ${prenom},\n\nMerci de vous être inscrit sur Learnflow en tant que ${role}.\n\nCordialement,\nL'équipe Learnflow`,
-    html: `<p>Bonjour ${prenom},</p><p>Merci de vous être inscrit sur Learnflow en tant que <strong>${role}</strong>.</p><p>Cordialement,<br>L'équipe Learnflow</p>`,
+   to: email,
+subject: "Bienvenue sur Learnflow !",
+text: `Bonjour ${prenom},
+
+Bienvenue sur Learnflow !
+
+Nous vous remercions chaleureusement pour votre inscription en tant que ${role}. 
+Nous sommes ravis de vous compter parmi notre communauté d’apprentissage.
+
+À très bientôt sur Learnflow !
+
+Cordialement,
+Aymen Maiza
+Fondateur de Learnflow`,
+html: `
+  <p>Bonjour ${prenom},</p>
+  <p>Bienvenue sur <strong>Learnflow</strong> !</p>
+  <p>Nous vous remercions chaleureusement pour votre inscription en tant que <strong>${role}</strong>. 
+  Nous sommes ravis de vous compter parmi notre communauté d’apprentissage.</p>
+  <p>À très bientôt sur Learnflow !</p>
+  <p>Cordialement,<br><strong>Aymen Maiza</strong><br>Fondateur de Learnflow</p>
+`,
+
   }).catch((err) => console.error("Erreur lors de l'envoi de l'email:", err));
   //
   res.status(201).json(newUser);
@@ -177,6 +196,19 @@ router.get("/getallenseignants", async (req, res) => {{
     }catch (error) {
       res.status(500).json({ error: "Erreur lors de la récupération des enseignants" });
     }}});
+router.delete("deleteuser/:id", async (req, res) => {
+      try{
+        const {id}=req.params;
+        const user=await utilisateur.findByPk(id);
+        if(user){
+          await user.destroy();
+        }else{
+          res.status(404).json({ error: "Utilisateur non trouvé" });
+        }
+
+      }catch (error) {
+        res.status(500).json({ error: "Erreur lors de la suppression de l'utilisateur" });
+      }})
 module.exports = router;
 
 

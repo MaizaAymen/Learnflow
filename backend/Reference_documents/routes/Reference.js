@@ -1,10 +1,11 @@
 const express = require('express');
 const router = express.Router();
-const {specialite,departement} = require('../models');
+const specialite = require('../models/Specialite');
+const departement = require('../models/Département');
 const niveau = require('../models/Niveau');
 const Classe = require('../models/Classe');
 const salle = require('../models/Salle');
-const matiere = require('../models/Matiere');
+const matiere = require('../models/Matiére');
 const matiereClasse = require('../models/MatiereClasse');
 const matiereEnseignant = require('../models/MatiereEnseignant');
 // CRUD Specialite
@@ -76,13 +77,13 @@ router.delete('/specialites/:id', async (req, res) => {
 
 
 // CRUD Département
-router.post('/departements', async (req, res) => {
+router.post('/adddepartements', async (req, res) => {
   try {
-    const { nom, description } = req.body;
-    if (!nom) {
+    const { name, description } = req.body;
+    if (!name) {
       return res.status(400).json({ error: 'Le nom du département est requis' });
     }
-    const newdepartment = await departement.create({ nom, description });
+    const newdepartment = await departement.create({ name, description });
     res.status(201).json(newdepartment);
   }catch (error) {
     console.error('Error creating departement:', error);
@@ -278,4 +279,6 @@ router.delete('/classes/:id', async (req, res) => {
     }catch(error){
       return res.status(500).json({ error: 'Internal server error' });
     }})
+
+module.exports = router;
 

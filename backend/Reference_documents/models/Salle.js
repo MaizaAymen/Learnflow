@@ -1,6 +1,6 @@
-// models/Salle.js
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config');
+// Use the same sequelize instance as auth-service to enable cross-schema relationships
+const sequelize = require('../../auth-service/config');
 
 const Salle = sequelize.define('Salle', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },

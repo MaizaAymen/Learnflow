@@ -1,5 +1,6 @@
 const {DataTypes} = require('sequelize');
-const sequelize = require('../config');
+// Use the same sequelize instance as auth-service to enable cross-schema relationships
+const sequelize = require('../../auth-service/config');
 const departement = require('./Département');   
 
 
@@ -14,3 +15,5 @@ const specialite =sequelize.define('specialite',{
 );
 departement.hasMany(specialite,{foreignKey:'departementId'});
 specialite.belongsTo(departement,{foreignKey:'departementId'});
+
+module.exports = specialite;

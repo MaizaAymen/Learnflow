@@ -18,6 +18,8 @@ const { Header, Content, Footer, Sider } = Layout;
 
 import {  Menu, theme } from 'antd';
 
+
+
 const items1 = ['1', '2', '3'].map(key => ({
   key,
   label: `nav ${key}`,
@@ -37,7 +39,7 @@ const items2 = [UserOutlined, LaptopOutlined, NotificationOutlined].map((icon, i
     }),
   };
 });
-const ShowUsers = () => {
+const AdminPanel = () => {
   const [users, setUsers] = useState([]);
 
 //sidbar
@@ -77,12 +79,11 @@ const ShowUsers = () => {
       render: (_, record) => (
         <Space size="middle">
           <a>Edit {record.nom}</a>
-          <a style={{ color: "red" }} onClick={() => deleteuser(record.id)}>Delete</a>
+          <a style={{ color: "red" }}>Delete</a>
         </Space>
       ),
     },
   ];
-
 
   const handleLogout = () => {
     fetch("http://localhost:4000/api/auth/logout", {
@@ -97,48 +98,10 @@ const ShowUsers = () => {
       });
   };
 
-  useEffect(() => {
-    fetch("http://localhost:4000/api/auth/getAllUsers", {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-    })
-      .then((res) => res.json())
-      .then((data) => {
-        console.log(data);  
-        setUsers(Array.isArray(data) ? data : data.users);
-      });
-  }, []);
-
-const deleteuser=(id)=>{
-  fetch(`http://localhost:4000/api/auth/deleteuser/${id}`, {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-  })
-  .then((res) => res.json())
-  .then((data) => {
-      console.log(data);
-      // Handle delete success
-  });
-}
 
   return (
     <div>
-      {/* <h2>Users List</h2>
-      <Button type="primary" onClick={handleFetchingUsers}>
-        Show Users
-        
-      </Button> 
-          <h2>Users List</h2>
-      <Table
-        columns={columns}
-        dataSource={users}
-        rowKey="id" // important: use "id" as unique key
-        style={{ marginTop: 20 }}
-      />
-      
-          */}
+
   <Layout>
       <Header
       style={{
@@ -201,58 +164,8 @@ const deleteuser=(id)=>{
       </Footer>
     </Layout>
 
-      
-{/*   
-       <Layout>
-      <Sider trigger={null} collapsible collapsed={collapsed}>
-        <div className="demo-logo-vertical" />
-        <Menu
-          theme="dark"
-          mode="inline"
-          defaultSelectedKeys={['3']}
-          defaultOpenKeys={['sub1']}
-          items={items}
-        />
-      </Sider>
-      <Layout>
-        <Header style={{ padding: 0, background: colorBgContainer }}>
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            style={{
-              fontSize: '16px',
-              width: 64,
-              height: 64,
-            }}
-          />
-        </Header>
-        <Content
-          style={{
-            margin: '24px 16px',
-            padding: 24,
-            minHeight: 280,
-            background: colorBgContainer,
-            borderRadius: borderRadiusLG,
-          }}
-        >
-            <Button type="primary" >
-        Show Users
-        
-      </Button> 
-          <h2>Users List</h2>
-           <Table
-        columns={columns}
-        dataSource={users}
-        rowKey="id" // important: use "id" as unique key
-        style={{ marginTop: 20 }}
-        
-      />
-        </Content>
-      </Layout>
-    </Layout> */}
     </div>
   );
 };
 
-export default ShowUsers;
+export default AdminPanel;

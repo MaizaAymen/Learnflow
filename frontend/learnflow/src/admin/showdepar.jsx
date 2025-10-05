@@ -37,8 +37,10 @@ const items2 = [UserOutlined, LaptopOutlined, NotificationOutlined].map((icon, i
     }),
   };
 });
-const ShowUsers = () => {
-  const [users, setUsers] = useState([]);
+
+
+const Showdepartments = () => {
+  const [departments, setDepartments] = useState([]);
 
 //sidbar
  const [collapsed, setCollapsed] = useState(true);
@@ -47,15 +49,16 @@ const ShowUsers = () => {
   } = theme.useToken();
   // define table columns
   const columns = [
+    //
     {
-      title: "Nom",
-      dataIndex: "nom",
-      key: "nom",
+      title: "name",
+      dataIndex: "name",
+      key: "name",
     },
     {
-      title: "Prénom",
-      dataIndex: "prenom",
-      key: "prenom",
+      title: "budget",
+      dataIndex: "budget",
+      key: "budget",
     },
     {
       title: "Email",
@@ -98,20 +101,20 @@ const ShowUsers = () => {
   };
 
   useEffect(() => {
-    fetch("http://localhost:4000/api/auth/getAllUsers", {
+    fetch("http://localhost:3000/api/reference/departements", {
       method: "GET",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
     })
       .then((res) => res.json())
       .then((data) => {
-        console.log(data);  
-        setUsers(Array.isArray(data) ? data : data.users);
+        console.log(data);
+        setDepartments(Array.isArray(data) ? data : data.departments);
       });
   }, []);
 
-const deleteuser=(id)=>{
-  fetch(`http://localhost:4000/api/auth/deleteuser/${id}`, {
+const deletedepartment=(id)=>{
+  fetch(`http://localhost:3000/api/reference/deletedepartment/${id}`, {
       method: "DELETE",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
@@ -125,20 +128,6 @@ const deleteuser=(id)=>{
 
   return (
     <div>
-      {/* <h2>Users List</h2>
-      <Button type="primary" onClick={handleFetchingUsers}>
-        Show Users
-        
-      </Button> 
-          <h2>Users List</h2>
-      <Table
-        columns={columns}
-        dataSource={users}
-        rowKey="id" // important: use "id" as unique key
-        style={{ marginTop: 20 }}
-      />
-      
-          */}
   <Layout>
       <Header
       style={{
@@ -188,7 +177,7 @@ const deleteuser=(id)=>{
           </Sider>
           <Table
         columns={columns}
-        dataSource={users}
+        dataSource={departments}
         rowKey="id" // important: use "id" as unique key
         style={{ marginTop: 20 }}
         
@@ -202,57 +191,9 @@ const deleteuser=(id)=>{
     </Layout>
 
       
-{/*   
-       <Layout>
-      <Sider trigger={null} collapsible collapsed={collapsed}>
-        <div className="demo-logo-vertical" />
-        <Menu
-          theme="dark"
-          mode="inline"
-          defaultSelectedKeys={['3']}
-          defaultOpenKeys={['sub1']}
-          items={items}
-        />
-      </Sider>
-      <Layout>
-        <Header style={{ padding: 0, background: colorBgContainer }}>
-          <Button
-            type="text"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-            onClick={() => setCollapsed(!collapsed)}
-            style={{
-              fontSize: '16px',
-              width: 64,
-              height: 64,
-            }}
-          />
-        </Header>
-        <Content
-          style={{
-            margin: '24px 16px',
-            padding: 24,
-            minHeight: 280,
-            background: colorBgContainer,
-            borderRadius: borderRadiusLG,
-          }}
-        >
-            <Button type="primary" >
-        Show Users
-        
-      </Button> 
-          <h2>Users List</h2>
-           <Table
-        columns={columns}
-        dataSource={users}
-        rowKey="id" // important: use "id" as unique key
-        style={{ marginTop: 20 }}
-        
-      />
-        </Content>
-      </Layout>
-    </Layout> */}
+
     </div>
   );
 };
 
-export default ShowUsers;
+export default Showdepartments;

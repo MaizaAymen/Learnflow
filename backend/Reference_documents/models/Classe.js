@@ -1,6 +1,6 @@
-// models/Classe.js
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config');
+// Use the same sequelize instance as auth-service to enable cross-schema relationships
+const sequelize = require('../../auth-service/config');
 const Niveau = require('./Niveau');
 
 const Classe = sequelize.define('Classe', {
