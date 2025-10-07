@@ -196,15 +196,16 @@ router.get("/getallenseignants", async (req, res) => {{
     }catch (error) {
       res.status(500).json({ error: "Erreur lors de la récupération des enseignants" });
     }}});
-router.delete("deleteuser/:id", async (req, res) => {
+router.delete("/deleteuser/:id", async (req, res) => {
       try{
         const {id}=req.params;
         const user=await utilisateur.findByPk(id);
-        if(user){
-          await user.destroy();
-        }else{
-          res.status(404).json({ error: "Utilisateur non trouvé" });
-        }
+        if (user) {
+      await user.destroy();
+      return res.status(200).json({ message: "Utilisateur supprimé avec succès" }); 
+    } else {
+      return res.status(404).json({ error: "Utilisateur non trouvé" });
+    }
 
       }catch (error) {
         res.status(500).json({ error: "Erreur lors de la suppression de l'utilisateur" });

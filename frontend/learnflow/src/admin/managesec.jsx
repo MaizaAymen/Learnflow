@@ -14,8 +14,6 @@ import {
 } from '@ant-design/icons';
 import { Layout} from 'antd';
 const { Header, Content, Footer, Sider } = Layout;
-
-
 import {  Menu, theme } from 'antd';
 
 const items1 = ['1', '2', '3'].map(key => ({
@@ -39,21 +37,8 @@ const items2 = [UserOutlined, LaptopOutlined, NotificationOutlined].map((icon, i
 });
 
 
-const Showdepartments = () => {
-  //nom,description,code,chef_departement_id,budget,statut,localisation,telephone,email,capacite_max
-  const [namen,setNamen] = useState("");
-  const [descriptionn,setDescriptionn] = useState("");
-  const [coden,setCoden] = useState("");
-  const [chef_departement_idn,setChef_departement_idn] = useState("");
-  const [budgetn,setBudgetn] = useState("");
-  const [statutn,setStatutn] = useState("");
-  const [localisationn,setLocalisationn] = useState("");
-  const [telephonen,setTelephonen] = useState("");
-  const [emailn,setEmailn] = useState("");
-  const [capacite_maxn,setCapacite_maxn] = useState("");
-  //
-  const [departments, setDepartments] = useState([]);
-//
+const Creationspes = () => {
+
 //sidbar
  const [collapsed, setCollapsed] = useState(true);
   const {
@@ -98,53 +83,6 @@ const Showdepartments = () => {
       ),
     },
   ];
-//crud deparement
-const updatedepartement=()=>{
-  fetch("http://localhost:3000/api/reference/updatedepartment/:id", {
-    method:"PUT",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
- body:JSON.stringify({
-  name:namen,
-  description:descriptionn,
-  code:coden,
-  chef_departement_id:chef_departement_idn,
-  budget:budgetn,
-  statut:statutn,
-  localisation:localisationn,
-  telephone:telephonen,
-  email:emailn,
-  capacite_max:capacite_maxn
-  })}).then(res=>res.json())
-   .then(data=>{
-    console.log(data);
-    alert("departement updated with success")
-   })
-
-  }
-const departementdelete=(id)=>{
-  fetch(`http://localhost:3000/api/reference/departements/${id}`, {
-    method:"DELETE",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-}).then(res=>res.json())
-   .then(data=>{
-    console.log(data);
-   })
-};
-
-
-const handeleshowdepartement=()=>{
-  fetch("http://localhost:3000/api/reference/departements", {
-    method:"GET",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-}).then(res=>res.json()).then
-    (data=>{
-      console.log(data);
-      alert("departement fetched with success");
-    });}
-
 
   const handleLogout = () => {
     fetch("http://localhost:4000/api/auth/logout", {
@@ -171,6 +109,19 @@ const handeleshowdepartement=()=>{
         setDepartments(Array.isArray(data) ? data : data.departments);
       });
   }, []);
+
+const handelecreactionclasse=()=>{
+    fetch("http://localhost:3000/api/reference/specialites", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+}).then(res=>res.json()).then(data=>{
+    console.log(data);
+    alert("class created")
+})
+.catch(err=>console.log(err))
+}
+
 
 
   return (
@@ -222,13 +173,10 @@ const handeleshowdepartement=()=>{
               items={items2}
             />
           </Sider>
-          <Table
-        columns={columns}
-        dataSource={departments}
-        rowKey="id" // important: use "id" as unique key
-        style={{ marginTop: 20 }}
-        
-      />
+       
+       <button onClick={handelecreactionclasse}>Create specialites</button>
+       <input type="text" placeholder="nom specialite" />
+   
           <Content style={{ padding: '0 24px', minHeight: 280 }}>Content</Content>
         </Layout>
       </div>
@@ -241,4 +189,4 @@ const handeleshowdepartement=()=>{
   );
 };
 
-export default Showdepartments;
+export default Creationspes;

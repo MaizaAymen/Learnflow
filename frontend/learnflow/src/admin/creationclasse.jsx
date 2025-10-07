@@ -39,18 +39,15 @@ const items2 = [UserOutlined, LaptopOutlined, NotificationOutlined].map((icon, i
 });
 
 
-const Showdepartments = () => {
-  //nom,description,code,chef_departement_id,budget,statut,localisation,telephone,email,capacite_max
-  const [namen,setNamen] = useState("");
-  const [descriptionn,setDescriptionn] = useState("");
-  const [coden,setCoden] = useState("");
-  const [chef_departement_idn,setChef_departement_idn] = useState("");
-  const [budgetn,setBudgetn] = useState("");
-  const [statutn,setStatutn] = useState("");
-  const [localisationn,setLocalisationn] = useState("");
-  const [telephonen,setTelephonen] = useState("");
-  const [emailn,setEmailn] = useState("");
-  const [capacite_maxn,setCapacite_maxn] = useState("");
+const CreationClasse = () => {
+  //  id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
+  // nom, description, effectif, niveau_id
+  const [nom,setNom] = useState("");
+  const[typecapacite,settypecapacite]=useState("");
+  const [localisation,setLocalisation] = useState("");
+  const [description,setDescription] = useState("");
+
+
   //
   const [departments, setDepartments] = useState([]);
 //
@@ -99,51 +96,6 @@ const Showdepartments = () => {
     },
   ];
 //crud deparement
-const updatedepartement=()=>{
-  fetch("http://localhost:3000/api/reference/updatedepartment/:id", {
-    method:"PUT",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
- body:JSON.stringify({
-  name:namen,
-  description:descriptionn,
-  code:coden,
-  chef_departement_id:chef_departement_idn,
-  budget:budgetn,
-  statut:statutn,
-  localisation:localisationn,
-  telephone:telephonen,
-  email:emailn,
-  capacite_max:capacite_maxn
-  })}).then(res=>res.json())
-   .then(data=>{
-    console.log(data);
-    alert("departement updated with success")
-   })
-
-  }
-const departementdelete=(id)=>{
-  fetch(`http://localhost:3000/api/reference/departements/${id}`, {
-    method:"DELETE",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-}).then(res=>res.json())
-   .then(data=>{
-    console.log(data);
-   })
-};
-
-
-const handeleshowdepartement=()=>{
-  fetch("http://localhost:3000/api/reference/departements", {
-    method:"GET",
-    headers: { "Content-Type": "application/json" },
-    credentials: "include",
-}).then(res=>res.json()).then
-    (data=>{
-      console.log(data);
-      alert("departement fetched with success");
-    });}
 
 
   const handleLogout = () => {
@@ -171,6 +123,26 @@ const handeleshowdepartement=()=>{
         setDepartments(Array.isArray(data) ? data : data.departments);
       });
   }, []);
+
+const handelcreateclass=()=>{
+     fetch("http://localhost:3000/api/reference/classes",{
+        method:"POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          nom:nom,
+          description:description,
+          typecapacite:typecapacite,
+          localisation:localisation,
+        }),
+      })
+        .then((res) => res.json())
+        .then((data) => {
+          console.log(data);
+        
+        });
+  };
+
 
 
   return (
@@ -222,13 +194,18 @@ const handeleshowdepartement=()=>{
               items={items2}
             />
           </Sider>
-          <Table
+          {/* <Table
         columns={columns}
         dataSource={departments}
         rowKey="id" // important: use "id" as unique key
         style={{ marginTop: 20 }}
         
-      />
+      /> */}
+       <button onClick={handelcreateclass}>Create Class</button>
+    <input type="text" placeholder="nom" value={nom} onChange={(e)=>setNom(e.target.value)}/>
+    <input type="text" placeholder="description" value={description} onChange={(e)=>setDescription(e.target.value)}/>
+    <input type="text" placeholder="typecapacite" value={typecapacite} onChange={(e)=>settypecapacite(e.target.value)}/>
+    <input type="text" placeholder="localisation" value={localisation} onChange={(e)=>setLocalisation(e.target.value)}/>
           <Content style={{ padding: '0 24px', minHeight: 280 }}>Content</Content>
         </Layout>
       </div>
@@ -241,4 +218,4 @@ const handeleshowdepartement=()=>{
   );
 };
 
-export default Showdepartments;
+export default CreationClasse;

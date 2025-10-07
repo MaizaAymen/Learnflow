@@ -74,16 +74,14 @@ router.delete('/specialites/:id', async (req, res) => {
     }})
 
 
-
-
 // CRUD Département
 router.post('/adddepartements', async (req, res) => {
   try {
-    const { name, description } = req.body;
-    if (!name) {
-      return res.status(400).json({ error: 'Le nom du département est requis' });
+    const { name, description , code, chef_departement_id, budget, statut, localisation, telephone, email, capacite_max } = req.body;
+    if (!name || !description || !code || !chef_departement_id || !budget || !statut || !localisation || !telephone || !email || !capacite_max) {
+      return res.status(400).json({ error: 'Tous les champs sont requis' });
     }
-    const newdepartment = await departement.create({ name, description });
+    const newdepartment = await departement.create({ name, description, code, chef_departement_id, budget, statut, localisation, telephone, email, capacite_max });
     res.status(201).json(newdepartment);
   }catch (error) {
     console.error('Error creating departement:', error);
@@ -108,7 +106,7 @@ router.get('/departements/:id',async (req,res)=>{
       if (!id){
         return res.status(400).json({error:"ID manquant"})
       }
-       return await departement.findByPK({where:{id:id}})
+       return await departement.findByPk(id)
     } catch (error) {
       return res.status(500).json({ error: 'Internal server error' });
       
@@ -117,12 +115,12 @@ router.get('/departements/:id',async (req,res)=>{
 //update
 router.put('/departements/:id', async (req, res) => {
   try{
-      const {nom,description}=req.body;
-      const dep = await departement.findByPK({where:{id:req.params.id}});///departements/:id <---- //
+      const {nom,description,code,chef_departement_id,budget,statut,localisation,telephone,email,capacite_max}=req.body;
+      const dep = await departement.findByPk({where:{id:req.params.id}});///departements/:id <---- //
       if(!dep){
         return res.status(404).json({message:"Département introuvable"})
       }
-      await dep.update({nom,description})
+      await dep.update({nom,description,code,chef_departement_id,budget,statut,localisation,telephone,email,capacite_max})
       return res.status(200).json({message:"Département mis à jour avec succès"})
   }catch(error){
     return res.status(500).json({ error: 'Internal server error' });
@@ -130,11 +128,11 @@ router.put('/departements/:id', async (req, res) => {
 router.delete('/departements/:id', async (req, res) => {
     try{
   const id = req.params.id;
-  const dep = await departement.findByPK({where:{id:id}});
+  const dep = await departement.findByPk(id);
   if (!dep){
     return res.status(404).json({message:"Département introuvable"})
   }
-  await dep.delete();
+  await dep.destroy();  
   return res.status(200).json({message:"Département supprimé avec succès"})
     }catch(error){
       return res.status(500).json({ error: 'Internal server error' });
@@ -211,22 +209,33 @@ router.delete('/niveaux/:id', async (req, res) => {
 
 
 
-
-
 // CRUD Classe
 router.post('/classes', async (req, res) => {
   try {
-    const { nom, description } = req.body;
+    const { nom, description, effectif, niveau_id } = req.body;
     if (!nom) {
       return res.status(400).json({ error: 'Le nom de la classe est requis' });
     }
-    const newClasse = await classe.create({ nom, description });
-    res.status(201).json(newClasse);
+    if (!effectif) {
+      return res.status(400).json({ error: 'L\'effectif est requis' });
+    }
+    if (!niveau_id) {
+      return res.status(400).json({ error: 'Le niveau est requis' });
+    }
+    if (!description) {
+      return res.status(400).json({ error: 'La description est requise' });
+    }
+    const newClasse = await Classe.create({ nom, description, effectif, niveau_id });
+    if (newClasse) {
+      console.log('Classe created successfully:', newClasse);
+      return res.status(201).json(newClasse);
+    }
+    
   } catch (error) {
     console.error('Error creating classe:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
-})
+});
 router.get('/classes', async (req, res) => {
     try {
       const classes = await classe.findAll();

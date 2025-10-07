@@ -5,9 +5,9 @@ const Niveau = require('./Niveau');
 
 const Classe = sequelize.define('Classe', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  nom: { type: DataTypes.STRING, allowNull: false }, // ex: G1, 2ème Info A
+  nom: { type: DataTypes.STRING, allowNull: true }, // ex: G1, 2ème Info A
   effectif: { type: DataTypes.INTEGER, allowNull: true },
-  niveau_id: { type: DataTypes.INTEGER, allowNull: false },
+  niveau_id: { type: DataTypes.INTEGER, allowNull: true },
   description: { type: DataTypes.TEXT, allowNull: true },
   
 }, {
