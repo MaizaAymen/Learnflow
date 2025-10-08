@@ -2,6 +2,7 @@ const { DataTypes } = require('sequelize');
 // Use the same sequelize instance as auth-service to enable cross-schema relationships
 const sequelize = require('../../auth-service/config');
 const Niveau = require('./Niveau');
+ 
 
 const Classe = sequelize.define('Classe', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
