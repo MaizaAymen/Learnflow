@@ -3,6 +3,7 @@ const {DataTypes} = require('sequelize');
 const sequelize = require('../../auth-service/config');
 
 const departement = sequelize.define('departement', {
+    
     id: {
         type: DataTypes.INTEGER,
         primaryKey: true,
