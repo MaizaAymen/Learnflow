@@ -1,0 +1,11 @@
+.app-layout { min-height: 100vh; }
+.app-sider .logo { color: #fff; font-size: 20px; font-weight: 700; text-align: center; padding: 18px 0; }
+.app-header { background: #fff; padding: 0 24px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+.header-left h2 { margin: 0; color: #1890ff; }
+.app-content { margin: 24px; padding: 24px; background: #fff; border-radius: 8px; min-height: 360px; }
+.app-footer { text-align: center; }
+
+@media (max-width: 768px) {
+  .app-sider { display: none; }
+  .app-content { margin: 12px; padding: 12px; }
+}

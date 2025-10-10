@@ -289,5 +289,156 @@ router.delete('/classes/:id', async (req, res) => {
       return res.status(500).json({ error: 'Internal server error' });
     }})
 
+// CRUD Salle
+router.post('/salles', async (req, res) => {
+  try {
+    const { nom, type, capacite, localisation, description } = req.body;
+    if (!nom) {
+      return res.status(400).json({ error: 'Le nom de la salle est requis' });
+    }
+    if (!type) {
+      return res.status(400).json({ error: 'Le type de la salle est requis' });
+    }
+    if (!capacite) {
+      return res.status(400).json({ error: 'La capacité est requise' });
+    }
+    const newSalle = await salle.create({ nom, type, capacite, localisation, description });
+    res.status(201).json(newSalle);
+  } catch (error) {
+    console.error('Error creating salle:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/salles', async (req, res) => {
+  try {
+    const salles = await salle.findAll();
+    if (!salles) {
+      return res.json({ message: "Aucune salle n'est disponible pour le moment" });
+    }
+    return res.status(200).json(salles);
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/salles/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ error: "ID manquant" });
+    }
+    const salleFound = await salle.findByPk(id);
+    if (!salleFound) {
+      return res.status(404).json({ error: "Salle introuvable" });
+    }
+    return res.status(200).json(salleFound);
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.put('/salles/:id', async (req, res) => {
+  try {
+    const { nom, type, capacite, localisation, description } = req.body;
+    const salleToUpdate = await salle.findByPk(req.params.id);
+    if (!salleToUpdate) {
+      return res.status(404).json({ message: "Salle introuvable" });
+    }
+    await salleToUpdate.update({ nom, type, capacite, localisation, description });
+    return res.status(200).json({ message: "Salle mise à jour avec succès" });
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.delete('/salles/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const salleToDelete = await salle.findByPk(id);
+    if (!salleToDelete) {
+      return res.status(404).json({ message: "Salle introuvable" });
+    }
+    await salleToDelete.destroy();
+    return res.status(200).json({ message: "Salle supprimée avec succès" });
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// CRUD Matière
+router.post('/matieres', async (req, res) => {
+  try {
+    const { name, description, code, credits, niveauId } = req.body;
+    if (!name) {
+      return res.status(400).json({ error: 'Le nom de la matière est requis' });
+    }
+    if (!code) {
+      return res.status(400).json({ error: 'Le code de la matière est requis' });
+    }
+    const newMatiere = await matiere.create({ name, description, code, credits, niveauId });
+    res.status(201).json(newMatiere);
+  } catch (error) {
+    console.error('Error creating matiere:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/matieres', async (req, res) => {
+  try {
+    const matieres = await matiere.findAll();
+    if (!matieres) {
+      return res.json({ message: "Aucune matière n'est disponible pour le moment" });
+    }
+    return res.status(200).json(matieres);
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.get('/matieres/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!id) {
+      return res.status(400).json({ error: "ID manquant" });
+    }
+    const matiereFound = await matiere.findByPk(id);
+    if (!matiereFound) {
+      return res.status(404).json({ error: "Matière introuvable" });
+    }
+    return res.status(200).json(matiereFound);
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.put('/matieres/:id', async (req, res) => {
+  try {
+    const { name, description, code, credits, niveauId } = req.body;
+    const matiereToUpdate = await matiere.findByPk(req.params.id);
+    if (!matiereToUpdate) {
+      return res.status(404).json({ message: "Matière introuvable" });
+    }
+    await matiereToUpdate.update({ name, description, code, credits, niveauId });
+    return res.status(200).json({ message: "Matière mise à jour avec succès" });
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+router.delete('/matieres/:id', async (req, res) => {
+  try {
+    const id = req.params.id;
+    const matiereToDelete = await matiere.findByPk(id);
+    if (!matiereToDelete) {
+      return res.status(404).json({ message: "Matière introuvable" });
+    }
+    await matiereToDelete.destroy();
+    return res.status(200).json({ message: "Matière supprimée avec succès" });
+  } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 module.exports = router;
 

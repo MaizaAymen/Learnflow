@@ -7,20 +7,52 @@ import AdminPanel from './admin/adminpanel.jsx'
 import CreationClasse from './admin/creationclasse.jsx'
 import CreateDepartment from './admin/CreateDepartement.jsx'
 import Showdepartments from './admin/showdepar.jsx'
+import AppLayout from './components/Layout.jsx'
+
+// Import new reference management components
+import ReferenceManagement from './admin/ReferenceManagement.jsx'
+import ReferenceManagementSimple from './admin/ReferenceManagementSimple.jsx'
+import SpecialiteManagement from './admin/SpecialiteManagement.jsx'
+import SpecialiteManagementSimple from './admin/SpecialiteManagementSimple.jsx'
+import DepartementManagement from './admin/DepartementManagement.jsx'
+import NiveauManagementSimple from './admin/NiveauManagementSimple.jsx'
+import ClasseManagementSimple from './admin/ClasseManagementSimple.jsx'
+import SalleManagementSimple from './admin/SalleManagementSimple.jsx'
+import MatiereManagementSimple from './admin/MatiereManagementSimple.jsx'
+import TestReferenceAPI from './admin/TestReferenceAPI.jsx'
+import SimpleReference from './admin/SimpleReference.jsx'
+
 function App() {
   return (
     <>
       <div id="app">
-      <Routes>
-        <Route path="/" element={<ShowUsers />} />
-        <Route path="/auth" element={<Auth />} />
-        <Route path="/profile" element={<Profile />} />
-        <Route path="/admin" element={<AdminPanel />} />
-        <Route path="/create-department" element={<CreateDepartment />} />
-        <Route path="/show-departments" element={<Showdepartments />} />//CreationClasse
-        <Route path="/CreationClasse" element={<CreationClasse />} />
-      </Routes>
-    </div>
+        <AppLayout>
+          <Routes>
+            <Route path="/" element={<ShowUsers />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/admin" element={<AdminPanel />} />
+            
+            {/* Legacy routes - you might want to remove these eventually */}
+            <Route path="/create-department" element={<CreateDepartment />} />
+            <Route path="/show-departments" element={<Showdepartments />} />
+            <Route path="/CreationClasse" element={<CreationClasse />} />
+            
+            {/* New Reference Management Routes */}
+            <Route path="/reference" element={<ReferenceManagementSimple />} />
+            <Route path="/reference/dashboard" element={<ReferenceManagementSimple />} />
+            <Route path="/reference/specialites" element={<SpecialiteManagementSimple />} />
+            <Route path="/reference/departements" element={<DepartementManagement />} />
+            <Route path="/reference/niveaux" element={<NiveauManagementSimple />} />
+            <Route path="/reference/classes" element={<ClasseManagementSimple />} />
+            <Route path="/reference/salles" element={<SalleManagementSimple />} />
+            <Route path="/reference/matieres" element={<MatiereManagementSimple />} />
+            
+            {/* Test route for API */}
+            <Route path="/test-api" element={<TestReferenceAPI />} />
+          </Routes>
+        </AppLayout>
+      </div>
     </>
   )
 }

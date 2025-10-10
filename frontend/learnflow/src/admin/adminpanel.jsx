@@ -18,8 +18,6 @@ const { Header, Content, Footer, Sider } = Layout;
 
 import {  Menu, theme } from 'antd';
 
-
-
 const items1 = ['1', '2', '3'].map(key => ({
   key,
   label: `nav ${key}`,
