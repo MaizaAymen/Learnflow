@@ -1,0 +1,274 @@
+/* WeeklySchedule.css */
+
+.weekly-schedule {
+  padding: 20px;
+  background: #f5f5f5;
+  border-radius: 12px;
+  margin: 20px 0;
+}
+
+.schedule-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #e0e0e0;
+}
+
+.schedule-header h2 {
+  margin: 0;
+  color: #2c3e50;
+  font-size: 24px;
+}
+
+.refresh-btn {
+  padding: 10px 20px;
+  background: #3498db;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background 0.3s ease;
+}
+
+.refresh-btn:hover {
+  background: #2980b9;
+}
+
+/* Grid Layout */
+.schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 20px;
+}
+
+.day-column {
+  background: white;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.day-column:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.day-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.day-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.course-count {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.day-schedule {
+  padding: 16px;
+  min-height: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* Schedule Card */
+.schedule-card {
+  background: #fff;
+  border: 2px solid #e0e0e0;
+  border-radius: 8px;
+  padding: 12px;
+  transition: all 0.3s ease;
+}
+
+.schedule-card:hover {
+  border-color: #667eea;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.schedule-card.status-annule {
+  opacity: 0.6;
+  background: #f8f8f8;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.time {
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 14px;
+}
+
+.badge {
+  padding: 4px 12px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-blue { background: #e3f2fd; color: #1976d2; }
+.badge-purple { background: #f3e5f5; color: #7b1fa2; }
+.badge-orange { background: #fff3e0; color: #f57c00; }
+.badge-red { background: #ffebee; color: #c62828; }
+.badge-green { background: #e8f5e9; color: #2e7d32; }
+
+.card-body {
+  margin-bottom: 12px;
+}
+
+.matiere-name {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  color: #2c3e50;
+  font-weight: 600;
+}
+
+.salle-info,
+.teacher-info,
+.notes {
+  margin: 4px 0;
+  font-size: 13px;
+  color: #666;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.card-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.status-badge.status-planifie {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.status-badge.status-confirme {
+  background: #d4edda;
+  color: #155724;
+}
+
+.status-badge.status-annule {
+  background: #f8d7da;
+  color: #721c24;
+}
+
+.status-badge.status-termine {
+  background: #d1ecf1;
+  color: #0c5460;
+}
+
+/* No Classes */
+.no-classes {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 150px;
+  color: #999;
+  font-style: italic;
+}
+
+/* Loading State */
+.schedule-loading {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: 60px;
+  color: #666;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid #667eea;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Error State */
+.schedule-error {
+  padding: 40px;
+  text-align: center;
+  color: #c62828;
+  background: #ffebee;
+  border-radius: 8px;
+}
+
+.schedule-error button {
+  margin-top: 16px;
+  padding: 10px 24px;
+  background: #c62828;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.schedule-error button:hover {
+  background: #b71c1c;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .schedule-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .schedule-header {
+    flex-direction: column;
+    gap: 12px;
+    text-align: center;
+  }
+
+  .schedule-header h2 {
+    font-size: 20px;
+  }
+}
+
+@media (min-width: 1400px) {
+  .schedule-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}

@@ -42,50 +42,76 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
+  const [profileLoading, setProfileLoading] = useState(true);
   
   useEffect(() => {
+    setProfileLoading(true);
     fetch("http://localhost:4000/api/auth/profile", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
         credentials:'include',
-    }).then(res=>res.json())
-    .then(data=>{
-        console.log(data);
-        setProfile(data.user);
+    }).then(res => {
+        if (!res.ok) {
+          throw new Error('Échec de la connexion au serveur');
+        }
+        return res.json();
+    })
+    .then(data => {
         if (data.user) {
+          setProfile(data.user);
           form.setFieldsValue(data.user);
+          message.success('Profil chargé avec succès');
+        } else {
+          message.warning('Aucune donnée de profil trouvée. Veuillez compléter vos informations.');
         }
     })
     .catch(error => {
-        console.error('Error:', error);
-        message.error('Erreur lors du chargement du profil');
+        console.error('Erreur de chargement du profil:', error);
+        message.error('Impossible de charger votre profil. Vérifiez votre connexion internet et réessayez.');
+    })
+    .finally(() => {
+        setProfileLoading(false);
     });
-
-},[] )
+  }, [])
 
 const handleCompleteProfile = (values) => {
   setLoading(true);
+  message.loading({ content: 'Mise à jour de votre profil en cours...', key: 'updating' });
+  
   fetch("http://localhost:4000/api/auth/completeprofile", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: 'include',
       body: JSON.stringify({ ...values, id: profile.id })
   })
-  .then(res => res.json())
+  .then(res => {
+      if (!res.ok) {
+        throw new Error('Erreur de connexion au serveur');
+      }
+      return res.json();
+  })
   .then(data => {
-      console.log(data);
-      if (data.message) {
-        message.success('Profil mis à jour avec succès!');
+      if (data.message || data.user) {
+        // Update local state instead of page reload
+        setProfile({ ...profile, ...values });
+        message.success({ 
+          content: 'Votre profil a été mis à jour avec succès !', 
+          key: 'updating',
+          duration: 3 
+        });
         setIsEditing(false);
-        // Refresh profile data
-        window.location.reload();
+        form.setFieldsValue({ ...profile, ...values });
       } else {
-        message.error(data.error || 'Erreur lors de la mise à jour');
+        throw new Error(data.error || 'Réponse inattendue du serveur');
       }
   })
   .catch(error => {
-      console.error('Error:', error);
-      message.error('Erreur lors de la mise à jour du profil');
+      console.error('Erreur lors de la mise à jour du profil:', error);
+      message.error({ 
+        content: `Impossible de mettre à jour votre profil: ${error.message}. Veuillez réessayer.`,
+        key: 'updating',
+        duration: 5
+      });
   })
   .finally(() => {
     setLoading(false);
@@ -102,9 +128,33 @@ const handleCompleteProfile = (values) => {
   };
 
   const formatDate = (dateString) => {
-    if (!dateString) return 'Non spécifié';
-    return new Date(dateString).toLocaleDateString('fr-FR');
+    if (!dateString) return 'Non renseignée';
+    return new Date(dateString).toLocaleDateString('fr-FR', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
   };
+
+  if (profileLoading) {
+    return (
+      <div style={{ 
+        display: 'flex', 
+        justifyContent: 'center', 
+        alignItems: 'center', 
+        minHeight: '400px',
+        background: '#f5f5f5' 
+      }}>
+        <Card style={{ width: 400, textAlign: 'center' }}>
+          <div style={{ padding: '40px' }}>
+            <UserOutlined style={{ fontSize: '48px', color: '#1890ff', marginBottom: '16px' }} />
+            <Title level={4}>Chargement de votre profil...</Title>
+            <Text type="secondary">Veuillez patienter pendant que nous récupérons vos informations.</Text>
+          </div>
+        </Card>
+      </div>
+    );
+  }
 
   if (!profile) {
     return (
@@ -117,30 +167,37 @@ const handleCompleteProfile = (values) => {
       }}>
         <Card style={{ width: 400, textAlign: 'center' }}>
           <Empty 
-            description="Aucune donnée de profil disponible"
+            description={
+              <div>
+                <p>Aucune donnée de profil disponible</p>
+                <Text type="secondary">
+                  Il semble que votre profil ne soit pas encore configuré. 
+                  Veuillez vous reconnecter ou contacter l'administrateur.
+                </Text>
+              </div>
+            }
             image={Empty.PRESENTED_IMAGE_SIMPLE}
           />
+          <Button 
+            type="primary" 
+            onClick={() => window.location.reload()}
+            style={{ marginTop: '16px' }}
+          >
+            Recharger la page
+          </Button>
         </Card>
       </div>
     );
   }
 
   return (
-    <div style={{ 
-      padding: '24px', 
-      background: 'linear-gradient(135deg, #ffffffff 0%, #ffffffff 100%)', 
-      minHeight: '100vh' 
-    }}>
-      <div style={{ maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="page-wrapper animate-fadeInUp">
+      <div className="app-container">
         {/* Header Card */}
         <Card 
-          style={{ 
-            marginBottom: '24px',
-            borderRadius: '16px',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-            border: 'none'
-          }}
-          bodyStyle={{ padding: '32px' }}
+          className="data-card hover-lift"
+          style={{ marginBottom: 'var(--space-6)' }}
+          bodyStyle={{ padding: 'var(--space-8)' }}
         >
           <Row align="middle" justify="space-between" gutter={24}>
             <Col>
@@ -150,35 +207,26 @@ const handleCompleteProfile = (values) => {
                     size={100} 
                     src={profile.image} 
                     icon={<UserOutlined />}
+                    className="status-online hover-glow"
                     style={{ 
-                      backgroundColor: '#1890ff',
-                      border: '4px solid #fff',
-                      boxShadow: '0 4px 16px rgba(24,144,255,0.3)'
+                      backgroundColor: 'var(--primary-500)',
+                      border: '4px solid var(--bg-primary)',
+                      boxShadow: 'var(--shadow-lg)'
                     }}
                   />
                 </Col>
                 <Col>
-                  <Title level={1} style={{ margin: 0, color: '#1890ff', fontSize: '2.5rem' }}>
+                  <Title level={1} className="form-title" style={{ margin: 0, fontSize: 'var(--font-size-4xl)' }}>
                     {profile.nom} {profile.prenom}
                   </Title>
-                  <Space size="large" style={{ marginTop: '12px' }}>
-                    <Tag color={getRoleColor(profile.role)} style={{ 
-                      fontSize: '16px', 
-                      padding: '8px 16px',
-                      borderRadius: '20px',
-                      border: 'none'
-                    }}>
+                  <Space size="large" style={{ marginTop: 'var(--space-3)' }}>
+                    <div className={`status-badge status-badge--${getRoleColor(profile.role) === 'red' ? 'error' : getRoleColor(profile.role) === 'blue' ? 'info' : 'success'}`}>
                       {profile.role?.toUpperCase()}
-                    </Tag>
+                    </div>
                     {profile.specialite && (
-                      <Tag color="orange" style={{ 
-                        fontSize: '16px', 
-                        padding: '8px 16px',
-                        borderRadius: '20px',
-                        border: 'none'
-                      }}>
+                      <div className="status-badge status-badge--warning">
                         {profile.specialite}
-                      </Tag>
+                      </div>
                     )}
                   </Space>
                 </Col>
@@ -190,12 +238,11 @@ const handleCompleteProfile = (values) => {
                 size="large"
                 icon={isEditing ? <SaveOutlined /> : <EditOutlined />}
                 onClick={() => setIsEditing(!isEditing)}
+                className="hover-lift"
                 style={{
-                  borderRadius: '12px',
-                  height: '48px',
-                  paddingLeft: '24px',
-                  paddingRight: '24px',
-                  boxShadow: '0 4px 12px rgba(24,144,255,0.3)'
+                  height: 'var(--space-12)',
+                  paddingLeft: 'var(--space-6)',
+                  paddingRight: 'var(--space-6)'
                 }}
               >
                 {isEditing ? 'Annuler' : 'Modifier le profil'}
@@ -224,7 +271,7 @@ const handleCompleteProfile = (values) => {
                 <div>
                   <Text strong><MailOutlined /> Email:</Text>
                   <br />
-                  <Text copyable style={{ color: '#1890ff' }}>{profile.email}</Text>
+                  <Text copyable style={{ color: '#1890ff' }}>{profile.email || 'Non renseigné'}</Text>
                 </div>
                 
                 {profile.phone && (
@@ -424,7 +471,17 @@ const handleCompleteProfile = (values) => {
         
         {/* Edit Profile Modal */}
         <Modal
-          title={<span style={{ fontSize: '20px', color: '#1890ff' }}><EditOutlined /> Modifier le profil</span>}
+          title={
+            <div>
+              <span style={{ fontSize: '20px', color: '#1890ff' }}>
+                <EditOutlined /> Modifier le profil
+              </span>
+              <br />
+              <Text type="secondary" style={{ fontSize: '14px' }}>
+                Complétez vos informations pour améliorer votre expérience sur la plateforme
+              </Text>
+            </div>
+          }
           open={isEditing}
           onCancel={() => setIsEditing(false)}
           footer={null}
@@ -442,18 +499,26 @@ const handleCompleteProfile = (values) => {
                 <Form.Item
                   label="Nom"
                   name="nom"
-                  rules={[{ required: true, message: 'Le nom est requis' }]}
+                  rules={[{ required: true, message: 'Veuillez saisir votre nom de famille' }]}
                 >
-                  <Input disabled style={{ backgroundColor: '#f5f5f5' }} />
+                  <Input 
+                    disabled 
+                    style={{ backgroundColor: '#f5f5f5' }} 
+                    placeholder="Cette information ne peut pas être modifiée"
+                  />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item
                   label="Prénom"
                   name="prenom"
-                  rules={[{ required: true, message: 'Le prénom est requis' }]}
+                  rules={[{ required: true, message: 'Veuillez saisir votre prénom' }]}
                 >
-                  <Input disabled style={{ backgroundColor: '#f5f5f5' }} />
+                  <Input 
+                    disabled 
+                    style={{ backgroundColor: '#f5f5f5' }} 
+                    placeholder="Cette information ne peut pas être modifiée"
+                  />
                 </Form.Item>
               </Col>
             </Row>
@@ -464,15 +529,25 @@ const handleCompleteProfile = (values) => {
                   label="Email"
                   name="email"
                 >
-                  <Input disabled style={{ backgroundColor: '#f5f5f5' }} />
+                  <Input 
+                    disabled 
+                    style={{ backgroundColor: '#f5f5f5' }} 
+                    placeholder="Votre adresse email ne peut pas être modifiée"
+                  />
                 </Form.Item>
               </Col>
               <Col span={12}>
                 <Form.Item
                   label="Téléphone"
                   name="phone"
+                  rules={[
+                    { 
+                      pattern: /^[\+]?[(]?[0-9\s\-\(\)]{8,}$/, 
+                      message: 'Veuillez saisir un numéro de téléphone valide' 
+                    }
+                  ]}
                 >
-                  <Input placeholder="+216 XX XXX XXX" />
+                  <Input placeholder="Exemple: +216 XX XXX XXX" />
                 </Form.Item>
               </Col>
             </Row>
@@ -482,8 +557,14 @@ const handleCompleteProfile = (values) => {
                 <Form.Item
                   label="CIN"
                   name="cin"
+                  rules={[
+                    { 
+                      pattern: /^[0-9]{8}$/, 
+                      message: 'Le CIN doit contenir exactement 8 chiffres' 
+                    }
+                  ]}
                 >
-                  <Input placeholder="12345678" />
+                  <Input placeholder="Saisissez votre numéro CIN (8 chiffres)" maxLength={8} />
                 </Form.Item>
               </Col>
               <Col span={12}>
@@ -499,8 +580,16 @@ const handleCompleteProfile = (values) => {
             <Form.Item
               label="Bio"
               name="bio"
+              rules={[
+                { max: 500, message: 'La biographie ne doit pas dépasser 500 caractères' }
+              ]}
             >
-              <TextArea rows={3} placeholder="Parlez-nous de vous..." />
+              <TextArea 
+                rows={3} 
+                placeholder="Parlez-nous de vous, vos passions, vos objectifs... (maximum 500 caractères)"
+                showCount
+                maxLength={500}
+              />
             </Form.Item>
             
             <Row gutter={16}>
@@ -509,7 +598,7 @@ const handleCompleteProfile = (values) => {
                   label="Ville"
                   name="ville"
                 >
-                  <Input placeholder="Tunis" />
+                  <Input placeholder="Exemple: Tunis, Sousse, Sfax..." />
                 </Form.Item>
               </Col>
               <Col span={12}>
@@ -517,7 +606,7 @@ const handleCompleteProfile = (values) => {
                   label="Pays"
                   name="pays"
                 >
-                  <Input placeholder="Tunisie" />
+                  <Input placeholder="Exemple: Tunisie, France, Canada..." />
                 </Form.Item>
               </Col>
             </Row>
@@ -526,7 +615,7 @@ const handleCompleteProfile = (values) => {
               label="Adresse"
               name="adresse"
             >
-              <Input placeholder="Adresse complète" />
+              <Input placeholder="Votre adresse complète (rue, numéro, code postal...)" />
             </Form.Item>
             
             {profile.role === 'etudiant' && (
@@ -537,11 +626,12 @@ const handleCompleteProfile = (values) => {
                       label="Niveau d'étude"
                       name="niveau_etude"
                     >
-                      <Select placeholder="Sélectionner le niveau">
-                        <Option value="licence">Licence</Option>
-                        <Option value="master">Master</Option>
-                        <Option value="doctorat">Doctorat</Option>
-                        <Option value="ingenieur">Ingénieur</Option>
+                      <Select placeholder="Choisissez votre niveau d'étude actuel">
+                        <Option value="licence">Licence (L1, L2, L3)</Option>
+                        <Option value="master">Master (M1, M2)</Option>
+                        <Option value="doctorat">Doctorat / PhD</Option>
+                        <Option value="ingenieur">École d'Ingénieur</Option>
+                        <Option value="autre">Autre</Option>
                       </Select>
                     </Form.Item>
                   </Col>
@@ -550,7 +640,7 @@ const handleCompleteProfile = (values) => {
                       label="Parcours"
                       name="parcours"
                     >
-                      <Input placeholder="Votre parcours académique" />
+                      <Input placeholder="Exemple: Informatique, Mathématiques, Économie..." />
                     </Form.Item>
                   </Col>
                 </Row>
@@ -565,7 +655,7 @@ const handleCompleteProfile = (values) => {
                       label="Département"
                       name="departement"
                     >
-                      <Input placeholder="Département d'enseignement" />
+                      <Input placeholder="Exemple: Informatique, Mathématiques, Langues..." />
                     </Form.Item>
                   </Col>
                   <Col span={12}>
@@ -573,7 +663,7 @@ const handleCompleteProfile = (values) => {
                       label="Établissement"
                       name="etablissement"
                     >
-                      <Input placeholder="Nom de l'établissement" />
+                      <Input placeholder="Exemple: Université de Tunis, ESPRIT, INSAT..." />
                     </Form.Item>
                   </Col>
                 </Row>
@@ -582,7 +672,7 @@ const handleCompleteProfile = (values) => {
                   label="Certification"
                   name="certification"
                 >
-                  <Input placeholder="Vos certifications" />
+                  <Input placeholder="Exemple: AWS Certified, Microsoft Certified, Cisco..." />
                 </Form.Item>
               </>
             )}
@@ -597,12 +687,13 @@ const handleCompleteProfile = (values) => {
                   size="large"
                   style={{ borderRadius: '8px' }}
                 >
-                  Enregistrer
+                  {loading ? 'Enregistrement en cours...' : 'Enregistrer les modifications'}
                 </Button>
                 <Button 
                   onClick={() => setIsEditing(false)}
                   size="large"
                   style={{ borderRadius: '8px' }}
+                  disabled={loading}
                 >
                   Annuler
                 </Button>

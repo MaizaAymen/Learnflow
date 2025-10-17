@@ -1,11 +1,9 @@
-import React from 'react';
-import { Link, Outlet } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import './Layout.css';
-import { Layout as AntLayout, Menu, Avatar, Dropdown } from 'antd';
+import { Layout as AntLayout, Menu, Avatar, Dropdown, Button, Badge, Breadcrumb, message, theme } from 'antd';
 import { 
   UserOutlined, 
-  MenuFoldOutlined, 
-  MenuUnfoldOutlined,
   LaptopOutlined,
   TeamOutlined,
   SettingOutlined,
@@ -13,22 +11,111 @@ import {
   BookOutlined,
   BankOutlined,
   GoldOutlined,
-  BuildOutlined
+  BuildOutlined,
+  LogoutOutlined,
+  BellOutlined,
+  DashboardOutlined
 } from '@ant-design/icons';
 
 const { Header, Sider, Content, Footer } = AntLayout;
 
+const siderStyle = {
+  overflow: 'auto',
+  height: '100vh',
+  position: 'sticky',
+  insetInlineStart: 0,
+  top: 0,
+  bottom: 0,
+  scrollbarWidth: 'thin',
+  scrollbarGutter: 'stable',
+};
+
 const AppLayout = ({ children }) => {
+  const [collapsed, setCollapsed] = useState(false);
+  const [user, setUser] = useState(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  
+  const {
+    token: { colorBgContainer, borderRadiusLG },
+  } = theme.useToken();
+
+  useEffect(() => {
+    // Fetch user info on mount
+    fetchUserInfo();
+  }, []);
+
+  const fetchUserInfo = async () => {
+    try {
+      const response = await fetch("http://localhost:4000/api/auth/profile", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setUser(data.user);
+      }
+    } catch (error) {
+      console.error('Error fetching user info:', error);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("http://localhost:4000/api/auth/logout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        message.success('Déconnexion réussie');
+        navigate('/auth');
+      } else {
+        message.error('Erreur lors de la déconnexion');
+      }
+    } catch (error) {
+      console.error('Error logging out:', error);
+      message.error('Erreur lors de la déconnexion');
+    }
+  };
+
+  const userMenuItems = [
+    {
+      key: 'profile',
+      icon: <UserOutlined />,
+      label: 'Mon Profil',
+      onClick: () => navigate('/profile'),
+    },
+    {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: 'Paramètres',
+      onClick: () => message.info('Paramètres à venir'),
+    },
+    {
+      type: 'divider',
+    },
+    {
+      key: 'logout',
+      icon: <LogoutOutlined />,
+      label: 'Se déconnecter',
+      onClick: handleLogout,
+    },
+  ];
+
   const menuItems = [
     {
       key: '/',
-      icon: <HomeOutlined />,
-      label: <Link to="/">Dashboard</Link>,
+      icon: <DashboardOutlined />,
+      label: <Link to="/">Tableau de Bord</Link>,
     },
     {
       key: '/users',
-      icon: <UserOutlined />,
-      label: <Link to="/">Utilisateurs</Link>,
+      icon: <TeamOutlined />,
+      label: <Link to="/users">Utilisateurs</Link>,
     },
     {
       key: 'reference',
@@ -37,7 +124,8 @@ const AppLayout = ({ children }) => {
       children: [
         {
           key: '/reference',
-          label: <Link to="/reference">Tableau de Bord</Link>,
+          icon: <DashboardOutlined />,
+          label: <Link to="/reference">Vue d'ensemble</Link>,
         },
         {
           key: '/reference/specialites',
@@ -74,7 +162,7 @@ const AppLayout = ({ children }) => {
     {
       key: '/profile',
       icon: <UserOutlined />,
-      label: <Link to="/profile">Profil</Link>,
+      label: <Link to="/profile">Mon Profil</Link>,
     },
     {
       key: '/admin',
@@ -83,31 +171,144 @@ const AppLayout = ({ children }) => {
     },
   ];
 
+  const getBreadcrumbItems = () => {
+    const pathSegments = location.pathname.split('/').filter(Boolean);
+    const breadcrumbItems = [
+      {
+        title: <Link to="/"><HomeOutlined /> Accueil</Link>,
+      }
+    ];
+
+    if (pathSegments.length > 0) {
+      let currentPath = '';
+      pathSegments.forEach((segment, index) => {
+        currentPath += `/${segment}`;
+        
+        // Create readable labels for segments
+        let label = segment.charAt(0).toUpperCase() + segment.slice(1);
+        switch (segment) {
+          case 'reference':
+            label = 'Données de Référence';
+            break;
+          case 'specialites':
+            label = 'Spécialités';
+            break;
+          case 'departements':
+            label = 'Départements';
+            break;
+          case 'niveaux':
+            label = 'Niveaux';
+            break;
+          case 'classes':
+            label = 'Classes';
+            break;
+          case 'salles':
+            label = 'Salles';
+            break;
+          case 'matieres':
+            label = 'Matières';
+            break;
+          case 'profile':
+            label = 'Mon Profil';
+            break;
+          case 'admin':
+            label = 'Administration';
+            break;
+        }
+
+        breadcrumbItems.push({
+          title: index === pathSegments.length - 1 ? 
+            label : 
+            <Link to={currentPath}>{label}</Link>
+        });
+      });
+    }
+
+    return breadcrumbItems;
+  };
+
   return (
-    <AntLayout className="app-layout">
-      <Sider width={220} className="app-sider" breakpoint="lg" collapsedWidth="0">
-        <div className="logo">Learnflow</div>
+    <AntLayout hasSider>
+      <Sider 
+        style={siderStyle}
+        width={240} 
+        className="app-sider" 
+        breakpoint="lg" 
+        collapsedWidth="80"
+        collapsible
+        collapsed={collapsed}
+        onCollapse={(value) => setCollapsed(value)}
+      >
+        <div className="logo">
+          {collapsed ? 'LE' : 'LEARNFLOW'}
+        </div>
         <Menu 
           theme="dark" 
           mode="inline" 
-          defaultSelectedKeys={[window.location.pathname]}
+          selectedKeys={[location.pathname]}
           defaultOpenKeys={['reference']}
           items={menuItems}
+          style={{ border: 'none' }}
         />
       </Sider>
+
       <AntLayout>
-        <Header className="app-header">
+        <Header className="app-header" style={{ padding: 0, background: colorBgContainer }}>
           <div className="header-left">
             <h2>Learnflow</h2>
           </div>
+
           <div className="header-right">
-            <Avatar icon={<UserOutlined />} />
+            <Badge count={5} size="small">
+              <Button 
+                type="text" 
+                icon={<BellOutlined />} 
+                className="notification-badge"
+                onClick={() => message.info('Notifications à venir')}
+              />
+            </Badge>
+            
+            <Dropdown
+              menu={{ items: userMenuItems }}
+              placement="bottomRight"
+              arrow={{ pointAtCenter: true }}
+              overlayClassName="user-menu-dropdown"
+            >
+              <div style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Avatar 
+                  className="header-avatar"
+                  src={user?.image} 
+                  icon={<UserOutlined />}
+                  size="default"
+                />
+                <span style={{ 
+                  color: 'var(--text-primary)', 
+                  fontWeight: '500',
+                  display: window.innerWidth > 768 ? 'block' : 'none'
+                }}>
+                  {user ? `${user.prenom} ${user.nom}` : 'Utilisateur'}
+                </span>
+              </div>
+            </Dropdown>
           </div>
         </Header>
-        <Content className="app-content">
-          {children}
+
+        {location.pathname !== '/' && (
+          <Breadcrumb 
+            className="app-breadcrumb"
+            items={getBreadcrumbItems()}
+          />
+        )}
+
+        <Content className="app-content" style={{ margin: '24px 16px 0', overflow: 'initial' }}>
+          <div className="page-transition">
+            {children}
+          </div>
         </Content>
-        <Footer className="app-footer">© {new Date().getFullYear()} Learnflow</Footer>
+
+        <Footer className="app-footer" style={{ textAlign: 'center' }}>
+          © {new Date().getFullYear()} Learnflow - Plateforme d'apprentissage moderne
+        </Footer>
       </AntLayout>
     </AntLayout>
   );

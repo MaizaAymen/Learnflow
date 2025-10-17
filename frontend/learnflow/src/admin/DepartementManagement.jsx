@@ -25,6 +25,7 @@ import {
   ArrowLeftOutlined
 } from "@ant-design/icons";
 
+
 const { TextArea } = Input;
 const { Option } = Select;
 
@@ -303,6 +304,7 @@ const DepartementManagement = () => {
           setEditingDepartement(null);
           form.resetFields();
         }}
+       
         footer={null}
         width={800}
       >

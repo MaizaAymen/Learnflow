@@ -9,7 +9,7 @@ const sequelize = new Sequelize(
     dialect: 'postgres',
     port: 5432,
     define: {
-      schema: 'auth'   // 👈 toutes les tables iront dans auth
+      schema: 'auth'   //  toutes les tables iront dans auth
     }
   }
 );

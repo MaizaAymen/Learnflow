@@ -8,6 +8,9 @@ const salle = require('../models/Salle');
 const matiere = require('../models/Matiére');
 const matiereClasse = require('../models/MatiereClasse');
 const matiereEnseignant = require('../models/MatiereEnseignant');
+
+// Import Calendar routes
+const calendarRoutes = require('./Calendar');
 // CRUD Specialite
 router.post('/specialites', async (req, res) => {
   try {
@@ -73,6 +76,36 @@ router.delete('/specialites/:id', async (req, res) => {
       return res.status(500).json({ error: 'Internal server error' });
     }})
 
+// Search specialites by name
+router.get('/specialites/search/:term', async (req, res) => {
+  try {
+    const { term } = req.params;
+    const { Op } = require('sequelize');
+    const results = await specialite.findAll({
+      where: {
+        nom: {
+          [Op.like]: `%${term}%`
+        }
+      }
+    });
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error('Error searching specialites:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get specialite count
+router.get('/specialites/stats/count', async (req, res) => {
+  try {
+    const count = await specialite.count();
+    return res.status(200).json({ count });
+  } catch (error) {
+    console.error('Error counting specialites:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 
 // CRUD Département
 router.post('/adddepartements', async (req, res) => {
@@ -137,6 +170,59 @@ router.delete('/departements/:id', async (req, res) => {
     }catch(error){
       return res.status(500).json({ error: 'Internal server error' });
     }})
+
+// Search departements by name or code
+router.get('/departements/search/:term', async (req, res) => {
+  try {
+    const { term } = req.params;
+    const { Op } = require('sequelize');
+    const results = await departement.findAll({
+      where: {
+        [Op.or]: [
+          { name: { [Op.like]: `%${term}%` } },
+          { code: { [Op.like]: `%${term}%` } }
+        ]
+      }
+    });
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error('Error searching departements:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get departement statistics
+router.get('/departements/stats/summary', async (req, res) => {
+  try {
+    const count = await departement.count();
+    const { Op } = require('sequelize');
+    const activeCount = await departement.count({
+      where: { statut: 'actif' }
+    });
+    return res.status(200).json({ 
+      total: count, 
+      active: activeCount,
+      inactive: count - activeCount 
+    });
+  } catch (error) {
+    console.error('Error getting departement stats:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get departements by status
+router.get('/departements/filter/statut/:statut', async (req, res) => {
+  try {
+    const { statut } = req.params;
+    const results = await departement.findAll({
+      where: { statut }
+    });
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error('Error filtering departements by status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 
 
@@ -206,6 +292,39 @@ router.delete('/niveaux/:id', async (req, res) => {
     }catch(error){
       return res.status(500).json({ error: 'Internal server error' });
     }})
+
+// Search niveaux by name
+router.get('/niveaux/search/:term', async (req, res) => {
+  try {
+    const { term } = req.params;
+    const { Op } = require('sequelize');
+    const results = await niveau.findAll({
+      where: {
+        nom: {
+          [Op.like]: `%${term}%`
+        }
+      }
+    });
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error('Error searching niveaux:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get classes by niveau
+router.get('/niveaux/:id/classes', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const classes = await Classe.findAll({
+      where: { niveau_id: id }
+    });
+    return res.status(200).json(classes);
+  } catch (error) {
+    console.error('Error getting classes by niveau:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
 
 
 
@@ -289,6 +408,45 @@ router.delete('/classes/:id', async (req, res) => {
       return res.status(500).json({ error: 'Internal server error' });
     }})
 
+// Search classes by name
+router.get('/classes/search/:term', async (req, res) => {
+  try {
+    const { term } = req.params;
+    const { Op } = require('sequelize');
+    const results = await Classe.findAll({
+      where: {
+        nom: {
+          [Op.like]: `%${term}%`
+        }
+      }
+    });
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error('Error searching classes:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get classe statistics
+router.get('/classes/stats/summary', async (req, res) => {
+  try {
+    const count = await Classe.count();
+    const { fn, col } = require('sequelize').Sequelize;
+    const totalEffectif = await Classe.sum('effectif') || 0;
+    const avgEffectif = await Classe.findAll({
+      attributes: [[fn('AVG', col('effectif')), 'average']]
+    });
+    return res.status(200).json({ 
+      totalClasses: count,
+      totalStudents: totalEffectif,
+      averageSize: avgEffectif[0]?.dataValues?.average || 0
+    });
+  } catch (error) {
+    console.error('Error getting classe stats:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // CRUD Salle
 router.post('/salles', async (req, res) => {
   try {
@@ -366,6 +524,59 @@ router.delete('/salles/:id', async (req, res) => {
   }
 });
 
+// Search salles by name or type
+router.get('/salles/search/:term', async (req, res) => {
+  try {
+    const { term } = req.params;
+    const { Op } = require('sequelize');
+    const results = await salle.findAll({
+      where: {
+        [Op.or]: [
+          { nom: { [Op.like]: `%${term}%` } },
+          { type: { [Op.like]: `%${term}%` } }
+        ]
+      }
+    });
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error('Error searching salles:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Filter salles by type
+router.get('/salles/filter/type/:type', async (req, res) => {
+  try {
+    const { type } = req.params;
+    const results = await salle.findAll({
+      where: { type }
+    });
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error('Error filtering salles by type:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get available salles by minimum capacity
+router.get('/salles/filter/capacity/:minCapacity', async (req, res) => {
+  try {
+    const { minCapacity } = req.params;
+    const { Op } = require('sequelize');
+    const results = await salle.findAll({
+      where: {
+        capacite: {
+          [Op.gte]: parseInt(minCapacity)
+        }
+      }
+    });
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error('Error filtering salles by capacity:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // CRUD Matière
 router.post('/matieres', async (req, res) => {
   try {
@@ -439,6 +650,77 @@ router.delete('/matieres/:id', async (req, res) => {
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
+
+
+
+//iaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa--------------------------------------
+
+// Search matieres by name or code
+router.get('/matieres/search/:term', async (req, res) => {
+  try {
+    const { term } = req.params;
+    const { Op } = require('sequelize');
+    const results = await matiere.findAll({
+      where: {
+        [Op.or]: [
+          { name: { [Op.like]: `%${term}%` } },
+          { code: { [Op.like]: `%${term}%` } }
+        ]
+      }
+    });
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error('Error searching matieres:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get matieres by niveau
+router.get('/matieres/filter/niveau/:niveauId', async (req, res) => {
+  try {
+    const { niveauId } = req.params;
+    const results = await matiere.findAll({
+      where: { niveauId }
+    });
+    return res.status(200).json(results);
+  } catch (error) {
+    console.error('Error filtering matieres by niveau:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get matiere statistics
+router.get('/matieres/stats/summary', async (req, res) => {
+  try {
+    const count = await matiere.count();
+    const totalCredits = await matiere.sum('credits') || 0;
+    return res.status(200).json({ 
+      totalMatieres: count,
+      totalCredits: totalCredits
+    });
+  } catch (error) {
+    console.error('Error getting matiere stats:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Bulk create matieres
+router.post('/matieres/bulk', async (req, res) => {
+  try {
+    const { matieres } = req.body;
+    if (!Array.isArray(matieres) || matieres.length === 0) {
+      return res.status(400).json({ error: 'Un tableau de matières est requis' });
+    }
+    const createdMatieres = await matiere.bulkCreate(matieres);
+    res.status(201).json(createdMatieres);
+  } catch (error) {
+    console.error('Error bulk creating matieres:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Use Calendar routes
+router.use('/calendar', calendarRoutes);
 
 module.exports = router;
 
