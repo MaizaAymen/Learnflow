@@ -14,8 +14,10 @@ import {
   BuildOutlined,
   LogoutOutlined,
   BellOutlined,
+  CalendarOutlined,
   DashboardOutlined
 } from '@ant-design/icons';
+import examenLogo from './examen.png';
 
 const { Header, Sider, Content, Footer } = AntLayout;
 
@@ -169,6 +171,11 @@ const AppLayout = ({ children }) => {
       icon: <SettingOutlined />,
       label: <Link to="/admin">Administration</Link>,
     },
+    {
+      key: '/calendar',
+      icon: <CalendarOutlined />,
+      label: <Link to="/calendar">Calendrier</Link>,
+    },
   ];
 
   const getBreadcrumbItems = () => {
@@ -214,6 +221,10 @@ const AppLayout = ({ children }) => {
           case 'admin':
             label = 'Administration';
             break;
+            case 'calendar':
+            label = 'Calendrier';
+            break;
+            
         }
 
         breadcrumbItems.push({
@@ -240,10 +251,17 @@ const AppLayout = ({ children }) => {
         onCollapse={(value) => setCollapsed(value)}
       >
         <div className="logo">
-          {collapsed ? 'LE' : 'LEARNFLOW'}
+          {collapsed ? (
+            <img src={examenLogo} alt="L" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px' }}>
+              <img src={examenLogo} alt="LEARNFLOW" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+              <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '18px' }}>LEARNFLOW</span>
+            </div>
+          )}
         </div>
         <Menu 
-          theme="dark" 
+          theme="dark"
           mode="inline" 
           selectedKeys={[location.pathname]}
           defaultOpenKeys={['reference']}

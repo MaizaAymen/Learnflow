@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  Layout,
+  Menu,
   Breadcrumb,
   Table,
   Button,
@@ -20,9 +22,12 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  ArrowLeftOutlined
+  ArrowLeftOutlined,
+  UserOutlined,
+  LaptopOutlined,
 } from "@ant-design/icons";
 
+const { Content, Sider } = Layout;
 const { TextArea } = Input;
 
 const SalleManagementSimple = () => {
@@ -140,12 +145,13 @@ const SalleManagementSimple = () => {
       title: "ID",
       dataIndex: "id",
       key: "id",
-      width: 80,
+      width: 60,
     },
     {
       title: "Nom",
       dataIndex: "nom",
       key: "nom",
+      width: 150,
     },
     {
       title: "Capacité",
@@ -157,21 +163,21 @@ const SalleManagementSimple = () => {
       title: "Localisation",
       dataIndex: "localisation",
       key: "localisation",
+      width: 150,
     },
     {
       title: "Actions",
       key: "actions",
-      width: 200,
+      width: 150,
+      fixed: 'right',
       render: (_, record) => (
-        <Space size="middle">
+        <Space size="small">
           <Button
             type="primary"
             icon={<EditOutlined />}
             size="small"
             onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
+          />
           <Popconfirm
             title="Are you sure to delete this salle?"
             onConfirm={() => handleDelete(record.id)}
@@ -183,66 +189,138 @@ const SalleManagementSimple = () => {
               danger
               icon={<DeleteOutlined />}
               size="small"
-            >
-              Delete
-            </Button>
+            />
           </Popconfirm>
         </Space>
       ),
     },
   ];
 
-  return (
-    <div style={{ padding: "24px" }}>
-      <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
-        <Col span={24}>
-          <Button
-            icon={<ArrowLeftOutlined />}
-            onClick={() => navigate("/reference")}
-            style={{ marginBottom: 16 }}
-          >
-            Retour au Dashboard
-          </Button>
-          <Breadcrumb
-            items={[
-              { title: "Home" },
-              { title: <span onClick={() => navigate("/reference")} style={{ cursor: 'pointer' }}>Données de Référence</span> },
-              { title: "Salles" },
-            ]}
-          />
-        </Col>
-      </Row>
+const items1 = [
+  { key: '1', label: 'Dashboard' },
+  { key: '2', label: 'Users' },
+  { key: '3', label: 'Reports' }
+];
 
-      <Row gutter={[16, 16]}>
-        <Col span={24}>
-          <Card
-            title="Gestion des Salles"
-            extra={
-              <Button
-                type="primary"
-                icon={<PlusOutlined />}
-                onClick={handleAddNew}
+const items2 = [
+  {
+    key: 'users',
+    icon: React.createElement(UserOutlined),
+    label: 'User Management',
+    children: [
+      { key: 'show-users', label: 'Show Users' },
+      { key: 'add-user', label: 'Add User' },
+    ],
+  },
+  {
+    key: 'reference',
+    icon: React.createElement(LaptopOutlined),
+    label: 'Reference Data',
+    children: [
+      { key: 'specialites', label: 'Spécialités' },
+      { key: 'departements', label: 'Départements' },
+      { key: 'niveaux', label: 'Niveaux' },
+      { key: 'classes', label: 'Classes' },
+      { key: 'salles', label: 'Salles' },
+      { key: 'matieres', label: 'Matières' },
+    ],
+  },
+];
+
+  return (
+    <Layout style={{ minHeight: "100vh" }}>
+      <Sider width={250} style={{ background: colorBgContainer }}>
+        <Menu
+          mode="inline"
+          defaultSelectedKeys={["salles"]}
+          defaultOpenKeys={["reference"]}
+          style={{ height: "100%", borderRight: 0 }}
+          items={items2}
+        />
+      </Sider>
+
+      <Layout style={{ padding: "0 24px 24px" }}>
+        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+          <Col span={24}>
+            <Button
+              icon={<ArrowLeftOutlined />}
+              onClick={() => navigate("/reference")}
+              style={{ marginBottom: 16 }}
+            >
+              Retour au Dashboard
+            </Button>
+          </Col>
+        </Row>
+        
+        <Breadcrumb
+          style={{ margin: "16px 0" }}
+          items={[
+            { 
+              title: (
+                <span 
+                  onClick={() => navigate("/")} 
+                  style={{ cursor: 'pointer' }}
+                >
+                  Home
+                </span>
+              )
+            },
+            { 
+              title: (
+                <span 
+                  onClick={() => navigate("/reference")} 
+                  style={{ cursor: 'pointer' }}
+                >
+                  Données de Référence
+                </span>
+              )
+            },
+            { title: "Salles" },
+          ]}
+        />
+
+        <Content
+          style={{
+            padding: 24,
+            margin: 0,
+            minHeight: 280,
+            background: colorBgContainer,
+            borderRadius: borderRadiusLG,
+          }}
+        >
+          <Row gutter={[16, 16]}>
+            <Col span={24}>
+              <Card
+                title="Gestion des Salles"
+                extra={
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={handleAddNew}
+                  >
+                    Ajouter Salle
+                  </Button>
+                }
               >
-                Ajouter Salle
-              </Button>
-            }
-          >
-            <Table
-              dataSource={salles}
-              columns={columns}
-              rowKey="id"
-              loading={loading}
-              pagination={{
-                pageSize: 10,
-                showSizeChanger: true,
-                showQuickJumper: true,
-                showTotal: (total, range) =>
-                  `${range[0]}-${range[1]} de ${total} éléments`,
-              }}
-            />
-          </Card>
-        </Col>
-      </Row>
+                <Table
+                  dataSource={salles}
+                  columns={columns}
+                  rowKey="id"
+                  loading={loading}
+                  scroll={{ x: 700 }}
+                  pagination={{
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total, range) =>
+                      `${range[0]}-${range[1]} de ${total} éléments`,
+                  }}
+                />
+              </Card>
+            </Col>
+          </Row>
+        </Content>
+      </Layout>
 
       {/* Modal for Create/Edit */}
       <Modal
@@ -260,6 +338,7 @@ const SalleManagementSimple = () => {
           form={form}
           layout="vertical"
           onFinish={handleSubmit}
+          style={{ marginTop: 20 }}
         >
           <Form.Item
             label="Nom"
@@ -271,7 +350,7 @@ const SalleManagementSimple = () => {
               },
             ]}
           >
-            <Input placeholder="Enter salle name" />
+            <Input placeholder="Entrez le nom de la salle" />
           </Form.Item>
 
           <Form.Item
@@ -286,7 +365,7 @@ const SalleManagementSimple = () => {
           >
             <InputNumber 
               min={1} 
-              placeholder="Enter capacity" 
+              placeholder="Entrez la capacité" 
               style={{ width: '100%' }}
             />
           </Form.Item>
@@ -295,17 +374,11 @@ const SalleManagementSimple = () => {
             label="Localisation"
             name="localisation"
           >
-            <Input placeholder="Enter location" />
+            <Input placeholder="Entrez la localisation" />
           </Form.Item>
 
-          <Form.Item>
+          <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
             <Space>
-              <Button
-                type="primary"
-                htmlType="submit"
-              >
-                {editingSalle ? "Mettre à jour" : "Créer"}
-              </Button>
               <Button
                 onClick={() => {
                   setModalVisible(false);
@@ -315,11 +388,14 @@ const SalleManagementSimple = () => {
               >
                 Annuler
               </Button>
+              <Button type="primary" htmlType="submit">
+                {editingSalle ? "Mettre à jour" : "Créer"}
+              </Button>
             </Space>
           </Form.Item>
         </Form>
       </Modal>
-    </div>
+    </Layout>
   );
 };
 

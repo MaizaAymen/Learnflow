@@ -189,12 +189,13 @@ const SalleManagement = () => {
       title: "ID",
       dataIndex: "id",
       key: "id",
-      width: 80,
+      width: 60,
     },
     {
       title: "Nom",
       dataIndex: "nom",
       key: "nom",
+      width: 150,
     },
     {
       title: "Type",
@@ -232,17 +233,16 @@ const SalleManagement = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 200,
+      width: 150,
+      fixed: 'right',
       render: (_, record) => (
-        <Space size="middle">
+        <Space size="small">
           <Button
             type="primary"
             icon={<EditOutlined />}
             size="small"
             onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
+          />
           <Popconfirm
             title="Are you sure to delete this salle?"
             onConfirm={() => handleDelete(record.id)}
@@ -254,9 +254,7 @@ const SalleManagement = () => {
               danger
               icon={<DeleteOutlined />}
               size="small"
-            >
-              Delete
-            </Button>
+            />
           </Popconfirm>
         </Space>
       ),
@@ -344,12 +342,13 @@ const SalleManagement = () => {
                     columns={columns}
                     rowKey="id"
                     loading={loading}
+                    scroll={{ x: 1000 }}
                     pagination={{
                       pageSize: 10,
                       showSizeChanger: true,
                       showQuickJumper: true,
                       showTotal: (total, range) =>
-                        `${range[0]}-${range[1]} of ${total} items`,
+                        `${range[0]}-${range[1]} de ${total} éléments`,
                     }}
                   />
                 </Card>

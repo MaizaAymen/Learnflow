@@ -492,6 +492,24 @@ router.delete("/deleteuser/:id", async (req, res) => {
       }catch (error) {
         res.status(500).json({ error: "Erreur lors de la suppression de l'utilisateur" });
       }})
+
+      router.put("/updateuser/:id", async (req, res) => {
+        try{
+          const {id}=req.params;
+          const { nom, prenom, email, role, phone, bio, specialite, ville } = req.body;
+          const user=await utilisateur.findByPk(id);
+          if (user) {
+        await user.update({ nom, prenom, email, role, phone, bio, specialite, ville });
+        return res.status(200).json({ message: "Utilisateur mis à jour avec succès" }); 
+      }
+        else {
+        return res.status(404).json({ error: "Utilisateur non trouvé" });
+      }
+
+        }catch (error) {
+          res.status(500).json({ error: "Erreur lors de la mise à jour de l'utilisateur" });
+        }
+      });
 module.exports = router;
 
 

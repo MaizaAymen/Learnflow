@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import {
   Layout,
   Menu,
@@ -20,12 +21,12 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
+  ArrowLeftOutlined,
   UserOutlined,
   LaptopOutlined,
-  LogoutOutlined
 } from "@ant-design/icons";
 
-const { Header, Content, Sider } = Layout;
+const { Content, Sider } = Layout;
 const { TextArea } = Input;
 
 const items1 = [
@@ -53,6 +54,8 @@ const items2 = [
       { key: 'departements', label: 'Départements' },
       { key: 'niveaux', label: 'Niveaux' },
       { key: 'classes', label: 'Classes' },
+      { key: 'salles', label: 'Salles' },
+      { key: 'matieres', label: 'Matières' },
     ],
   },
 ];
@@ -63,6 +66,7 @@ const SpecialiteManagementSimple = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingSpecialite, setEditingSpecialite] = useState(null);
   const [form] = Form.useForm();
+  const navigate = useNavigate();
   
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -72,7 +76,7 @@ const SpecialiteManagementSimple = () => {
   const fetchSpecialites = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:3001/api/reference/specialites");
+      const response = await fetch("http://localhost:3000/api/reference/specialites");
       if (response.ok) {
         const data = await response.json();
         setSpecialites(data);
@@ -95,9 +99,9 @@ const SpecialiteManagementSimple = () => {
   const handleSubmit = async (values) => {
     try {
       const url = editingSpecialite
-        ? `http://localhost:3001/api/reference/specialites/${editingSpecialite.id}`
-        : "http://localhost:3001/api/reference/specialites";
-      
+        ? `http://localhost:3000/api/reference/specialites/${editingSpecialite.id}`
+        : "http://localhost:3000/api/reference/specialites";
+
       const method = editingSpecialite ? "PUT" : "POST";
       
       const response = await fetch(url, {
@@ -180,12 +184,13 @@ const SpecialiteManagementSimple = () => {
       title: "ID",
       dataIndex: "id",
       key: "id",
-      width: 80,
+      width: 60,
     },
     {
       title: "Nom",
       dataIndex: "name",
       key: "name",
+      width: 150,
     },
     {
       title: "Description",
@@ -196,17 +201,16 @@ const SpecialiteManagementSimple = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 200,
+      width: 150,
+      fixed: 'right',
       render: (_, record) => (
-        <Space size="middle">
+        <Space size="small">
           <Button
             type="primary"
             icon={<EditOutlined />}
             size="small"
             onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
+          />
           <Popconfirm
             title="Are you sure to delete this specialite?"
             onConfirm={() => handleDelete(record.id)}
@@ -218,9 +222,7 @@ const SpecialiteManagementSimple = () => {
               danger
               icon={<DeleteOutlined />}
               size="small"
-            >
-              Delete
-            </Button>
+            />
           </Popconfirm>
         </Space>
       ),
@@ -229,98 +231,97 @@ const SpecialiteManagementSimple = () => {
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
-      <Header
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          padding: "0 20px",
-        }}
-      >
-        <div className="demo-logo" style={{ color: "#fff", fontWeight: "bold" }}>
-          LearnFlow Admin
-        </div>
-
+      <Sider width={250} style={{ background: colorBgContainer }}>
         <Menu
-          theme="dark"
-          mode="horizontal"
-          defaultSelectedKeys={["1"]}
-          items={items1}
-          style={{ flex: 1, minWidth: 0 }}
+          mode="inline"
+          defaultSelectedKeys={["specialites"]}
+          defaultOpenKeys={["reference"]}
+          style={{ height: "100%", borderRight: 0 }}
+          items={items2}
+        />
+      </Sider>
+
+      <Layout style={{ padding: "0 24px 24px" }}>
+        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+          <Col span={24}>
+            <Button
+              icon={<ArrowLeftOutlined />}
+              onClick={() => navigate("/reference")}
+              style={{ marginBottom: 16 }}
+            >
+              Retour au Dashboard
+            </Button>
+          </Col>
+        </Row>
+        
+        <Breadcrumb
+          style={{ margin: "16px 0" }}
+          items={[
+            { 
+              title: (
+                <span 
+                  onClick={() => navigate("/")} 
+                  style={{ cursor: 'pointer' }}
+                >
+                  Home
+                </span>
+              )
+            },
+            { 
+              title: (
+                <span 
+                  onClick={() => navigate("/reference")} 
+                  style={{ cursor: 'pointer' }}
+                >
+                  Données de Référence
+                </span>
+              )
+            },
+            { title: "Spécialités" },
+          ]}
         />
 
-        <Button
-          type="primary"
-          icon={<LogoutOutlined />}
-          onClick={handleLogout}
-          danger
+        <Content
+          style={{
+            padding: 24,
+            margin: 0,
+            minHeight: 280,
+            background: colorBgContainer,
+            borderRadius: borderRadiusLG,
+          }}
         >
-          Logout
-        </Button>
-      </Header>
-
-      <Layout>
-        <Sider width={250} style={{ background: colorBgContainer }}>
-          <Menu
-            mode="inline"
-            defaultSelectedKeys={["specialites"]}
-            defaultOpenKeys={["reference"]}
-            style={{ height: "100%", borderRight: 0 }}
-            items={items2}
-          />
-        </Sider>
-
-        <Layout style={{ padding: "0 24px 24px" }}>
-          <Breadcrumb
-            style={{ margin: "16px 0" }}
-            items={[
-              { title: "Home" },
-              { title: "Reference" },
-              { title: "Spécialités" },
-            ]}
-          />
-
-          <Content
-            style={{
-              padding: 24,
-              margin: 0,
-              minHeight: 280,
-              background: colorBgContainer,
-              borderRadius: borderRadiusLG,
-            }}
-          >
-            <Row gutter={[16, 16]}>
-              <Col span={24}>
-                <Card
-                  title="Gestion des Spécialités"
-                  extra={
-                    <Button
-                      type="primary"
-                      icon={<PlusOutlined />}
-                      onClick={handleAddNew}
-                    >
-                      Ajouter Spécialité
-                    </Button>
-                  }
-                >
-                  <Table
-                    dataSource={specialites}
-                    columns={columns}
-                    rowKey="id"
-                    loading={loading}
-                    pagination={{
-                      pageSize: 10,
-                      showSizeChanger: true,
-                      showQuickJumper: true,
-                      showTotal: (total, range) =>
-                        `${range[0]}-${range[1]} of ${total} items`,
-                    }}
-                  />
-                </Card>
-              </Col>
-            </Row>
-          </Content>
-        </Layout>
+          <Row gutter={[16, 16]}>
+            <Col span={24}>
+              <Card
+                title="Gestion des Spécialités"
+                extra={
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={handleAddNew}
+                  >
+                    Ajouter Spécialité
+                  </Button>
+                }
+              >
+                <Table
+                  dataSource={specialites}
+                  columns={columns}
+                  rowKey="id"
+                  loading={loading}
+                  scroll={{ x: 600 }}
+                  pagination={{
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total, range) =>
+                      `${range[0]}-${range[1]} de ${total} éléments`,
+                  }}
+                />
+              </Card>
+            </Col>
+          </Row>
+        </Content>
       </Layout>
 
       {/* Modal for Create/Edit */}

@@ -9,13 +9,16 @@ import {
   Modal,
   Form,
   Input,
+  Select,
   message,
   Space,
   Popconfirm,
   Card,
   Row,
   Col,
-  theme
+  theme,
+  Tag,
+  Upload
 } from "antd";
 import {
   PlusOutlined,
@@ -24,16 +27,17 @@ import {
   ArrowLeftOutlined,
   UserOutlined,
   LaptopOutlined,
+  UploadOutlined,
 } from "@ant-design/icons";
 
 const { Content, Sider } = Layout;
-const { TextArea } = Input;
+const { Option } = Select;
 
-const NiveauManagement = () => {
-  const [niveaux, setNiveaux] = useState([]);
+const UserManagement = () => {
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
-  const [editingNiveau, setEditingNiveau] = useState(null);
+  const [editingUser, setEditingUser] = useState(null);
   const [form] = Form.useForm();
   const navigate = useNavigate();
   
@@ -41,63 +45,65 @@ const NiveauManagement = () => {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
-  // Fetch all niveaux
-  const fetchNiveaux = async () => {
+  // Fetch all users
+  const fetchUsers = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:3001/api/reference/niveaux");
+      const response = await fetch("http://localhost:4000/api/auth/getAllUsers", {
+        method: "GET",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
       const data = await response.json();
       if (response.ok) {
-        setNiveaux(data);
+        setUsers(Array.isArray(data) ? data : data.users || []);
       } else {
-        message.error(data.message || "Failed to fetch niveaux");
+        message.error(data.message || "Failed to fetch users");
       }
     } catch (error) {
-      console.error("Error fetching niveaux:", error);
-      message.error("Error fetching niveaux");
+      console.error("Error fetching users:", error);
+      message.error("Error fetching users");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchNiveaux();
+    fetchUsers();
   }, []);
 
-  // Handle create/update
+  
   const handleSubmit = async (values) => {
     try {
-      const url = editingNiveau
-        ? `http://localhost:3001/api/reference/niveaux/${editingNiveau.id}`
-        : "http://localhost:3001/api/reference/niveaux";
+      const url = editingUser
+        ? `http://localhost:4000/api/auth/updateuser/${editingUser.id}`
+        : "http://localhost:4000/api/auth/register";
       
-      const method = editingNiveau ? "PUT" : "POST";
+      const method = editingUser ? "PUT" : "POST";
       
       const response = await fetch(url, {
         method,
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          nom: values.nom,
-          description: values.description,
-        }),
+        credentials: "include",
+        body: JSON.stringify(values),
       });
 
       const data = await response.json();
       
       if (response.ok) {
         message.success(
-          editingNiveau 
-            ? "Niveau updated successfully!"
-            : "Niveau created successfully!"
+          editingUser 
+            ? "Utilisateur mis à jour avec succès!"
+            : "Utilisateur créé avec succès!"
         );
         setModalVisible(false);
-        setEditingNiveau(null);
+        setEditingUser(null);
         form.resetFields();
-        fetchNiveaux();
+        fetchUsers();
       } else {
-        message.error(data.error || "Operation failed");
+        message.error(data.error || data.message || "Operation failed");
       }
     } catch (error) {
       console.error("Error:", error);
@@ -105,42 +111,47 @@ const NiveauManagement = () => {
     }
   };
 
-  // Handle delete
+  
   const handleDelete = async (id) => {
     try {
       const response = await fetch(
-        `http://localhost:3001/api/reference/niveaux/${id}`,
+        `http://localhost:4000/api/auth/deleteuser/${id}`,
         {
           method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
         }
       );
 
       if (response.ok) {
-        message.success("Niveau deleted successfully!");
-        fetchNiveaux();
+        message.success("Utilisateur supprimé avec succès!");
+        fetchUsers();
       } else {
         const data = await response.json();
         message.error(data.message || "Delete failed");
       }
     } catch (error) {
-      console.error("Error deleting niveau:", error);
-      message.error("Error deleting niveau");
+      console.error("Error deleting user:", error);
+      message.error("Error deleting user");
     }
   };
 
-  // Handle edit
-  const handleEdit = (niveau) => {
-    setEditingNiveau(niveau);
+  
+  const handleEdit = (user) => {
+    setEditingUser(user);
     form.setFieldsValue({
-      nom: niveau.nom,
-      description: niveau.description,
+      nom: user.nom,
+      prenom: user.prenom,
+      email: user.email,
+      role: user.role,
+      // Don't set password for security
     });
     setModalVisible(true);
   };
 
   // Handle add new
   const handleAddNew = () => {
-    setEditingNiveau(null);
+    setEditingUser(null);
     form.resetFields();
     setModalVisible(true);
   };
@@ -159,10 +170,26 @@ const NiveauManagement = () => {
       width: 150,
     },
     {
-      title: "Description",
-      dataIndex: "description",
-      key: "description",
-      ellipsis: true,
+      title: "Prénom",
+      dataIndex: "prenom",
+      key: "prenom",
+      width: 150,
+    },
+    {
+      title: "Email",
+      dataIndex: "email",
+      key: "email",
+      width: 200,
+    },
+    {
+      title: "Rôle",
+      dataIndex: "role",
+      key: "role",
+      width: 100,
+      render: (role) => {
+        let color = role === "admin" ? "geekblue" : role === "enseignant" ? "green" : "orange";
+        return <Tag color={color}>{role?.toUpperCase()}</Tag>;
+      },
     },
     {
       title: "Actions",
@@ -178,10 +205,10 @@ const NiveauManagement = () => {
             onClick={() => handleEdit(record)}
           />
           <Popconfirm
-            title="Are you sure to delete this niveau?"
+            title="Êtes-vous sûr de vouloir supprimer cet utilisateur?"
             onConfirm={() => handleDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
+            okText="Oui"
+            cancelText="Non"
           >
             <Button
               type="primary"
@@ -231,8 +258,8 @@ const items2 = [
       <Sider width={250} style={{ background: colorBgContainer }}>
         <Menu
           mode="inline"
-          defaultSelectedKeys={["niveaux"]}
-          defaultOpenKeys={["reference"]}
+          defaultSelectedKeys={["users"]}
+          defaultOpenKeys={["users"]}
           style={{ height: "100%", borderRight: 0 }}
           items={items2}
         />
@@ -243,7 +270,7 @@ const items2 = [
           <Col span={24}>
             <Button
               icon={<ArrowLeftOutlined />}
-              onClick={() => navigate("/reference")}
+              onClick={() => navigate("/")}
               style={{ marginBottom: 16 }}
             >
               Retour au Dashboard
@@ -264,17 +291,7 @@ const items2 = [
                 </span>
               )
             },
-            { 
-              title: (
-                <span 
-                  onClick={() => navigate("/reference")} 
-                  style={{ cursor: 'pointer' }}
-                >
-                  Données de Référence
-                </span>
-              )
-            },
-            { title: "Niveaux" },
+            { title: "Gestion des Utilisateurs" },
           ]}
         />
 
@@ -290,23 +307,23 @@ const items2 = [
           <Row gutter={[16, 16]}>
             <Col span={24}>
               <Card
-                title="Gestion des Niveaux"
+                title="Gestion des Utilisateurs"
                 extra={
                   <Button
                     type="primary"
                     icon={<PlusOutlined />}
                     onClick={handleAddNew}
                   >
-                    Ajouter Niveau
+                    Ajouter Utilisateur
                   </Button>
                 }
               >
                 <Table
-                  dataSource={niveaux}
+                  dataSource={users}
                   columns={columns}
                   rowKey="id"
                   loading={loading}
-                  scroll={{ x: 600 }}
+                  scroll={{ x: 1000 }}
                   pagination={{
                     pageSize: 10,
                     showSizeChanger: true,
@@ -323,15 +340,15 @@ const items2 = [
 
       {/* Modal for Create/Edit */}
       <Modal
-        title={editingNiveau ? "Modifier Niveau" : "Ajouter Niveau"}
+        title={editingUser ? "Modifier Utilisateur" : "Ajouter Utilisateur"}
         open={modalVisible}
         onCancel={() => {
           setModalVisible(false);
-          setEditingNiveau(null);
+          setEditingUser(null);
           form.resetFields();
         }}
         footer={null}
-        width={600}
+        width={700}
       >
         <Form
           form={form}
@@ -339,42 +356,95 @@ const items2 = [
           onFinish={handleSubmit}
           style={{ marginTop: 20 }}
         >
-          <Form.Item
-            label="Nom"
-            name="nom"
-            rules={[
-              {
-                required: true,
-                message: "Please input the niveau name!",
-              },
-            ]}
-          >
-            <Input placeholder="Entrez le nom du niveau" />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Nom"
+                name="nom"
+                rules={[
+                  { required: true, message: "Veuillez entrer le nom!" },
+                  { min: 2, message: "Le nom doit contenir au moins 2 caractères!" },
+                ]}
+              >
+                <Input placeholder="Entrez le nom" />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Prénom"
+                name="prenom"
+                rules={[
+                  { required: true, message: "Veuillez entrer le prénom!" },
+                  { min: 2, message: "Le prénom doit contenir au moins 2 caractères!" },
+                ]}
+              >
+                <Input placeholder="Entrez le prénom" />
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item
-            label="Description"
-            name="description"
+            label="Email"
+            name="email"
+            rules={[
+              { required: true, message: "Veuillez entrer l'email!" },
+              { type: "email", message: "Format d'email invalide!" },
+            ]}
           >
-            <TextArea
-              rows={4}
-              placeholder="Entrez la description du niveau"
-            />
+            <Input placeholder="Entrez l'email" />
           </Form.Item>
+
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Mot de passe"
+                name="password"
+                rules={[
+                  { 
+                    required: !editingUser, 
+                    message: "Veuillez entrer le mot de passe!" 
+                  },
+                  { 
+                    min: 6, 
+                    message: "Le mot de passe doit contenir au moins 6 caractères!" 
+                  },
+                ]}
+              >
+                <Input.Password 
+                  placeholder={editingUser ? "Laisser vide pour ne pas changer" : "Entrez le mot de passe"} 
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Rôle"
+                name="role"
+                rules={[
+                  { required: true, message: "Veuillez sélectionner le rôle!" },
+                ]}
+              >
+                <Select placeholder="Sélectionnez le rôle">
+                  <Option value="admin">Admin</Option>
+                  <Option value="enseignant">Enseignant</Option>
+                  <Option value="etudiant">Étudiant</Option>
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
             <Space>
               <Button
                 onClick={() => {
                   setModalVisible(false);
-                  setEditingNiveau(null);
+                  setEditingUser(null);
                   form.resetFields();
                 }}
               >
                 Annuler
               </Button>
               <Button type="primary" htmlType="submit">
-                {editingNiveau ? "Mettre à jour" : "Créer"}
+                {editingUser ? "Mettre à jour" : "Créer"}
               </Button>
             </Space>
           </Form.Item>
@@ -384,4 +454,4 @@ const items2 = [
   );
 };
 
-export default NiveauManagement;
+export default UserManagement;

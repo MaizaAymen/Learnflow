@@ -299,7 +299,7 @@ const ModernDashboard = () => {
               }}
               className="hover-lift"
             >
-              📅 Calendrier
+              Calendrier
             </Button>
             <Button 
               type="primary" 

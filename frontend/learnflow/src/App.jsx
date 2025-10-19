@@ -1,6 +1,7 @@
 import './App.css'
 import Auth from './auth/auth.jsx'
 import ShowUsers from './admin/showusers.jsx'
+import UserManagement from './admin/UserManagement.jsx'
 import { Route, Routes } from "react-router-dom"
 import Profile from './user/Profile.jsx'
 import AdminPanel from './admin/adminpanel.jsx'
@@ -36,7 +37,7 @@ function App() {
         <AppLayout>
           <Routes>
             <Route path="/" element={<ModernDashboard />} />
-            <Route path="/users" element={<ShowUsers />} />
+            <Route path="/users" element={<UserManagement />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<AdminPanel />} />

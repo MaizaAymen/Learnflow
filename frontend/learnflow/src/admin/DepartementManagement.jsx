@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
+  Layout,
+  Menu,
   Breadcrumb,
   Table,
   Button,
@@ -22,10 +24,11 @@ import {
   PlusOutlined,
   EditOutlined,
   DeleteOutlined,
-  ArrowLeftOutlined
+  ArrowLeftOutlined,
+  UserOutlined,
+  LaptopOutlined,
 } from "@ant-design/icons";
-
-
+const { Content, Sider } = Layout;
 const { TextArea } = Input;
 const { Option } = Select;
 
@@ -35,7 +38,7 @@ const DepartementManagement = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingDepartement, setEditingDepartement] = useState(null);
   const [form] = Form.useForm();
-  const navigate = useNavigate();
+  const navigate = useNavigate(); 
   
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -239,11 +242,49 @@ const DepartementManagement = () => {
       ),
     },
   ];
+const items1 = [
+  { key: '1', label: 'Dashboard' },
+  { key: '2', label: 'Users' },
+  { key: '3', label: 'Reports' }
+];
+
+const items2 = [
+  {
+    key: 'users',
+    icon: React.createElement(UserOutlined),
+    label: 'User Management',
+    children: [
+      { key: 'show-users', label: 'Show Users' },
+      { key: 'add-user', label: 'Add User' },
+    ],
+  },
+  {
+    key: 'reference',
+    icon: React.createElement(LaptopOutlined),
+    label: 'Reference Data',
+    children: [
+      { key: 'specialites', label: 'Spécialités' },
+      { key: 'departements', label: 'Départements' },
+      { key: 'niveaux', label: 'Niveaux' },
+      { key: 'classes', label: 'Classes' },
+    ],
+  },
+];
 
   return (
-    <>
-      <div style={{ padding: "24px" }}>
-        <Row gutter={[16, 16]} style={{ marginBottom: 24 }}>
+    <Layout style={{ minHeight: "100vh" }}>
+      <Sider width={250} style={{ background: colorBgContainer }}>
+        <Menu
+          mode="inline"
+          defaultSelectedKeys={["departements"]}
+          defaultOpenKeys={["reference"]}
+          style={{ height: "100%", borderRight: 0 }}
+          items={items2}
+        />
+      </Sider>
+
+      <Layout style={{ padding: "0 24px 24px" }}>
+        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
           <Col span={24}>
             <Button
               icon={<ArrowLeftOutlined />}
@@ -252,48 +293,78 @@ const DepartementManagement = () => {
             >
               Retour au Dashboard
             </Button>
-            <Breadcrumb
-              items={[
-                { title: "Home" },
-                { title: <span onClick={() => navigate("/reference")} style={{ cursor: 'pointer' }}>Données de Référence</span> },
-                { title: "Départements" },
-              ]}
-            />
           </Col>
         </Row>
-
-        <Row gutter={[16, 16]}>
-          <Col span={24}>
-            <Card
-              title="Gestion des Départements"
-              extra={
-                <Button
-                  type="primary"
-                  icon={<PlusOutlined />}
-                  onClick={handleAddNew}
+        
+        <Breadcrumb
+          style={{ margin: "16px 0" }}
+          items={[
+            { 
+              title: (
+                <span 
+                  onClick={() => navigate("/")} 
+                  style={{ cursor: 'pointer' }}
                 >
-                  Ajouter Département
-                </Button>
-              }
-            >
-              <Table
-                dataSource={departements}
-                columns={columns}
-                rowKey="id"
-                loading={loading}
-                scroll={{ x: 1200 }}
-                pagination={{
-                  pageSize: 10,
-                  showSizeChanger: true,
-                  showQuickJumper: true,
-                  showTotal: (total, range) =>
-                    `${range[0]}-${range[1]} de ${total} éléments`,
-                }}
-              />
-            </Card>
-          </Col>
-        </Row>
-      </div>
+                  Home
+                </span>
+              )
+            },
+            { 
+              title: (
+                <span 
+                  onClick={() => navigate("/reference")} 
+                  style={{ cursor: 'pointer' }}
+                >
+                  Données de Référence
+                </span>
+              )
+            },
+            { title: "Départements" },
+          ]}
+        />
+
+        <Content
+          style={{
+            padding: 24,
+            margin: 0,
+            minHeight: 280,
+            background: colorBgContainer,
+            borderRadius: borderRadiusLG,
+          }}
+        >
+          <Row gutter={[16, 16]}>
+            <Col span={24}>
+              <Card
+                title="Gestion des Départements"
+                extra={
+                  <Button
+                    type="primary"
+                    icon={<PlusOutlined />}
+                    onClick={handleAddNew}
+                  >
+                    Ajouter Département
+                  </Button>
+                }
+              >
+                <Table
+                  dataSource={departements}
+                  columns={columns}
+                  rowKey="id"
+                  loading={loading}
+                  scroll={{ x: 1200 }}
+                  pagination={{
+                    pageSize: 10,
+                    showSizeChanger: true,
+                    showQuickJumper: true,
+                    showTotal: (total, range) =>
+                      `${range[0]}-${range[1]} de ${total} éléments`,
+                  }}
+                />
+              </Card>
+            </Col>
+          </Row>
+        </Content>
+      </Layout>
 
       {/* Modal for Create/Edit */}
       <Modal
@@ -476,7 +547,7 @@ const DepartementManagement = () => {
           </Form.Item>
         </Form>
       </Modal>
-    </>
+    </Layout>
   );
 };
 

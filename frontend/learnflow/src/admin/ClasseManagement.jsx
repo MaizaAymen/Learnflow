@@ -199,12 +199,13 @@ const ClasseManagement = () => {
       title: "ID",
       dataIndex: "id",
       key: "id",
-      width: 80,
+      width: 60,
     },
     {
       title: "Nom",
       dataIndex: "nom",
       key: "nom",
+      width: 150,
     },
     {
       title: "Description",
@@ -231,17 +232,16 @@ const ClasseManagement = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 200,
+      width: 150,
+      fixed: 'right',
       render: (_, record) => (
-        <Space size="middle">
+        <Space size="small">
           <Button
             type="primary"
             icon={<EditOutlined />}
             size="small"
             onClick={() => handleEdit(record)}
-          >
-            Edit
-          </Button>
+          />
           <Popconfirm
             title="Are you sure to delete this classe?"
             onConfirm={() => handleDelete(record.id)}
@@ -253,9 +253,7 @@ const ClasseManagement = () => {
               danger
               icon={<DeleteOutlined />}
               size="small"
-            >
-              Delete
-            </Button>
+            />
           </Popconfirm>
         </Space>
       ),
@@ -343,12 +341,13 @@ const ClasseManagement = () => {
                     columns={columns}
                     rowKey="id"
                     loading={loading}
+                    scroll={{ x: 900 }}
                     pagination={{
                       pageSize: 10,
                       showSizeChanger: true,
                       showQuickJumper: true,
                       showTotal: (total, range) =>
-                        `${range[0]}-${range[1]} of ${total} items`,
+                        `${range[0]}-${range[1]} de ${total} éléments`,
                     }}
                   />
                 </Card>
