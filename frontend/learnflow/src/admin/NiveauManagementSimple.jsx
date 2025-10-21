@@ -45,7 +45,7 @@ const NiveauManagement = () => {
   const fetchNiveaux = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:3001/api/reference/niveaux");
+      const response = await fetch("http://localhost:3000/api/reference/niveaux");
       const data = await response.json();
       if (response.ok) {
         setNiveaux(data);
@@ -68,9 +68,9 @@ const NiveauManagement = () => {
   const handleSubmit = async (values) => {
     try {
       const url = editingNiveau
-        ? `http://localhost:3001/api/reference/niveaux/${editingNiveau.id}`
-        : "http://localhost:3001/api/reference/niveaux";
-      
+        ? `http://localhost:3000/api/reference/niveaux/${editingNiveau.id}`
+        : "http://localhost:3000/api/reference/niveaux";
+
       const method = editingNiveau ? "PUT" : "POST";
       
       const response = await fetch(url, {
@@ -109,7 +109,7 @@ const NiveauManagement = () => {
   const handleDelete = async (id) => {
     try {
       const response = await fetch(
-        `http://localhost:3001/api/reference/niveaux/${id}`,
+        `http://localhost:3000/api/reference/niveaux/${id}`,
         {
           method: "DELETE",
         }
@@ -132,8 +132,8 @@ const NiveauManagement = () => {
   const handleEdit = (niveau) => {
     setEditingNiveau(niveau);
     form.setFieldsValue({
-      nom: niveau.nom,
-      description: niveau.description,
+      nom: nom,
+      description: description,
     });
     setModalVisible(true);
   };

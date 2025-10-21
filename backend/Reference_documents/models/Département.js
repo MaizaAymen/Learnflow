@@ -11,7 +11,7 @@ const departement = sequelize.define('departement', {
     },
     name: {
         type: DataTypes.STRING,
-        allowNull: false
+        allowNull: true
     },
     description: {
         type: DataTypes.TEXT,
@@ -31,7 +31,9 @@ const departement = sequelize.define('departement', {
                 schema: 'auth'
             },
             key: 'id'
-        }
+        },
+        onDelete: 'SET NULL',
+        onUpdate: 'CASCADE'
     },
     budget: {
         type: DataTypes.DECIMAL(15, 2),
@@ -40,7 +42,7 @@ const departement = sequelize.define('departement', {
     },
     statut: {
         type: DataTypes.ENUM('actif', 'inactif', 'suspendu'),
-        allowNull: false,
+        allowNull: true,
         defaultValue: 'actif'
     },
     localisation: {
@@ -69,7 +71,7 @@ const departement = sequelize.define('departement', {
     date_creation: {
         type: DataTypes.DATE,
         allowNull: true,
-        defaultValue: DataTypes.NOW
+        defaultValue: sequelize.literal('CURRENT_TIMESTAMP')
     }
 }, {
     schema: "referentiels",

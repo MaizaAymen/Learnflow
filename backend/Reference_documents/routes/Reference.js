@@ -40,7 +40,7 @@ router.get('/specialites', async (req, res) => {
 router.get('/specialites/:id', async (req, res) => {
     try 
     {
-     const spes = await specialite.findByPK({where:{id:req.params.id}});
+     const spes = await specialite.findByPk(req.params.id);
      if (!spes){
         return res.status(404).json({message:"Spécialité introuvable"})
      }
@@ -54,23 +54,23 @@ router.get('/specialites/:id', async (req, res) => {
 router.put('/specialites/:id', async (req, res) => {
   try{
       const {nom,description}=req.body;
-      const spes = await specialite.findByPK({where:{id:req.params.id}});///specialites/:id <---- //
+      const spes = await specialite.findByPk(req.params.id);
       if(!spes){
         return res.status(404).json({message:"Spécialité introuvable"})
       }
       await spes.update({nom,description})
-      return re
+      return res.status(200).json({message:"Spécialité mise à jour avec succès", data: spes})
   }catch(error){
     return res.status(500).json({ error: 'Internal server error' });
   }})
 router.delete('/specialites/:id', async (req, res) => {
     try{
-  const spes = await specialite.findByPK({where:{id:req.params.id}});
+  const spes = await specialite.findByPk(req.params.id);
 
   if (!spes){
     return res.status(404).json({message:"Spécialité introuvable"})
   }
-  await spes.delete();
+  await spes.destroy();
   return res.status(200).json({message:"Spécialité supprimée avec succès"})
     }catch(error){
       return res.status(500).json({ error: 'Internal server error' });
@@ -110,15 +110,47 @@ router.get('/specialites/stats/count', async (req, res) => {
 // CRUD Département
 router.post('/adddepartements', async (req, res) => {
   try {
+    console.log('Received department creation request:', req.body);
     const { name, description , code, chef_departement_id, budget, statut, localisation, telephone, email, capacite_max } = req.body;
-    if (!name || !description || !code || !chef_departement_id || !budget || !statut || !localisation || !telephone || !email || !capacite_max) {
-      return res.status(400).json({ error: 'Tous les champs sont requis' });
+    
+    if (!name) {
+      return res.status(400).json({ error: 'Le nom du département est requis' });
     }
-    const newdepartment = await departement.create({ name, description, code, chef_departement_id, budget, statut, localisation, telephone, email, capacite_max });
+    if (!code) {
+      return res.status(400).json({ error: 'Le code du département est requis' });
+    }
+    
+    // Create department data object
+    const departementData = {
+      name,
+      description,
+      code,
+      chef_departement_id: chef_departement_id || null,
+      budget: budget || 0,
+      statut: statut || 'actif',
+      localisation,
+      telephone,
+      email,
+      capacite_max: capacite_max || 50
+    };
+    
+    console.log('Creating department with data:', departementData);
+    const newdepartment = await departement.create(departementData);
+    console.log('Department created successfully:', newdepartment.toJSON());
     res.status(201).json(newdepartment);
   }catch (error) {
     console.error('Error creating departement:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    // Send more specific error message
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ error: 'Un département avec ce code existe déjà' });
+    }
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({ error: 'Le chef de département spécifié n\'existe pas' });
+    }
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ error: error.errors.map(e => e.message).join(', ') });
+    }
+    res.status(500).json({ error: 'Erreur interne du serveur', details: error.message });
   }})
 router.get('/departements', async (req, res) => {
     try {
@@ -148,12 +180,12 @@ router.get('/departements/:id',async (req,res)=>{
 //update
 router.put('/departements/:id', async (req, res) => {
   try{
-      const {nom,description,code,chef_departement_id,budget,statut,localisation,telephone,email,capacite_max}=req.body;
-      const dep = await departement.findByPk({where:{id:req.params.id}});///departements/:id <---- //
+      const {name,description,code,chef_departement_id,budget,statut,localisation,telephone,email,capacite_max}=req.body;
+      const dep = await departement.findByPk(req.params.id);
       if(!dep){
         return res.status(404).json({message:"Département introuvable"})
       }
-      await dep.update({nom,description,code,chef_departement_id,budget,statut,localisation,telephone,email,capacite_max})
+      await dep.update({name,description,code,chef_departement_id,budget,statut,localisation,telephone,email,capacite_max})
       return res.status(200).json({message:"Département mis à jour avec succès"})
   }catch(error){
     return res.status(500).json({ error: 'Internal server error' });
@@ -258,11 +290,11 @@ router.get('/niveaux/:id',async (req,res)=>{
       if (!id){
         return res.status(400).json({error:"ID manquant"})
       }
-      const niveau = await niveau.findByPK({where:{id:id}});
-      if (!niveau){
+      const niv = await niveau.findByPk(id);
+      if (!niv){
         return res.status(404).json({error:"Niveau introuvable"})
       }
-      return res.status(200).json(niveau);
+      return res.status(200).json(niv);
     } catch (error) {
       return res.status(500).json({ error: 'Internal server error' });
     }
@@ -271,7 +303,7 @@ router.get('/niveaux/:id',async (req,res)=>{
 router.put('/niveaux/:id', async (req, res) => {
   try{
       const {nom,description}=req.body;
-      const niv = await niveau.findByPK({where:{id:req.params.id}});
+      const niv = await niveau.findByPk(req.params.id);
       if(!niv){
         return res.status(404).json({message:"Niveau introuvable"})
       }
@@ -283,7 +315,7 @@ router.put('/niveaux/:id', async (req, res) => {
 router.delete('/niveaux/:id', async (req, res) => {
     try{
   const id = req.params.id;
-  const niv = await niveau.findByPK({where:{id:id}});
+  const niv = await niveau.findByPk(id);
   if (!niv){
     return res.status(404).json({message:"Niveau introuvable"})
   }
@@ -331,7 +363,9 @@ router.get('/niveaux/:id/classes', async (req, res) => {
 // CRUD Classe
 router.post('/classes', async (req, res) => {
   try {
+    console.log('Received classe creation request:', req.body);
     const { nom, description, effectif, niveau_id } = req.body;
+    
     if (!nom) {
       return res.status(400).json({ error: 'Le nom de la classe est requis' });
     }
@@ -341,23 +375,19 @@ router.post('/classes', async (req, res) => {
     if (!niveau_id) {
       return res.status(400).json({ error: 'Le niveau est requis' });
     }
-    if (!description) {
-      return res.status(400).json({ error: 'La description est requise' });
-    }
+    
     const newClasse = await Classe.create({ nom, description, effectif, niveau_id });
-    if (newClasse) {
-      console.log('Classe created successfully:', newClasse);
-      return res.status(201).json(newClasse);
-    }
+    console.log('Classe created successfully:', newClasse.toJSON());
+    return res.status(201).json(newClasse);
     
   } catch (error) {
     console.error('Error creating classe:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
 router.get('/classes', async (req, res) => {
     try {
-      const classes = await classe.findAll();
+      const classes = await Classe.findAll();
       if (!classes) {
         return res.json({ message: "Aucune classe n'est disponible pour le moment" });
       }
@@ -372,11 +402,11 @@ router.get('/classes/:id',async (req,res)=>{
       if (!id){
         return res.status(400).json({error:"ID manquant"})
       }
-      const classe = await classe.findByPK({where:{id:id}});
-      if (!classe){
+      const classeFound = await Classe.findByPk(id);
+      if (!classeFound){
         return res.status(404).json({error:"Classe introuvable"})
       }
-      return res.status(200).json(classe);
+      return res.status(200).json(classeFound);
     } catch (error) {
       return res.status(500).json({ error: 'Internal server error' });
     }
@@ -385,11 +415,11 @@ router.get('/classes/:id',async (req,res)=>{
 router.put('/classes/:id', async (req, res) => {
   try{
       const {nom,description}=req.body;
-      const classe = await classe.findByPK({where:{id:req.params.id}});
-      if(!classe){
+      const classeToUpdate = await Classe.findByPk(req.params.id);
+      if(!classeToUpdate){
         return res.status(404).json({message:"Classe introuvable"})
       }
-      await classe.update({nom,description})
+      await classeToUpdate.update({nom,description})
       return res.status(200).json({message:"Classe mise à jour avec succès"})
   }catch(error){
     return res.status(500).json({ error: 'Internal server error' });
@@ -398,11 +428,11 @@ router.put('/classes/:id', async (req, res) => {
 router.delete('/classes/:id', async (req, res) => {
     try{
   const id = req.params.id;
-  const classe = await classe.findByPK({where:{id:id}});
-  if (!classe){
+  const classeToDelete = await Classe.findByPk(id);
+  if (!classeToDelete){
     return res.status(404).json({message:"Classe introuvable"})
   }
-  await classe.destroy();
+  await classeToDelete.destroy();
   return res.status(200).json({message:"Classe supprimée avec succès"})
     }catch(error){
       return res.status(500).json({ error: 'Internal server error' });

@@ -46,7 +46,7 @@ const MatiereManagementSimple = () => {
   const fetchMatieres = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:3001/api/reference/matieres");
+      const response = await fetch("http://localhost:3000/api/reference/matieres");
       const data = await response.json();
       if (response.ok) {
         setMatieres(data);
@@ -69,8 +69,8 @@ const MatiereManagementSimple = () => {
   const handleSubmit = async (values) => {
     try {
       const url = editingMatiere
-        ? `http://localhost:3001/api/reference/matieres/${editingMatiere.id}`
-        : "http://localhost:3001/api/reference/matieres";
+        ? `http://localhost:3000/api/reference/matieres/${editingMatiere.id}`
+        : "http://localhost:3000/api/reference/matieres";
       
       const method = editingMatiere ? "PUT" : "POST";
       
@@ -107,7 +107,7 @@ const MatiereManagementSimple = () => {
   const handleDelete = async (id) => {
     try {
       const response = await fetch(
-        `http://localhost:3001/api/reference/matieres/${id}`,
+        `http://localhost:3000/api/reference/matieres/${id}`,
         {
           method: "DELETE",
         }

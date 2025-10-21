@@ -48,7 +48,7 @@ const DepartementManagement = () => {
   const fetchDepartements = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:3001/api/reference/departements");
+      const response = await fetch("http://localhost:3000/api/reference/departements");
       const data = await response.json();
       if (response.ok) {
         setDepartements(data);
@@ -71,8 +71,8 @@ const DepartementManagement = () => {
   const handleSubmit = async (values) => {
     try {
       const url = editingDepartement
-        ? `http://localhost:3001/api/reference/departements/${editingDepartement.id}`
-        : "http://localhost:3001/api/reference/adddepartements";
+        ? `http://localhost:3000/api/reference/departements/${editingDepartement.id}`
+        : "http://localhost:3000/api/reference/adddepartements";
       
       const method = editingDepartement ? "PUT" : "POST";
       
@@ -97,7 +97,8 @@ const DepartementManagement = () => {
         form.resetFields();
         fetchDepartements();
       } else {
-        message.error(data.error || "Operation failed");
+        console.error("Error response:", data);
+        message.error(data.error || data.message || "Operation failed");
       }
     } catch (error) {
       console.error("Error:", error);
@@ -109,7 +110,7 @@ const DepartementManagement = () => {
   const handleDelete = async (id) => {
     try {
       const response = await fetch(
-        `http://localhost:3001/api/reference/departements/${id}`,
+        `http://localhost:3000/api/reference/departements/${id}`,
         {
           method: "DELETE",
         }
@@ -432,12 +433,12 @@ const items2 = [
                 label="Chef de Département ID"
                 name="chef_departement_id"
                 rules={[
-                  { required: true, message: "Please enter chef departement ID!" },
+                  { required: false, message: "Please enter chef departement ID!" },
                 ]}
               >
                 <InputNumber
                   style={{ width: "100%" }}
-                  placeholder="ID du chef de département"
+                  placeholder="ID du chef de département (optionnel)"
                 />
               </Form.Item>
             </Col>

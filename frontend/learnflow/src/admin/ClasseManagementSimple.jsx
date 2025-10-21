@@ -35,7 +35,6 @@ const { Option } = Select;
 const ClasseManagementSimple = () => {
   const [classes, setClasses] = useState([]);
   const [niveaux, setNiveaux] = useState([]);
-  const [departements, setDepartements] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingClasse, setEditingClasse] = useState(null);
@@ -50,7 +49,7 @@ const ClasseManagementSimple = () => {
   const fetchClasses = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:3001/api/reference/classes");
+      const response = await fetch("http://localhost:3000/api/reference/classes");
       const data = await response.json();
       if (response.ok) {
         setClasses(data);
@@ -68,7 +67,7 @@ const ClasseManagementSimple = () => {
   // Fetch niveaux for dropdown
   const fetchNiveaux = async () => {
     try {
-      const response = await fetch("http://localhost:3001/api/reference/niveaux");
+      const response = await fetch("http://localhost:3000/api/reference/niveaux");
       const data = await response.json();
       if (response.ok) {
         setNiveaux(data);
@@ -78,31 +77,17 @@ const ClasseManagementSimple = () => {
     }
   };
 
-  // Fetch departements for dropdown
-  const fetchDepartements = async () => {
-    try {
-      const response = await fetch("http://localhost:3001/api/reference/departements");
-      const data = await response.json();
-      if (response.ok) {
-        setDepartements(data);
-      }
-    } catch (error) {
-      console.error("Error fetching departements:", error);
-    }
-  };
-
   useEffect(() => {
     fetchClasses();
     fetchNiveaux();
-    fetchDepartements();
   }, []);
 
   // Handle create/update
   const handleSubmit = async (values) => {
     try {
       const url = editingClasse
-        ? `http://localhost:3001/api/reference/classes/${editingClasse.id}`
-        : "http://localhost:3001/api/reference/classes";
+        ? `http://localhost:3000/api/reference/classes/${editingClasse.id}`
+        : "http://localhost:3000/api/reference/classes";
       
       const method = editingClasse ? "PUT" : "POST";
       
@@ -127,7 +112,8 @@ const ClasseManagementSimple = () => {
         form.resetFields();
         fetchClasses();
       } else {
-        message.error(data.error || "Operation failed");
+        console.error("Error response:", data);
+        message.error(data.error || data.message || "Operation failed");
       }
     } catch (error) {
       console.error("Error:", error);
@@ -139,7 +125,7 @@ const ClasseManagementSimple = () => {
   const handleDelete = async (id) => {
     try {
       const response = await fetch(
-        `http://localhost:3001/api/reference/classes/${id}`,
+        `http://localhost:3000/api/reference/classes/${id}`,
         {
           method: "DELETE",
         }
@@ -383,6 +369,36 @@ const items2 = [
           </Form.Item>
 
           <Form.Item
+            label="Description"
+            name="description"
+            rules={[
+              {
+                required: true,
+                message: "Please input the description!",
+              },
+            ]}
+          >
+            <TextArea rows={3} placeholder="Entrez la description de la classe" />
+          </Form.Item>
+
+          <Form.Item
+            label="Effectif"
+            name="effectif"
+            rules={[
+              {
+                required: true,
+                message: "Please input the effectif!",
+              },
+            ]}
+          >
+            <InputNumber 
+              style={{ width: "100%" }} 
+              min={1} 
+              placeholder="Nombre d'étudiants"
+            />
+          </Form.Item>
+
+          <Form.Item
             label="Niveau"
             name="niveau_id"
             rules={[
@@ -396,25 +412,6 @@ const items2 = [
               {niveaux.map(niveau => (
                 <Option key={niveau.id} value={niveau.id}>
                   {niveau.nom}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
-
-          <Form.Item
-            label="Département"
-            name="departement_id"
-            rules={[
-              {
-                required: true,
-                message: "Please select a département!",
-              },
-            ]}
-          >
-            <Select placeholder="Sélectionnez le département">
-              {departements.map(dept => (
-                <Option key={dept.id} value={dept.id}>
-                  {dept.name}
                 </Option>
               ))}
             </Select>

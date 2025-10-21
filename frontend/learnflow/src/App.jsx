@@ -33,16 +33,18 @@ import EventCalendar from './admin/EventCalendar.jsx'
 function App() {
   return (
     <>
+    <Routes>
+      <Route path="/auth" element={<Auth />} />
+    </Routes>
       <div id="app">
         <AppLayout>
           <Routes>
             <Route path="/" element={<ModernDashboard />} />
             <Route path="/users" element={<UserManagement />} />
-            <Route path="/auth" element={<Auth />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<AdminPanel />} />
             
-            {/* Legacy routes - you might want to remove these eventually */}
+            
             <Route path="/create-department" element={<CreateDepartment />} />
             <Route path="/show-departments" element={<Showdepartments />} />
             <Route path="/CreationClasse" element={<CreationClasse />} />

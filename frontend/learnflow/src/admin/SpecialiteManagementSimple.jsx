@@ -139,7 +139,7 @@ const SpecialiteManagementSimple = () => {
   const handleDelete = async (id) => {
     try {
       const response = await fetch(
-        `http://localhost:3001/api/reference/specialites/${id}`,
+        `http://localhost:3000/api/reference/specialites/${id}`,
         {
           method: "DELETE",
         }
@@ -162,7 +162,7 @@ const SpecialiteManagementSimple = () => {
   const handleEdit = (specialite) => {
     setEditingSpecialite(specialite);
     form.setFieldsValue({
-      nom: specialite.name,
+      nom: specialite.nom,
       description: specialite.description,
     });
     setModalVisible(true);
@@ -188,8 +188,8 @@ const SpecialiteManagementSimple = () => {
     },
     {
       title: "Nom",
-      dataIndex: "name",
-      key: "name",
+      dataIndex: "nom",
+      key: "nom",
       width: 150,
     },
     {

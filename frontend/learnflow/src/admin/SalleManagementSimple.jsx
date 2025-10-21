@@ -46,7 +46,7 @@ const SalleManagementSimple = () => {
   const fetchSalles = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:3001/api/reference/salles");
+      const response = await fetch("http://localhost:3000/api/reference/salles");
       const data = await response.json();
       if (response.ok) {
         setSalles(data);
@@ -69,8 +69,8 @@ const SalleManagementSimple = () => {
   const handleSubmit = async (values) => {
     try {
       const url = editingSalle
-        ? `http://localhost:3001/api/reference/salles/${editingSalle.id}`
-        : "http://localhost:3001/api/reference/salles";
+        ? `http://localhost:3000/api/reference/salles/${editingSalle.id}`
+        : "http://localhost:3000/api/reference/salles";
       
       const method = editingSalle ? "PUT" : "POST";
       
@@ -107,7 +107,7 @@ const SalleManagementSimple = () => {
   const handleDelete = async (id) => {
     try {
       const response = await fetch(
-        `http://localhost:3001/api/reference/salles/${id}`,
+        `http://localhost:3000/api/reference/salles/${id}`,
         {
           method: "DELETE",
         }
@@ -152,6 +152,12 @@ const SalleManagementSimple = () => {
       dataIndex: "nom",
       key: "nom",
       width: 150,
+    },
+    {
+      title: "Type",
+      dataIndex: "type",
+      key: "type",
+      width: 120,
     },
     {
       title: "Capacité",
@@ -354,6 +360,19 @@ const items2 = [
           </Form.Item>
 
           <Form.Item
+            label="Type"
+            name="type"
+            rules={[
+              {
+                required: true,
+                message: "Please input the salle type!",
+              },
+            ]}
+          >
+            <Input placeholder="Entrez le type (ex: Laboratoire, Salle de cours, Amphithéâtre)" />
+          </Form.Item>
+
+          <Form.Item
             label="Capacité"
             name="capacite"
             rules={[
@@ -375,6 +394,16 @@ const items2 = [
             name="localisation"
           >
             <Input placeholder="Entrez la localisation" />
+          </Form.Item>
+
+          <Form.Item
+            label="Description"
+            name="description"
+          >
+            <TextArea 
+              rows={4}
+              placeholder="Entrez une description (optionnel)" 
+            />
           </Form.Item>
 
           <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
