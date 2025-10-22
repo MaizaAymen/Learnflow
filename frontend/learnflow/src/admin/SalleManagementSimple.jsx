@@ -37,7 +37,21 @@ const SalleManagementSimple = () => {
   const [editingSalle, setEditingSalle] = useState(null);
   const [form] = Form.useForm();
   const navigate = useNavigate();
-  
+const onClickMenu = (e) => {
+    if (e.key === 'specialites') {
+      navigate('/reference/specialites');
+    } else if (e.key === 'classes') {
+      navigate('/CreationClasse');
+    } else if (e.key === 'departements') {
+      navigate('/reference/departements');
+    } else if (e.key === 'niveaux') {
+      navigate('/reference/niveaux');
+    } else if (e.key === 'matieres') {
+      navigate('/reference/matieres');
+    }
+
+    // Add other navigation cases as needed
+  };
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -242,6 +256,7 @@ const items2 = [
           defaultOpenKeys={["reference"]}
           style={{ height: "100%", borderRight: 0 }}
           items={items2}
+          onClick={onClickMenu}
         />
       </Sider>
 

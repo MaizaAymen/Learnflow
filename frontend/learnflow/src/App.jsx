@@ -43,8 +43,6 @@ function App() {
             <Route path="/users" element={<UserManagement />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<AdminPanel />} />
-            
-            
             <Route path="/create-department" element={<CreateDepartment />} />
             <Route path="/show-departments" element={<Showdepartments />} />
             <Route path="/CreationClasse" element={<CreationClasse />} />
