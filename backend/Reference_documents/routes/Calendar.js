@@ -408,6 +408,68 @@ router.put('/schedules/:id', async (req, res) => {
   }
 });
 
+// Drag and drop schedule update (minimal backend change)
+router.patch('/schedules/:id/drag-drop', async (req, res) => {
+  try {
+    const schedule = await Schedule.findByPk(req.params.id);
+
+    if (!schedule) {
+      return res.status(404).json({ error: 'Planning introuvable' });
+    }
+
+    const { time_slot_id, classe_id, salle_id } = req.body;
+
+    // Check for conflicts only if moving to different time slot
+    if (time_slot_id && time_slot_id !== schedule.time_slot_id) {
+      const conflicts = await checkScheduleConflicts({
+        time_slot_id,
+        classe_id: classe_id || schedule.classe_id,
+        salle_id: salle_id || schedule.salle_id,
+        enseignant_id: schedule.enseignant_id,
+        date_debut: schedule.date_debut,
+        date_fin: schedule.date_fin,
+        excludeId: req.params.id
+      });
+
+      if (conflicts.length > 0) {
+        return res.status(409).json({ 
+          error: 'Conflit détecté - impossible de déplacer le cours',
+          conflicts 
+        });
+      }
+
+      schedule.time_slot_id = time_slot_id;
+    }
+
+    if (classe_id && classe_id !== schedule.classe_id) {
+      schedule.classe_id = classe_id;
+    }
+
+    if (salle_id && salle_id !== schedule.salle_id) {
+      schedule.salle_id = salle_id;
+    }
+
+    await schedule.save();
+    
+    const updatedSchedule = await Schedule.findByPk(req.params.id, {
+      include: [
+        { association: 'timeSlot' },
+        { association: 'classe' },
+        { association: 'matiere' },
+        { association: 'salle' }
+      ]
+    });
+
+    res.status(200).json({ 
+      message: 'Planning déplacé avec succès',
+      data: updatedSchedule 
+    });
+  } catch (error) {
+    console.error('Error drag-drop updating schedule:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
 // Cancel schedule
 router.patch('/schedules/:id/cancel', async (req, res) => {
   try {

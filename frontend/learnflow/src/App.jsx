@@ -28,8 +28,10 @@ import UploadStudents from './admin/upload.jsx'
 // Import Calendar System components
 import CalendarDashboard from './admin/CalendarDashboard.jsx'
 import TimeSlotManagement from './admin/TimeSlotManagement.jsx'
+import ScheduleManagementComplete from './admin/ScheduleManagementComplete.jsx'
 import ClassScheduleViewer from './admin/ClassScheduleViewer.jsx'
 import EventCalendar from './admin/EventCalendar.jsx'
+
 function App() {
   return (
     <>
@@ -62,8 +64,13 @@ function App() {
             <Route path="/calendar" element={<CalendarDashboard />} />
             <Route path="/calendar/dashboard" element={<CalendarDashboard />} />
             <Route path="/calendar/timeslots" element={<TimeSlotManagement />} />
+            <Route path="/calendar/schedules" element={<ScheduleManagementComplete />} />
             <Route path="/calendar/class-schedule" element={<ClassScheduleViewer />} />
             <Route path="/calendar/events" element={<EventCalendar />} />
+            
+            {/* Admin Calendar Routes (alternative paths) */}
+            <Route path="/admin/calendar/timeslots" element={<TimeSlotManagement />} />
+            <Route path="/admin/calendar/schedules" element={<ScheduleManagementComplete />} />
             {/* Add more calendar routes as you create the components */}
 
             {/* Test route for API */}

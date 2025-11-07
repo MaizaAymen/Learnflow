@@ -79,6 +79,15 @@ export class CalendarAPI {
     return response.json();
   }
 
+  async dragDropSchedule(id, data) {
+    const response = await fetch(`${this.baseURL}/schedules/${id}/drag-drop`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return response.json();
+  }
+
   async cancelSchedule(id) {
     const response = await fetch(`${this.baseURL}/schedules/${id}/cancel`, {
       method: 'PATCH'

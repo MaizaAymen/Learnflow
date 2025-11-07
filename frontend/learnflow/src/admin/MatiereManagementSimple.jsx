@@ -73,10 +73,12 @@ const MatiereManagementSimple = () => {
         : "http://localhost:3000/api/reference/matieres";
       
       const method = editingMatiere ? "PUT" : "POST";
-      
+      console.log("Values sent to backend:", values);
+
       const response = await fetch(url, {
         method,
         headers: {
+          
           "Content-Type": "application/json",
         },
         body: JSON.stringify(values),
@@ -350,7 +352,7 @@ const items2 = [
             <Col span={12}>
               <Form.Item
                 label="Nom"
-                name="nom"
+                name="name"
                 rules={[
                   {
                     required: true,
@@ -378,18 +380,18 @@ const items2 = [
           </Row>
 
           <Form.Item
-            label="Heures"
-            name="heures"
+            label="Crédits"
+            name="credits"
             rules={[
               {
                 required: true,
-                message: "Please input the hours!",
+                message: "Please input the credits!",
               },
             ]}
           >
-            <InputNumber 
-              min={1} 
-              placeholder="Entrez le nombre d'heures" 
+            <InputNumber
+              min={1}
+              placeholder="Entrez le nombre de crédits"
               style={{ width: '100%' }}
             />
           </Form.Item>

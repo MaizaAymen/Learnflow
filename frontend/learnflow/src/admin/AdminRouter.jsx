@@ -9,6 +9,8 @@ import NiveauManagement from './NiveauManagement';
 import ClasseManagement from './ClasseManagement';
 import SalleManagement from './SalleManagement';
 import MatiereManagement from './MatiereManagement';
+import ScheduleManagementComplete from './ScheduleManagementComplete';
+import TimeSlotManagement from './TimeSlotManagement';
 
 const AdminRouter = () => {
   return (
@@ -26,6 +28,10 @@ const AdminRouter = () => {
         <Route path="/admin/reference/classes" element={<ClasseManagement />} />
         <Route path="/admin/reference/salles" element={<SalleManagement />} />
         <Route path="/admin/reference/matieres" element={<MatiereManagement />} />
+        
+        {/* Calendar management routes */}
+        <Route path="/admin/calendar/timeslots" element={<TimeSlotManagement />} />
+        <Route path="/admin/calendar/schedules" element={<ScheduleManagementComplete />} />
         
         {/* Catch all route - redirect to dashboard */}
         <Route path="*" element={<Navigate to="/admin/reference" replace />} />

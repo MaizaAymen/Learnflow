@@ -3,15 +3,17 @@ const express = require("express");
 // Use the shared sequelize instance from auth-service
 const sequelize = require("../auth-service/config");
 const ReferenceRoutes = require("./routes/Reference");
+const CalendarRoutes = require("./routes/Calendar");
 const app = express();
 app.use(express.json());
 
 
 
 app.use(cors({ origin: "http://localhost:5173", 
-  methods: ["GET", "POST", "PUT", "DELETE"],
+  methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   credentials: true }));
 app.use("/api/reference", ReferenceRoutes);
+app.use("/api/calendar", CalendarRoutes);
 
 
 sequelize.sync({ alter: true }).then(async () => {
