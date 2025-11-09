@@ -16,6 +16,7 @@ import {
   Card,
   Row,
   Col,
+  Select,
   theme
 } from "antd";
 import {
@@ -37,6 +38,14 @@ const MatiereManagementSimple = () => {
   const [editingMatiere, setEditingMatiere] = useState(null);
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  
+  // Course popup states
+  const [courseModalVisible, setCourseModalVisible] = useState(false);
+  const [selectedMatiere, setSelectedMatiere] = useState(null);
+  const [courses, setCourses] = useState([]);
+  const [courseForm] = Form.useForm();
+  const [editingCourse, setEditingCourse] = useState(null);
+  const [users, setUsers] = useState([]);
   
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -63,7 +72,103 @@ const MatiereManagementSimple = () => {
 
   useEffect(() => {
     fetchMatieres();
+    fetchUsers();
   }, []);
+
+  // Fetch users (teachers)
+  const fetchUsers = async () => {
+    try {
+      const response = await fetch('http://localhost:4000/api/auth/getAllUsers');
+      if (response.ok) {
+        const data = await response.json();
+        const teachers = data.filter(user => user.role === 'enseignant');
+        setUsers(teachers);
+      }
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
+  // Fetch courses for a matiere
+  const fetchCourses = async (matiereId) => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/courses/matiere/${matiereId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setCourses(data);
+      }
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      message.error('Error fetching courses');
+    }
+  };
+
+  // Handle open course popup
+  const handleViewCourses = (matiere) => {
+    setSelectedMatiere(matiere);
+    fetchCourses(matiere.id);
+    setCourseModalVisible(true);
+  };
+
+  // Handle course submit
+  const handleCourseSubmit = async (values) => {
+    try {
+      const courseData = {
+        ...values,
+        matiereId: selectedMatiere.id,
+      };
+
+      const url = editingCourse
+        ? `http://localhost:3000/api/courses/${editingCourse.id}`
+        : 'http://localhost:3000/api/courses';
+      
+      const method = editingCourse ? 'PUT' : 'POST';
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(courseData),
+      });
+
+      if (response.ok) {
+        message.success(
+          editingCourse 
+            ? 'Course updated successfully!'
+            : 'Course created successfully!'
+        );
+        courseForm.resetFields();
+        setEditingCourse(null);
+        fetchCourses(selectedMatiere.id);
+      } else {
+        const data = await response.json();
+        message.error(data.error || 'Operation failed');
+      }
+    } catch (error) {
+      console.error('Error:', error);
+      message.error('An error occurred');
+    }
+  };
+
+  // Handle delete course
+  const handleDeleteCourse = async (courseId) => {
+    try {
+      const response = await fetch(`http://localhost:3000/api/courses/${courseId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        message.success('Course deleted successfully!');
+        fetchCourses(selectedMatiere.id);
+      } else {
+        message.error('Delete failed');
+      }
+    } catch (error) {
+      console.error('Error deleting course:', error);
+      message.error('Error deleting course');
+    }
+  };
 
   // Handle create/update
   const handleSubmit = async (values) => {
@@ -176,10 +281,17 @@ const MatiereManagementSimple = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 150,
+      width: 200,
       fixed: 'right',
       render: (_, record) => (
         <Space size="small">
+          <Button
+            type="default"
+            size="small"
+            onClick={() => handleViewCourses(record)}
+          >
+            📚 Courses
+          </Button>
           <Button
             type="primary"
             icon={<EditOutlined />}
@@ -330,7 +442,7 @@ const items2 = [
         </Content>
       </Layout>
 
-      {/* Modal for Create/Edit */}
+      {/* Modal for Create/Edit Matiere */}
       <Modal
         title={editingMatiere ? "Modifier Matière" : "Ajouter Matière"}
         open={modalVisible}
@@ -423,6 +535,165 @@ const items2 = [
             </Space>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Modal for Courses Popup */}
+      <Modal
+        title={`Courses for ${selectedMatiere?.name || ''}`}
+        open={courseModalVisible}
+        onCancel={() => {
+          setCourseModalVisible(false);
+          setSelectedMatiere(null);
+          setCourses([]);
+          setEditingCourse(null);
+          courseForm.resetFields();
+        }}
+        footer={null}
+        width={900}
+      >
+        <div style={{ marginBottom: 20 }}>
+          <Card 
+            size="small" 
+            style={{ backgroundColor: '#f0f2f5', marginBottom: 16 }}
+          >
+            <p><strong>Matière:</strong> {selectedMatiere?.name}</p>
+            <p><strong>Code:</strong> {selectedMatiere?.code}</p>
+            <p><strong>Total Courses:</strong> {courses.length}</p>
+          </Card>
+
+          {/* Add/Edit Course Form */}
+          <Card 
+            title={editingCourse ? "Edit Course" : "Add New Course"} 
+            size="small"
+            style={{ marginBottom: 16 }}
+          >
+            <Form
+              form={courseForm}
+              layout="vertical"
+              onFinish={handleCourseSubmit}
+            >
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item
+                    label="Title"
+                    name="title"
+                    rules={[{ required: true, message: 'Required!' }]}
+                  >
+                    <Input placeholder="Course title" />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item
+                    label="Teacher"
+                    name="userId"
+                    rules={[{ required: true, message: 'Required!' }]}
+                  >
+                    <Select placeholder="Select Teacher">
+                      {users.map(user => (
+                        <Select.Option key={user.id} value={user.id}>
+                          {user.nom} {user.prenom}
+                        </Select.Option>
+                      ))}
+                    </Select>
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Form.Item label="Description" name="description">
+                <TextArea rows={2} placeholder="Course description" />
+              </Form.Item>
+
+              <Row gutter={16}>
+                <Col span={12}>
+                  <Form.Item label="Video URL" name="videoUrl">
+                    <Input placeholder="https://..." />
+                  </Form.Item>
+                </Col>
+                <Col span={12}>
+                  <Form.Item label="Duration (min)" name="duration">
+                    <InputNumber min={0} style={{ width: '100%' }} />
+                  </Form.Item>
+                </Col>
+              </Row>
+
+              <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+                <Space>
+                  {editingCourse && (
+                    <Button onClick={() => {
+                      setEditingCourse(null);
+                      courseForm.resetFields();
+                    }}>
+                      Cancel
+                    </Button>
+                  )}
+                  <Button type="primary" htmlType="submit">
+                    {editingCourse ? 'Update' : 'Add'} Course
+                  </Button>
+                </Space>
+              </Form.Item>
+            </Form>
+          </Card>
+
+          {/* Courses List */}
+          <Card title="Courses List" size="small">
+            {courses.length === 0 ? (
+              <p style={{ textAlign: 'center', color: '#999' }}>No courses yet</p>
+            ) : (
+              <div style={{ maxHeight: '300px', overflowY: 'auto' }}>
+                {courses.map((course) => (
+                  <Card 
+                    key={course.id} 
+                    size="small" 
+                    style={{ marginBottom: 8 }}
+                  >
+                    <Row justify="space-between" align="middle">
+                      <Col span={16}>
+                        <h4 style={{ margin: 0 }}>{course.title}</h4>
+                        <p style={{ margin: '4px 0', fontSize: '12px', color: '#666' }}>
+                          Teacher: {course.enseignant?.nom} {course.enseignant?.prenom}
+                        </p>
+                        {course.duration && (
+                          <p style={{ margin: 0, fontSize: '12px', color: '#999' }}>
+                            Duration: {course.duration} min
+                          </p>
+                        )}
+                      </Col>
+                      <Col>
+                        <Space>
+                          <Button
+                            size="small"
+                            onClick={() => {
+                              setEditingCourse(course);
+                              courseForm.setFieldsValue({
+                                title: course.title,
+                                userId: course.userId,
+                                description: course.description,
+                                videoUrl: course.videoUrl,
+                                duration: course.duration,
+                              });
+                            }}
+                          >
+                            Edit
+                          </Button>
+                          <Popconfirm
+                            title="Delete this course?"
+                            onConfirm={() => handleDeleteCourse(course.id)}
+                            okText="Yes"
+                            cancelText="No"
+                          >
+                            <Button size="small" danger>
+                              Delete
+                            </Button>
+                          </Popconfirm>
+                        </Space>
+                      </Col>
+                    </Row>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </Card>
+        </div>
       </Modal>
     </Layout>
   );

@@ -510,6 +510,8 @@ router.delete("/deleteuser/:id", async (req, res) => {
           res.status(500).json({ error: "Erreur lors de la mise à jour de l'utilisateur" });
         }
       });
+
+
 module.exports = router;
 
 

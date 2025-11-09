@@ -38,6 +38,7 @@ const ClasseManagementSimple = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingClasse, setEditingClasse] = useState(null);
+  const [departements, setDepartements] = useState([]);
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const onClickMenu = (e) => {
@@ -60,21 +61,41 @@ const ClasseManagementSimple = () => {
   } = theme.useToken();
 
   // Fetch all classes
-  const fetchClasses = async () => {
-    setLoading(true);
+const fetchClasses = async () => {
+  setLoading(true);
+  try {
+    const response = await fetch("http://localhost:3000/api/reference/classes");
+    const data = await response.json();
+    console.log("Fetched classes:", data);  
+    if (response.ok) {
+      const formatted = data.map(c => ({
+        ...c,
+        niveau_nom: c.niveau?.name || "—",
+        departement_nom: c.departement?.name || "—",
+      }));
+      setClasses(formatted);
+    } else {
+      message.error(data.message || "Failed to fetch classes");
+    }
+  } catch (error) {
+    console.error("Error fetching classes:", error);
+    message.error("Error fetching classes");
+  } finally {
+    setLoading(false);
+  }
+};
+
+
+  const fetchDepartements= async () => {
     try {
-      const response = await fetch("http://localhost:3000/api/reference/classes");
+      const response = await fetch("http://localhost:3000/api/reference/departements");
       const data = await response.json();
+
       if (response.ok) {
-        setClasses(data);
-      } else {
-        message.error(data.message || "Failed to fetch classes");
+        setDepartements(data);
       }
     } catch (error) {
-      console.error("Error fetching classes:", error);
-      message.error("Error fetching classes");
-    } finally {
-      setLoading(false);
+      console.error("Error fetching departements:", error);
     }
   };
 
@@ -94,6 +115,7 @@ const ClasseManagementSimple = () => {
   useEffect(() => {
     fetchClasses();
     fetchNiveaux();
+    fetchDepartements();
   }, []);
 
   // Handle create/update
@@ -426,12 +448,33 @@ const items2 = [
             <Select placeholder="Sélectionnez le niveau">
               {niveaux.map(niveau => (
                 <Option key={niveau.id} value={niveau.id}>
-                  {niveau.nom}
+                  {niveau.name}
                 </Option>
               ))}
             </Select>
-          </Form.Item>
 
+          </Form.Item>
+          <Form.Item
+            label="département"
+            name="departement_id"
+            rules={[
+              {
+                required: true,
+                message: "Please select a département!",
+              },
+            ]}
+          >
+
+            <Select placeholder="Sélectionnez le département">
+              {departements.map(departement => (
+                <Option key={departement.id} value={departement.id}>
+                  {departement.name}
+                </Option>
+              ))}
+            </Select>
+            
+
+          </Form.Item>
           <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
             <Space>
               <Button

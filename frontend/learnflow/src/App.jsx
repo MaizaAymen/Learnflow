@@ -10,7 +10,6 @@ import CreateDepartment from './admin/CreateDepartement.jsx'
 import Showdepartments from './admin/showdepar.jsx'
 import AppLayout from './components/Layout.jsx'
 import ModernDashboard from './components/ModernDashboard.jsx'
-
 // Import new reference management components
 import ReferenceManagement from './admin/ReferenceManagement.jsx'
 import ReferenceManagementSimple from './admin/ReferenceManagementSimple.jsx'
@@ -31,15 +30,20 @@ import TimeSlotManagement from './admin/TimeSlotManagement.jsx'
 import ScheduleManagementComplete from './admin/ScheduleManagementComplete.jsx'
 import ClassScheduleViewer from './admin/ClassScheduleViewer.jsx'
 import EventCalendar from './admin/EventCalendar.jsx'
+import WeeklySchedule from './components/WeeklySchedule.jsx'
 
+const isAuthRoute =location.pathname=== '/auth';
 function App() {
   return (
     <>
-    <Routes>
-      <Route path="/auth" element={<Auth />} />
-    </Routes>
-      <div id="app">
-        <AppLayout>
+    {
+      isAuthRoute ? (
+        <Routes>
+          <Route path="/auth" element={<Auth />} />
+        </Routes>
+      ) : (
+        <div id="app">
+          <AppLayout>
           <Routes>
             <Route path="/" element={<ModernDashboard />} />
             <Route path="/users" element={<UserManagement />} />
@@ -67,7 +71,7 @@ function App() {
             <Route path="/calendar/schedules" element={<ScheduleManagementComplete />} />
             <Route path="/calendar/class-schedule" element={<ClassScheduleViewer />} />
             <Route path="/calendar/events" element={<EventCalendar />} />
-            
+            <Route path="/calendar/weekly-schedule" element={<WeeklySchedule />} />
             {/* Admin Calendar Routes (alternative paths) */}
             <Route path="/admin/calendar/timeslots" element={<TimeSlotManagement />} />
             <Route path="/admin/calendar/schedules" element={<ScheduleManagementComplete />} />
@@ -78,6 +82,7 @@ function App() {
           </Routes>
         </AppLayout>
       </div>
+      )}
     </>
   )
 }

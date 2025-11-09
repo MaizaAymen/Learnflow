@@ -384,7 +384,13 @@ const items2 = [
               },
             ]}
           >
-            <Input placeholder="Entrez le type (ex: Laboratoire, Salle de cours, Amphithéâtre)" />
+            <select name="type" id="type" style={{ width: '100%', height: '32px', borderRadius: '4px', border: '1px solid #d9d9d9', paddingLeft: '8px' }}>
+              <option value="Amphi">Amphi</option>
+              <option value="TP">TP</option>
+              <option value="TD">TD</option>
+              <option value="Cours">Cours</option>
+
+            </select>
           </Form.Item>
 
           <Form.Item

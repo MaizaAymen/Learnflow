@@ -1,24 +1,32 @@
 const express = require('express');
 const router = express.Router();
+
+// Import models/index.js first to ensure associations are loaded
+require('../models/index');
+
 const specialite = require('../models/Specialite');
-const departement = require('../models/Département');
-const niveau = require('../models/Niveau');
+const Departement = require('../models/Département');
+const Niveau = require('../models/Niveau');
 const Classe = require('../models/Classe');
 const salle = require('../models/Salle');
 const matiere = require('../models/Matiére');
 const matiereClasse = require('../models/MatiereClasse');
 const matiereEnseignant = require('../models/MatiereEnseignant');
 
+// Keep lowercase aliases for backward compatibility
+const departement = Departement;
+const niveau = Niveau;
+
 // Import Calendar routes
 const calendarRoutes = require('./Calendar');
 // CRUD Specialite
 router.post('/specialites', async (req, res) => {
   try {
-    const { nom, description } = req.body;
-    if (!nom) {
+    const { name, description } = req.body;
+    if (!name) {
       return res.status(400).json({ error: 'Le nom de la spécialité est requis' });
     }
-    const newSpecialite = await specialite.create({ nom, description });
+    const newSpecialite = await specialite.create({ name, description });
     res.status(201).json(newSpecialite);
   } catch (error) {
     console.error('Error creating specialite:', error);
@@ -80,7 +88,7 @@ router.delete('/specialites/:id', async (req, res) => {
 router.get('/specialites/search/:term', async (req, res) => {
   try {
     const { term } = req.params;
-    const { Op } = require('sequelize');
+    const { Op, Model } = require('sequelize');
     const results = await specialite.findAll({
       where: {
         nom: {
@@ -262,11 +270,11 @@ router.get('/departements/filter/statut/:statut', async (req, res) => {
 // CRUD Niveau
 router.post('/niveaux', async (req, res) => {
   try {
-    const { nom, description } = req.body;
-    if (!nom) {
+    const { name, description } = req.body;
+    if (!name) {
       return res.status(400).json({ error: 'Le nom du niveau est requis' });
     }
-    const newNiveau = await niveau.create({ nom, description });
+    const newNiveau = await niveau.create({ name, description });
     res.status(201).json(newNiveau);
   } catch (error) {
     console.error('Error creating niveau:', error);
@@ -364,7 +372,7 @@ router.get('/niveaux/:id/classes', async (req, res) => {
 router.post('/classes', async (req, res) => {
   try {
     console.log('Received classe creation request:', req.body);
-    const { nom, description, effectif, niveau_id } = req.body;
+    const { nom, description, effectif, niveau_id, departement_id } = req.body;
     
     if (!nom) {
       return res.status(400).json({ error: 'Le nom de la classe est requis' });
@@ -376,7 +384,7 @@ router.post('/classes', async (req, res) => {
       return res.status(400).json({ error: 'Le niveau est requis' });
     }
     
-    const newClasse = await Classe.create({ nom, description, effectif, niveau_id });
+    const newClasse = await Classe.create({ nom, description, effectif, niveau_id ,departement_id});
     console.log('Classe created successfully:', newClasse.toJSON());
     return res.status(201).json(newClasse);
     
@@ -387,15 +395,30 @@ router.post('/classes', async (req, res) => {
 });
 router.get('/classes', async (req, res) => {
     try {
-      const classes = await Classe.findAll();
-      if (!classes) {
-        return res.json({ message: "Aucune classe n'est disponible pour le moment" });
+      const classes = await Classe.findAll({
+        include: [
+          {
+            model: Niveau,
+            attributes: ['id', 'name'],
+            required: false
+          },
+          {
+            model: Departement,
+            attributes: ['id', 'name'],
+            required: false
+          }
+        ]
+      });
+      if (!classes || classes.length === 0) {
+        return res.json([]);
       }
       return res.status(200).json(classes);
     } catch (error) {
-      return res.status(500).json({ error: 'Internal server error' });
+      console.error('Error fetching classes:', error);
+      return res.status(500).json({ error: 'Internal server error', details: error.message });
     }
   });
+
 router.get('/classes/:id',async (req,res)=>{
     try {
       const id = req.params.id;
@@ -490,6 +513,10 @@ router.post('/salles', async (req, res) => {
     if (!capacite) {
       return res.status(400).json({ error: 'La capacité est requise' });
     }
+    if (isNaN(capacite) || capacite <= 0) {
+      return res.status(400).json({ error: 'La capacité doit être un nombre positif' });
+    }
+      
     const newSalle = await salle.create({ nom, type, capacite, localisation, description });
     res.status(201).json(newSalle);
   } catch (error) {

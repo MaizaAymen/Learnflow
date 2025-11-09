@@ -18,7 +18,7 @@ import {
   DashboardOutlined
 } from '@ant-design/icons';
 import examenLogo from './examen.png';
-
+import Capture from './Capture.png';
 const { Header, Sider, Content, Footer } = AntLayout;
 
 const siderStyle = {
@@ -252,10 +252,10 @@ const AppLayout = ({ children }) => {
       >
         <div className="logo">
           {collapsed ? (
-            <img src={examenLogo} alt="L" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+            <img src={Capture} alt="L" style={{ width: '80px', height: '40px', objectFit: 'contain' }} />
           ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px' }}>
-              <img src={examenLogo} alt="LEARNFLOW" style={{ width: '40px', height: '40px', objectFit: 'contain' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0px' }}>
+              <img src={Capture} alt="LEARNFLOW" style={{ width: '500px', height: '100px', objectFit: 'contain' }} />
               <span style={{ color: '#fff', fontWeight: 'bold', fontSize: '18px' }}>LEARNFLOW</span>
             </div>
           )}

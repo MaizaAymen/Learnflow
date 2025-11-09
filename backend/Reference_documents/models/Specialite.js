@@ -13,7 +13,7 @@ const specialite =sequelize.define('specialite',{
         tablename: "specialite",
     }
 );
-departement.hasMany(specialite,{foreignKey:'departementId'});
-specialite.belongsTo(departement,{foreignKey:'departementId'});
+
+// Relationships are defined in models/index.js to avoid circular dependencies
 
 module.exports = specialite;

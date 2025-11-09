@@ -9,6 +9,7 @@ const Classe = sequelize.define('Classe', {
   nom: { type: DataTypes.STRING, allowNull: true }, // ex: G1, 2ème Info A
   effectif: { type: DataTypes.INTEGER, allowNull: true },
   niveau_id: { type: DataTypes.INTEGER, allowNull: true },
+  departement_id: { type: DataTypes.INTEGER, allowNull: true },
   description: { type: DataTypes.TEXT, allowNull: true },
   
 }, {
@@ -16,7 +17,7 @@ const Classe = sequelize.define('Classe', {
   tableName: "classe",
 });
 
-Niveau.hasMany(Classe, { foreignKey: "niveau_id" });
-Classe.belongsTo(Niveau, { foreignKey: "niveau_id" });
+// Relationships are defined in a separate file to avoid circular dependencies
+// See models/index.js for relationship initialization
 
 module.exports = Classe;

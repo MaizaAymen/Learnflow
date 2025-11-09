@@ -94,6 +94,7 @@ const SpecialiteManagementSimple = () => {
       const response = await fetch("http://localhost:3000/api/reference/specialites");
       if (response.ok) {
         const data = await response.json();
+        console.log("Fetched specialites:", data);
         setSpecialites(data);
       } else {
         message.error("Failed to fetch specialites");
@@ -125,7 +126,7 @@ const SpecialiteManagementSimple = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          nom: values.nom,
+          name: values.name,
           description: values.description,
         }),
       });
@@ -202,9 +203,9 @@ const SpecialiteManagementSimple = () => {
       width: 60,
     },
     {
-      title: "Nom",
-      dataIndex: "nom",
-      key: "nom",
+      title: "name",
+      dataIndex: "name",
+      key: "name",
       width: 150,
     },
     {
@@ -359,8 +360,8 @@ const SpecialiteManagementSimple = () => {
           style={{ marginTop: 20 }}
         >
           <Form.Item
-            label="Nom"
-            name="nom"
+            label="name"
+            name="name"
             rules={[
               { required: true, message: "Please enter the name!" },
               { min: 2, message: "Name must be at least 2 characters!" },

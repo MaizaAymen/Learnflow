@@ -79,7 +79,7 @@ const NiveauManagement = () => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          nom: values.nom,
+          name: values.name,
           description: values.description,
         }),
       });
@@ -132,8 +132,8 @@ const NiveauManagement = () => {
   const handleEdit = (niveau) => {
     setEditingNiveau(niveau);
     form.setFieldsValue({
-      nom: nom,
-      description: description,
+      name: niveau.name,
+      description: niveau.description,
     });
     setModalVisible(true);
   };
@@ -154,8 +154,8 @@ const NiveauManagement = () => {
     },
     {
       title: "Nom",
-      dataIndex: "nom",
-      key: "nom",
+      dataIndex: "name",
+      key: "name",
       width: 150,
     },
     {
@@ -341,7 +341,7 @@ const items2 = [
         >
           <Form.Item
             label="Nom"
-            name="nom"
+            name="name"
             rules={[
               {
                 required: true,
