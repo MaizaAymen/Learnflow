@@ -1,6 +1,6 @@
 .event-calendar-container {
   padding: 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #e2e2e2 0%, #e2e2e2 100%);
   min-height: 100vh;
 }
 
@@ -16,7 +16,7 @@
 .event-calendar-header h1 {
   font-size: 32px;
   font-weight: 700;
-  color: #667eea;
+  color: #000000;
   margin-bottom: 8px;
 }
 

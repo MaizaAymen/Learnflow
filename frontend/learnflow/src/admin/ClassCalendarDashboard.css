@@ -1,0 +1,11 @@
+.class-calendar-card {
+  cursor: pointer;
+}
+
+.class-calendar-card:hover {
+  border-color: #1890ff;
+}
+
+.class-calendar-card .ant-card-body {
+  padding: 24px;
+}

@@ -15,6 +15,20 @@ const CalendarDashboard = () => {
 
   const menuItems = [
     {
+      title: '📚 Calendriers par Classe',
+      description: 'Voir le calendrier de chaque classe',
+      icon: '📚',
+      path: '/calendar/classes',
+      color: '#667eea'
+    },
+    {
+      title: '⚡ Créneaux Auto',
+      description: 'Générer automatiquement les créneaux horaires',
+      icon: '⚡',
+      path: '/calendar/timeslots/auto',
+      color: '#667eea'
+    },
+    {
       title: 'Créneaux Horaires',
       description: 'Gérer les créneaux horaires disponibles',
       icon: '🕐',
@@ -138,17 +152,17 @@ const CalendarDashboard = () => {
       <div className="quick-actions">
         <h2>Actions Rapides</h2>
         <div className="action-buttons">
-          <Link to="/calendar/schedules/create" className="action-btn primary">
+          <Link to="/calendar/classes" className="action-btn primary">
+            📚 Calendriers par Classe
+          </Link>
+          <Link to="/calendar/timeslots/auto" className="action-btn primary">
+            ⚡ Créneaux Auto
+          </Link>
+          <Link to="/calendar/create" className="action-btn primary">
             ➕ Créer un Planning
           </Link>
-          <Link to="/calendar/timeslots/bulk" className="action-btn secondary">
-            📦 Créneaux en Masse
-          </Link>
-          <Link to="/calendar/class-schedule" className="action-btn info">
-            👁️ Voir Planning Classe
-          </Link>
-          <Link to="/calendar/availability" className="action-btn success">
-            🔍 Vérifier Disponibilité
+          <Link to="/calendar/events" className="action-btn info">
+            �️ Voir Tous les Calendriers
           </Link>
         </div>
       </div>

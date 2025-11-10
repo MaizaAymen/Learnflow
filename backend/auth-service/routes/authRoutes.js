@@ -184,79 +184,76 @@ router.post("/student-signup", async (req, res) => {
 });
 
 
-// router.post("/register", async (req, res) => {
-//     try
-// {   
-//   const { nom, prenom, email, mdp, role, image, phone, bio ,specialite, ville} = req.body;
-// if (!nom) {
-//   return res.status(400).json({ error: "Le champ 'nom' est obligatoire" });
-// }
-
-// if (!prenom) {
-//   return res.status(400).json({ error: "Le champ 'prenom' est obligatoire" });
-// }
-
-// if (!email) {
-//   return res.status(400).json({ error: "Le champ 'email' est obligatoire" });
-// }
-
-// if (!mdp) {
-//   return res.status(400).json({ error: "Le champ 'mot de passe' est obligatoire" });
-// }
-
-// if (!role) {
-//   return res.status(400).json({ error: "Le champ 'role' est obligatoire" });
-// }
-
-// if (!specialite) {
-//   return res.status(400).json({ error: "Le champ 'spécialité' est obligatoire" });
-// }
-
-// if (!ville) {
-//   return res.status(400).json({ error: "Le champ 'ville' est obligatoire" });
-// }
-
-//   const mawjoud = await utilisateur.findOne({where: {email}})
-//   if (mawjoud) {
-//     return res.status(409).json({ error: "Email déjà utilisé" });}
-//    const mdp_hash = await bcrypt.hash(mdp, 10);
-//   const newUser =await utilisateur.create({
-//     nom, prenom, email,  mdp_hash, role, image, phone, bio, specialite, ville
-//   });
-//   sendEmail({
-//    to: email,
-// subject: "Bienvenue sur Learnflow !",
-// text: `Bonjour ${prenom},
-
-// Bienvenue sur Learnflow !
-
-// Nous vous remercions chaleureusement pour votre inscription en tant que ${role}. 
-// Nous sommes ravis de vous compter parmi notre communauté d’apprentissage.
-
-// À très bientôt sur Learnflow !
-
-// Cordialement,
-// Aymen Maiza
-// Fondateur de Learnflow`,
-// html: `
-//   <p>Bonjour ${prenom},</p>
-//   <p>Bienvenue sur <strong>Learnflow</strong> !</p>
-//   <p>Nous vous remercions chaleureusement pour votre inscription en tant que <strong>${role}</strong>. 
-//   Nous sommes ravis de vous compter parmi notre communauté d’apprentissage.</p>
-//   <p>À très bientôt sur Learnflow !</p>
-//   <p>Cordialement,<br><strong>Aymen Maiza</strong><br>Fondateur de Learnflow</p>
-// `,
-
-//   }).catch((err) => console.error("Erreur lors de l'envoi de l'email:", err));
-//   //
-//   res.status(201).json(newUser);
+router.post("/register", async (req, res) => {
+    try
+{   
+  const { nom, prenom, email, mdp, password, role, image, phone, bio ,specialite, ville} = req.body;
   
-// }
- 
-// catch (error) {
-//     res.status(500).json({ error: "Erreur lors de l'enregistrement de l'utilisateur" });
+  // Support both 'mdp' and 'password' field names
+  const motDePasse = mdp || password;
+  
+if (!nom) {
+  return res.status(400).json({ error: "Le champ 'nom' est obligatoire" });
+}
 
-// }})
+if (!prenom) {
+  return res.status(400).json({ error: "Le champ 'prenom' est obligatoire" });
+}
+
+if (!email) {
+  return res.status(400).json({ error: "Le champ 'email' est obligatoire" });
+}
+
+if (!motDePasse) {
+  return res.status(400).json({ error: "Le champ 'mot de passe' est obligatoire" });
+}
+
+if (!role) {
+  return res.status(400).json({ error: "Le champ 'role' est obligatoire" });
+}
+
+  // Note: specialite and ville are optional - only validate if provided from auth form
+  const mawjoud = await utilisateur.findOne({where: {email}})
+  if (mawjoud) {
+    return res.status(409).json({ error: "Email déjà utilisé" });}
+   const mdp_hash = await bcrypt.hash(motDePasse, 10);
+  const newUser =await utilisateur.create({
+    nom, prenom, email,  mdp_hash, role, image, phone, bio, specialite, ville
+  });
+  sendEmail({
+   to: email,
+subject: "Bienvenue sur Learnflow !",
+text: `Bonjour ${prenom},
+
+Bienvenue sur Learnflow !
+
+Nous vous remercions chaleureusement pour votre inscription en tant que ${role}. 
+Nous sommes ravis de vous compter parmi notre communauté d'apprentissage.
+
+À très bientôt sur Learnflow !
+
+Cordialement,
+Aymen Maiza
+Fondateur de Learnflow`,
+html: `
+  <p>Bonjour ${prenom},</p>
+  <p>Bienvenue sur <strong>Learnflow</strong> !</p>
+  <p>Nous vous remercions chaleureusement pour votre inscription en tant que <strong>${role}</strong>. 
+  Nous sommes ravis de vous compter parmi notre communauté d'apprentissage.</p>
+  <p>À très bientôt sur Learnflow !</p>
+  <p>Cordialement,<br><strong>Aymen Maiza</strong><br>Fondateur de Learnflow</p>
+`,
+
+  }).catch((err) => console.error("Erreur lors de l'envoi de l'email:", err));
+  //
+  res.status(201).json(newUser);
+  
+}
+ 
+catch (error) {
+    res.status(500).json({ error: "Erreur lors de l'enregistrement de l'utilisateur" });
+
+}})
 router.post("/completeprofile", async (req, res) => {
   try { 
     const { id, cin, certification, date_naissance, classes, specialite, departement, etablissement, adresse, ville, pays, niveau_etude, parcours, interets, competences } = req.body;

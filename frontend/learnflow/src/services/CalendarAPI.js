@@ -35,6 +35,22 @@ export class CalendarAPI {
     return response.json();
   }
 
+  async updateTimeSlot(id, data) {
+    const response = await fetch(`${this.baseURL}/timeslots/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
+    });
+    return response.json();
+  }
+
+  async deleteTimeSlot(id) {
+    const response = await fetch(`${this.baseURL}/timeslots/${id}`, {
+      method: 'DELETE'
+    });
+    return response.json();
+  }
+
   // ==================== SCHEDULES ====================
   
   async getSchedules(filters = {}) {

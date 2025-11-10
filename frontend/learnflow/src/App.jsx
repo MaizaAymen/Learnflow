@@ -31,6 +31,11 @@ import ScheduleManagementComplete from './admin/ScheduleManagementComplete.jsx'
 import ClassScheduleViewer from './admin/ClassScheduleViewer.jsx'
 import EventCalendar from './admin/EventCalendar.jsx'
 import WeeklySchedule from './components/WeeklySchedule.jsx'
+import CreateSchedule from './admin/CreateSchedule.jsx'
+import AutoTimeSlotGenerator from './admin/AutoTimeSlotGenerator.jsx'
+import ClassCalendarDashboard from './admin/ClassCalendarDashboard.jsx'
+import ClassCalendar from './admin/ClassCalendar.jsx'
+import NOTFOUND from './components/NOTFOUND.JSX'
 
 const isAuthRoute =location.pathname=== '/auth';
 function App() {
@@ -63,12 +68,17 @@ function App() {
             <Route path="/reference/salles" element={<SalleManagementSimple />} />
             <Route path="/reference/matieres" element={<MatiereManagementSimple />} />
             <Route path="/upload-students" element={<UploadStudents />} />
+          
 
             {/* Calendar System Routes */}
             <Route path="/calendar" element={<CalendarDashboard />} />
             <Route path="/calendar/dashboard" element={<CalendarDashboard />} />
+            <Route path="/calendar/classes" element={<ClassCalendarDashboard />} />
+            <Route path="/calendar/class/:classeId/events" element={<ClassCalendar />} />
             <Route path="/calendar/timeslots" element={<TimeSlotManagement />} />
+            <Route path="/calendar/timeslots/auto" element={<AutoTimeSlotGenerator />} />
             <Route path="/calendar/schedules" element={<ScheduleManagementComplete />} />
+            <Route path="/calendar/create" element={<CreateSchedule />} />
             <Route path="/calendar/class-schedule" element={<ClassScheduleViewer />} />
             <Route path="/calendar/events" element={<EventCalendar />} />
             <Route path="/calendar/weekly-schedule" element={<WeeklySchedule />} />
@@ -79,6 +89,7 @@ function App() {
 
             {/* Test route for API */}
             <Route path="/test-api" element={<TestReferenceAPI />} />
+              <Route path="*" element={<NOTFOUND />} />
           </Routes>
         </AppLayout>
       </div>
