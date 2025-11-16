@@ -33,6 +33,7 @@ const { TextArea } = Input;
 
 const MatiereManagementSimple = () => {
   const [matieres, setMatieres] = useState([]);
+  const [niveaux, setNiveaux] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingMatiere, setEditingMatiere] = useState(null);
@@ -58,7 +59,13 @@ const MatiereManagementSimple = () => {
       const response = await fetch("http://localhost:3000/api/reference/matieres");
       const data = await response.json();
       if (response.ok) {
-        setMatieres(data);
+        const formatted = data.map(m => ({
+          ...m,
+          niveau_nom: m.niveau?.name || "—",
+          specialite_nom: m.niveau?.specialite?.name || "—",
+          departement_nom: m.niveau?.specialite?.departement?.name || "—"
+        }));
+        setMatieres(formatted);
       } else {
         message.error(data.message || "Failed to fetch matieres");
       }
@@ -70,9 +77,23 @@ const MatiereManagementSimple = () => {
     }
   };
 
+  // Fetch niveaux for dropdown
+  const fetchNiveaux = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/api/reference/niveaux");
+      const data = await response.json();
+      if (response.ok) {
+        setNiveaux(data);
+      }
+    } catch (error) {
+      console.error("Error fetching niveaux:", error);
+    }
+  };
+
   useEffect(() => {
     fetchMatieres();
     fetchUsers();
+    fetchNiveaux();
   }, []);
 
   // Fetch users (teachers)
@@ -256,8 +277,8 @@ const MatiereManagementSimple = () => {
     },
     {
       title: "Nom",
-      dataIndex: "nom",
-      key: "nom",
+      dataIndex: "name",
+      key: "name",
       width: 150,
     },
     {
@@ -267,10 +288,16 @@ const MatiereManagementSimple = () => {
       width: 100,
     },
     {
-      title: "Heures",
-      dataIndex: "heures",
-      key: "heures",
-      width: 100,
+      title: "Niveau",
+      dataIndex: "niveau_nom",
+      key: "niveau_nom",
+      width: 120,
+    },
+    {
+      title: "Crédits",
+      dataIndex: "credits",
+      key: "credits",
+      width: 80,
     },
     {
       title: "Description",
@@ -322,30 +349,37 @@ const items1 = [
   { key: '3', label: 'Reports' }
 ];
 
-const items2 = [
-  {
-    key: 'users',
-    icon: React.createElement(UserOutlined),
-    label: 'User Management',
-    children: [
-      { key: 'show-users', label: 'Show Users' },
-      { key: 'add-user', label: 'Add User' },
-    ],
-  },
-  {
-    key: 'reference',
-    icon: React.createElement(LaptopOutlined),
-    label: 'Reference Data',
-    children: [
-      { key: 'specialites', label: 'Spécialités' },
-      { key: 'departements', label: 'Départements' },
-      { key: 'niveaux', label: 'Niveaux' },
-      { key: 'classes', label: 'Classes' },
-      { key: 'salles', label: 'Salles' },
-      { key: 'matieres', label: 'Matières' },
-    ],
-  },
-];
+  const onClickMenu = (e) => {
+    if (e.key === 'specialites') {
+      navigate('/reference/specialites');
+    } else if (e.key === 'classes') {
+      navigate('/reference/classes');
+    } else if (e.key === 'departements') {
+      navigate('/reference/departements');
+    } else if (e.key === 'niveaux') {
+      navigate('/reference/niveaux');
+    } else if (e.key === 'matieres') {
+      navigate('/reference/matieres');
+    } else if (e.key === 'salles') {
+      navigate('/reference/salles');
+    }
+  };
+
+  const items2 = [
+    {
+      key: 'reference',
+      icon: React.createElement(LaptopOutlined),
+      label: 'Données de Référence',
+      children: [
+        { key: 'specialites', label: 'Spécialités' },
+        { key: 'departements', label: 'Départements' },
+        { key: 'niveaux', label: 'Niveaux' },
+        { key: 'classes', label: 'Classes' },
+        { key: 'salles', label: 'Salles' },
+        { key: 'matieres', label: 'Matières' },
+      ],
+    },
+  ];
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -356,6 +390,7 @@ const items2 = [
           defaultOpenKeys={["reference"]}
           style={{ height: "100%", borderRight: 0 }}
           items={items2}
+          onClick={onClickMenu}
         />
       </Sider>
 
@@ -491,22 +526,54 @@ const items2 = [
             </Col>
           </Row>
 
-          <Form.Item
-            label="Crédits"
-            name="credits"
-            rules={[
-              {
-                required: true,
-                message: "Please input the credits!",
-              },
-            ]}
-          >
-            <InputNumber
-              min={1}
-              placeholder="Entrez le nombre de crédits"
-              style={{ width: '100%' }}
-            />
-          </Form.Item>
+          <Row gutter={16}>
+            <Col span={12}>
+              <Form.Item
+                label="Crédits"
+                name="credits"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please input the credits!",
+                  },
+                ]}
+              >
+                <InputNumber
+                  min={1}
+                  placeholder="Entrez le nombre de crédits"
+                  style={{ width: '100%' }}
+                />
+              </Form.Item>
+            </Col>
+            <Col span={12}>
+              <Form.Item
+                label="Niveau"
+                name="niveauId"
+                rules={[
+                  {
+                    required: true,
+                    message: "Please select a niveau!",
+                  },
+                ]}
+              >
+                <Select 
+                  placeholder="Sélectionnez le niveau"
+                  showSearch
+                  optionFilterProp="children"
+                  filterOption={(input, option) =>
+                    option.children.toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {niveaux.map(niveau => (
+                    <Select.Option key={niveau.id} value={niveau.id}>
+                      {niveau.name}
+                      {niveau.specialite && niveau.specialite.name && ` (${niveau.specialite.name})`}
+                    </Select.Option>
+                  ))}
+                </Select>
+              </Form.Item>
+            </Col>
+          </Row>
 
           <Form.Item
             label="Description"

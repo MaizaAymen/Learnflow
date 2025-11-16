@@ -10,128 +10,308 @@ const secretKey = "alex";
 const multer = require("multer");
 const csv = require("csv-parser");
 const fs = require("fs");
+const XLSX = require("xlsx");
+const { send } = require("process");
 
-
-
-
+// Import models for automatic class assignment
+const { Specialite, Niveau, Classe, Student } = require("../../Reference_documents/models");
 
 const upload = multer({ dest: "uploads/" });
 
+// Helper function to auto-assign student to class based on specialite
+async function autoAssignToClass(studentData) {
+  try {
+    const { nom, prenom, email, cin, specialite: specialiteName } = studentData;
+    
+    if (!specialiteName) {
+      console.log(`⚠️ Pas de spécialité pour ${prenom} ${nom}`);
+      return null;
+    }
+
+    // Find the specialite by name (case-insensitive)
+    const specialite = await Specialite.findOne({
+      where: sequelize.where(
+        sequelize.fn('LOWER', sequelize.col('name')),
+        sequelize.fn('LOWER', specialiteName)
+      )
+    });
+
+    if (!specialite) {
+      console.log(`⚠️ Spécialité "${specialiteName}" non trouvée pour ${prenom} ${nom}`);
+      return null;
+    }
+
+    // Find classes for this specialite through niveau
+    const niveaux = await Niveau.findAll({
+      where: { specialite_id: specialite.id }
+    });
+
+    if (niveaux.length === 0) {
+      console.log(`⚠️ Aucun niveau trouvé pour la spécialité "${specialiteName}"`);
+      return null;
+    }
+
+    // Get all classes for these niveaux
+    const classes = await Classe.findAll({
+      where: {
+        niveau_id: niveaux.map(n => n.id)
+      },
+      include: [{
+        model: Niveau,
+        as: 'niveau'
+      }]
+    });
+
+    if (classes.length === 0) {
+      console.log(`⚠️ Aucune classe trouvée pour la spécialité "${specialiteName}"`);
+      return null;
+    }
+
+    // Count students in each class to find the one with least students
+    const classesWithCounts = await Promise.all(
+      classes.map(async (classe) => {
+        const count = await Student.count({
+          where: { classe_id: classe.id }
+        });
+        return { classe, count };
+      })
+    );
+
+    // Sort by count (ascending) and pick the class with fewest students
+    classesWithCounts.sort((a, b) => a.count - b.count);
+    const targetClasse = classesWithCounts[0].classe;
+
+    // Generate unique student number
+    const studentCount = await Student.count();
+    const numero_etudiant = `ETU${new Date().getFullYear()}${String(studentCount + 1).padStart(5, '0')}`;
+
+    // Create student record in Reference_documents database
+    const newStudent = await Student.create({
+      nom,
+      prenom,
+      email,
+      numero_etudiant,
+      niveau_id: targetClasse.niveau_id,
+      classe_id: targetClasse.id,
+      statut: 'actif'
+    });
+
+    console.log(`✅ ${prenom} ${nom} assigné à la classe ${targetClasse.nom}`);
+    
+    return {
+      classe: targetClasse.nom,
+      niveau: targetClasse.niveau?.nom || 'N/A',
+      specialite: specialiteName
+    };
+  } catch (error) {
+    console.error(`❌ Erreur lors de l'assignation automatique:`, error);
+    return null;
+  }
+}
+
+// Universal upload endpoint that handles both CSV and Excel files
 router.post("/upload-csv", upload.single("file"), async (req, res) => {
   try {
+    if (!req.file) {
+      return res.status(400).json({ error: "Aucun fichier n'a été téléchargé" });
+    }
+
     const filePath = req.file.path;
-    const results = [];
+    const fileExtension = req.file.originalname.split('.').pop().toLowerCase();
+    let results = [];
 
-    fs.createReadStream(filePath)
-      .pipe(csv())
-      .on("data", (data) => results.push(data))
-      .on("end", async () => {
-        for (const student of results) {
-          const { nom, prenom, email, cin, ville, specialite } = student;
+    console.log(`📁 Fichier reçu: ${req.file.originalname} (${fileExtension})`);
 
-          if (!email || !cin) continue;
+    // Handle Excel files (.xlsx, .xls)
+    if (fileExtension === 'xlsx' || fileExtension === 'xls') {
+      try {
+        const workbook = XLSX.readFile(filePath);
+        const sheetName = workbook.SheetNames[0];
+        const worksheet = workbook.Sheets[sheetName];
+        results = XLSX.utils.sheet_to_json(worksheet);
+        console.log(`📊 ${results.length} lignes trouvées dans le fichier Excel`);
+      } catch (excelError) {
+        console.error("Erreur lecture Excel:", excelError);
+        fs.unlinkSync(filePath);
+        return res.status(400).json({ error: "Erreur lors de la lecture du fichier Excel" });
+      }
+      
+      // Process students immediately for Excel
+      let added = 0;
+      let skipped = 0;
+      let assigned = 0;
+      const assignments = [];
+      
+      for (const student of results) {
+        const { nom, prenom, email, cin, ville, specialite } = student;
 
-          const existing = await utilisateur.findOne({ where: { email } });
-
-          if (!existing) {
-            const randomPassword = Math.random().toString(36).slice(-8);
-            const hashed = await bcrypt.hash(randomPassword, 10);
-
-            await utilisateur.create({
-              nom,
-              prenom,
-              email,
-              cin,
-              mdp_hash: hashed,
-              ville,
-              specialite,
-              role: "etudiant",
-            });
-            sendEmail({
-              to: email,
-              subject: "Bienvenue sur Learnflow !",
-              text: `Bonjour ${prenom},
-                Bienvenue sur Learnflow !
-                Nous vous remercions chaleureusement pour votre inscription en tant qu'étudiant. 
-                Nous sommes ravis de vous compter parmi notre communauté d’apprentissage.
-                À très bientôt sur Learnflow !
-                Votre mot de passe temporaire est : ${randomPassword}
-                Cordialement,
-                Aymen Maiza
-                Fondateur de Learnflow`,
-            });
-
-            console.log(`Étudiant ajouté: ${prenom} ${nom}`);
-          } else {
-            console.log(`⚠️ Étudiant déjà existant: ${prenom} ${nom}`);
-          }
+        if (!email || !cin) {
+          console.log(`⚠️ Ligne ignorée (manque email ou CIN): ${JSON.stringify(student)}`);
+          skipped++;
+          continue;
         }
 
-        fs.unlinkSync(filePath); 
-        res.json({ message: "Importation terminée avec succès ✅" });
+        const existing = await utilisateur.findOne({ where: { email } });
+
+        if (!existing) {
+          const randomPassword = Math.random().toString(36).slice(-8);
+          const hashed = await bcrypt.hash(randomPassword, 10);
+
+          await utilisateur.create({
+            nom,
+            prenom,
+            email,
+            cin,
+            mdp_hash: hashed,
+            ville,
+            specialite,
+            role: "etudiant",
+          });
+          
+          // Auto-assign to class based on specialite
+          const assignmentInfo = await autoAssignToClass(student);
+          if (assignmentInfo) {
+            assigned++;
+            assignments.push({
+              nom: `${prenom} ${nom}`,
+              ...assignmentInfo
+            });
+          }
+          
+          sendEmail({
+            to: email,
+            subject: "Bienvenue sur Learnflow !",
+            text: `Bonjour ${prenom},
+              Bienvenue sur Learnflow !
+              Nous vous remercions chaleureusement pour votre inscription en tant qu'étudiant. 
+              Nous sommes ravis de vous compter parmi notre communauté d'apprentissage.
+              ${assignmentInfo ? `\nVous avez été assigné à la classe: ${assignmentInfo.classe} (${assignmentInfo.specialite})` : ''}
+              À très bientôt sur Learnflow !
+              Votre mot de passe temporaire est : ${randomPassword}
+              Cordialement,
+              Aymen Maiza
+              Fondateur de Learnflow`,
+          }).catch(err => console.error("Erreur email:", err));
+
+          console.log(`✅ Étudiant ajouté: ${prenom} ${nom}`);
+          added++;
+        } else {
+          console.log(`⚠️ Étudiant déjà existant: ${prenom} ${nom}`);
+          skipped++;
+        }
+      }
+      
+      fs.unlinkSync(filePath);
+      res.json({ 
+        message: `Importation terminée avec succès ✅ (${added} ajoutés, ${skipped} ignorés, ${assigned} assignés automatiquement)`,
+        added,
+        skipped,
+        assigned,
+        assignments
       });
+      
+    } else if (fileExtension === 'csv') {
+      // Handle CSV files
+      fs.createReadStream(filePath)
+        .pipe(csv())
+        .on("data", (data) => results.push(data))
+        .on("end", async () => {
+          console.log(`📊 ${results.length} lignes trouvées dans le fichier CSV`);
+          
+          let added = 0;
+          let skipped = 0;
+          let assigned = 0;
+          const assignments = [];
+          
+          for (const student of results) {
+            const { nom, prenom, email, cin, ville, specialite } = student;
+
+            if (!email || !cin) {
+              console.log(`⚠️ Ligne ignorée (manque email ou CIN): ${JSON.stringify(student)}`);
+              skipped++;
+              continue;
+            }
+
+            const existing = await utilisateur.findOne({ where: { email } });
+
+            if (!existing) {
+              const randomPassword = Math.random().toString(36).slice(-8);
+              const hashed = await bcrypt.hash(randomPassword, 10);
+
+              await utilisateur.create({
+                nom,
+                prenom,
+                email,
+                cin,
+                mdp_hash: hashed,
+                ville,
+                specialite,
+                role: "etudiant",
+              });
+              
+              // Auto-assign to class based on specialite
+              const assignmentInfo = await autoAssignToClass(student);
+              if (assignmentInfo) {
+                assigned++;
+                assignments.push({
+                  nom: `${prenom} ${nom}`,
+                  ...assignmentInfo
+                });
+              }
+              
+              sendEmail({
+                to: email,
+                subject: "Bienvenue sur Learnflow !",
+                text: `Bonjour ${prenom},
+                  Bienvenue sur Learnflow !
+                  Nous vous remercions chaleureusement pour votre inscription en tant qu'étudiant. 
+                  Nous sommes ravis de vous compter parmi notre communauté d'apprentissage.
+                  ${assignmentInfo ? `\nVous avez été assigné à la classe: ${assignmentInfo.classe} (${assignmentInfo.specialite})` : ''}
+                  À très bientôt sur Learnflow !
+                  Votre mot de passe temporaire est : ${randomPassword}
+                  Cordialement,
+                  Aymen Maiza
+                  Fondateur de Learnflow`,
+              }).catch(err => console.error("Erreur email:", err));
+
+              console.log(`✅ Étudiant ajouté: ${prenom} ${nom}`);
+              added++;
+            } else {
+              console.log(`⚠️ Étudiant déjà existant: ${prenom} ${nom}`);
+              skipped++;
+            }
+          }
+
+          fs.unlinkSync(filePath); 
+          res.json({ 
+            message: `Importation terminée avec succès ✅ (${added} ajoutés, ${skipped} ignorés, ${assigned} assignés automatiquement)`,
+            added,
+            skipped,
+            assigned,
+            assignments
+          });
+        })
+        .on("error", (error) => {
+          console.error("Erreur lecture CSV:", error);
+          fs.unlinkSync(filePath);
+          res.status(500).json({ error: "Erreur lors de la lecture du fichier CSV" });
+        });
+    } else {
+      fs.unlinkSync(filePath);
+      res.status(400).json({ error: "Format de fichier non supporté. Utilisez .csv, .xlsx ou .xls" });
+    }
   } catch (error) {
     console.error("Erreur upload:", error);
-    res.status(500).json({ error: "Erreur lors de l'importation du CSV" });
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ error: "Erreur lors de l'importation du fichier: " + error.message });
   }
 });
 
 router.post("/upload-students", upload.single("file"), async (req, res) => {
-  try {
-    const filePath = req.file.path;
-    const results = [];
-
-    fs.createReadStream(filePath)
-      .pipe(csv())
-      .on("data", (data) => results.push(data))
-      .on("end", async () => {
-        for (const student of results) {
-          const { nom, prenom, email, cin, ville, specialite } = student;
-
-          if (!email || !cin) continue;
-
-          const existing = await utilisateur.findOne({ where: { email } });
-
-          if (!existing) {
-            const randomPassword = Math.random().toString(36).slice(-8);
-            const hashed = await bcrypt.hash(randomPassword, 10);
-
-            await utilisateur.create({
-              nom,
-              prenom,
-              email,
-              cin,
-              mdp_hash: hashed,
-              ville,
-              specialite,
-              role: "etudiant",
-            });
-            sendEmail({
-              to: email,
-              subject: "Bienvenue sur Learnflow !",
-              text: `Bonjour ${prenom},
-                Bienvenue sur Learnflow !
-                Nous vous remercions chaleureusement pour votre inscription en tant qu'étudiant. 
-                Nous sommes ravis de vous compter parmi notre communauté d’apprentissage.
-                À très bientôt sur Learnflow !
-                votre password temporaire est : ${randomPassword}
-                Cordialement,
-                Aymen Maiza
-                Fondateur de Learnflow`,
-            });
-            console.log(`✅ Étudiant ajouté: ${prenom} ${nom}`);
-          } else {
-            console.log(`⚠️ Étudiant déjà existant: ${prenom} ${nom}`);
-          }
-        }
-
-        fs.unlinkSync(filePath); // delete temp file
-        res.json({ message: "Importation terminée avec succès ✅" });
-      });
-  } catch (error) {
-    console.error("Erreur upload:", error);
-    res.status(500).json({ error: "Erreur lors de l'importation du CSV" });
-  }
+  // Redirect to the main upload-csv endpoint
+  return router.post("/upload-csv")(req, res);
 });
 
 
@@ -144,8 +324,8 @@ router.post("/student-signup", async (req, res) => {
       return res.status(400).json({ error: "CIN et email sont requis" });
     }
 
-    // Vérifie si l’étudiant existe déjà (dans la base importée par admin)
-    const existingUser = await User.findOne({ where: { cin, email, role: "etudiant" } });
+    // Vérifie si l'étudiant existe déjà (dans la base importée par admin)
+    const existingUser = await utilisateur.findOne({ where: { cin, email, role: "etudiant" } });
 
     if (!existingUser) {
       return res.status(404).json({ error: "CIN ou email introuvable" });
@@ -403,7 +583,7 @@ router.post("/login", async (req, res) => {
       <a href="https://learnflow.com/security" class="button">🔒 Sécuriser mon compte</a>
     </div>
     <div class="footer">
-      <p>Cordialement,<br><strong>L’équipe Learnflow</strong></p>
+      <p>Cordialement,<br><strong>L'équipe Learnflow</strong></p>
       <p style="font-size: 12px; color: #999;">Cet email a été envoyé automatiquement, merci de ne pas y répondre.</p>
     </div>
   </div>
@@ -411,13 +591,26 @@ router.post("/login", async (req, res) => {
 </html>
 `
       }).catch((err) => console.error("Erreur lors de l'envoi de l'email:", err));
+      
+      // Create JWT token
       const token = jwt.sign({ id: user.id, role: user.role }, secretKey, {
         expiresIn: "1h",
       });
-      res.cookie("token",token,{httpOnly:true,secure:false,maxAge:1000*60*60}); //1h
-      //res.status(200).json({ token }); without cookie
-      console.log(token)
-      return res.status(200).json({ message: "Connexion réussie " });
+      
+      // Set httpOnly cookie (for same-domain requests)
+      res.cookie("token", token, {
+        httpOnly: true,
+        secure: false,
+        sameSite: 'lax',
+        path: '/',
+        maxAge: 1000 * 60 * 60*60 // 1 hour
+      });
+      
+      // Return token in response body for cross-domain requests
+      return res.status(200).json({ 
+        message: "Connexion réussie",
+        token: token
+      });
 
     } catch (error) {
       res.status(500).json({ error: "Erreur lors de la connexion de l'utilisateur" });
@@ -429,7 +622,7 @@ router.get("/profile", async (req, res) => {
       if (!authHeader) {
         return res.status(401).json({ error: "Token d'authentification manquant" });
       }
-      //const token = authHeader.split(" ")[1]; //Since you’re using cookies, you don’t need authHeader[1] — that’s only for Authorization: Bearer <token> headers. You can read the token directly from req.cookies.token.
+      //const token = authHeader.split(" ")[1]; //Since you're using cookies, you don't need authHeader[1] — that's only for Authorization: Bearer <token> headers. You can read the token directly from req.cookies.token.
       const token = authHeader;
       jwt.verify(token, secretKey, async (err, decoded) => {
         if (err) {
@@ -475,6 +668,28 @@ router.get("/getallenseignants", async (req, res) => {{
     }catch (error) {
       res.status(500).json({ error: "Erreur lors de la récupération des enseignants" });
     }}});
+
+// Generic users endpoint with role filtering (for frontend compatibility)
+router.get("/users", async (req, res) => {
+  try {
+    const { role } = req.query;
+    const where = {};
+    
+    if (role) {
+      where.role = role;
+    }
+    
+    const users = await utilisateur.findAll({ 
+      where,
+      attributes: ['id', 'nom', 'prenom', 'email', 'role', 'phone', 'specialite', 'classe_id']
+    });
+    
+    res.status(200).json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error);
+    res.status(500).json({ error: "Erreur lors de la récupération des utilisateurs" });
+  }
+});
 router.delete("/deleteuser/:id", async (req, res) => {
       try{
         const {id}=req.params;
@@ -490,25 +705,107 @@ router.delete("/deleteuser/:id", async (req, res) => {
         res.status(500).json({ error: "Erreur lors de la suppression de l'utilisateur" });
       }})
 
-      router.put("/updateuser/:id", async (req, res) => {
+router.put("/updateuser/:id", async (req, res) => {
         try{
           const {id}=req.params;
-          const { nom, prenom, email, role, phone, bio, specialite, ville } = req.body;
+          const { nom, prenom, email, mdp, password, role, phone, bio, specialite, ville } = req.body;
           const user=await utilisateur.findByPk(id);
-          if (user) {
-        await user.update({ nom, prenom, email, role, phone, bio, specialite, ville });
-        return res.status(200).json({ message: "Utilisateur mis à jour avec succès" }); 
-      }
-        else {
-        return res.status(404).json({ error: "Utilisateur non trouvé" });
-      }
+          if (!user) {
+            return res.status(404).json({ error: "Utilisateur non trouvé" });
+          }
+          
+
+          const updateData = { nom, prenom, email, role, phone, bio, specialite, ville };
+    
+          const motDePasse = mdp || password;
+          if (motDePasse) {
+            updateData.mdp_hash = await bcrypt.hash(motDePasse, 10);
+          }
+          
+          await user.update(updateData);
+          sendEmail({
+            to: email,
+            subject: "Mise à jour de votre compte Learnflow",
+            text: `Votre compte a été mis à jour avec succès. avec une novelle information. 
+            nom: ${nom}
+            prenom: ${prenom}
+            mot de passe ${motDePasse} 
+            email ${email}
+            role: ${role}
+            Cordialement,
+            L'équipe Learnflow`,
+          }).catch((err) => console.error("Erreur lors de l'envoi de l'email:", err));
+          return res.status(200).json({ message: "Utilisateur mis à jour avec succès" });
 
         }catch (error) {
           res.status(500).json({ error: "Erreur lors de la mise à jour de l'utilisateur" });
         }
       });
 
+// Bulk assign students to a class
+router.post("/assign-students-to-class", async (req, res) => {
+  try {
+    const { studentIds, classeId } = req.body;
+
+    console.log('📥 ASSIGN TO CLASS REQUEST (Auth Service):', { studentIds, classeId });
+
+    if (!studentIds || !Array.isArray(studentIds) || studentIds.length === 0) {
+      console.log('❌ Invalid studentIds:', studentIds);
+      return res.status(400).json({ error: 'Invalid studentIds provided' });
+    }
+
+    if (!classeId) {
+      console.log('❌ Missing classeId');
+      return res.status(400).json({ error: 'classeId is required' });
+    }
+
+    // Verify the class exists in referentiels
+    const classe = await Classe.findByPk(classeId);
+    console.log('🔍 Class found:', classe ? classe.nom : 'NOT FOUND');
+    
+    if (!classe) {
+      return res.status(404).json({ error: 'Class not found' });
+    }
+
+    // Check if students exist before updating
+    const existingStudents = await utilisateur.findAll({
+      where: {
+        id: studentIds,
+        role: 'etudiant'
+      }
+    });
+    
+    console.log('🔍 Students found:', existingStudents.length, 'out of', studentIds.length);
+    
+    if (existingStudents.length === 0) {
+      return res.status(404).json({ 
+        error: 'No matching students found',
+        details: 'Students may not exist or are not marked as etudiant'
+      });
+    }
+
+    // Update all students with the new class assignment
+    const [updatedCount] = await utilisateur.update(
+      { classe_id: classeId },
+      {
+        where: {
+          id: studentIds,
+          role: 'etudiant'
+        }
+      }
+    );
+
+    console.log('✅ Updated count:', updatedCount);
+
+    res.json({
+      message: `${updatedCount} student(s) assigned successfully`,
+      assignedCount: updatedCount
+    });
+
+  } catch (error) {
+    console.error('❌ Error assigning students:', error);
+    res.status(500).json({ error: 'Failed to assign students', details: error.message });
+  }
+});
 
 module.exports = router;
-
-

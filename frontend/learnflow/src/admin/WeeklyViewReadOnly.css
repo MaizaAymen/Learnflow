@@ -1,0 +1,76 @@
+/* Weekly View Read-Only Styles */
+
+.weekly-view-readonly {
+  padding: 20px;
+}
+
+.weekly-view-readonly .ant-table {
+  background: white;
+  border-radius: 4px;
+}
+
+.weekly-view-readonly .ant-table-cell {
+  padding: 12px;
+  text-align: center;
+  vertical-align: middle;
+}
+
+.weekly-view-readonly .schedule-card {
+  border-radius: 4px;
+  padding: 8px;
+  background: #fafafa;
+  border-left: 4px solid #1890ff;
+  cursor: default;
+  transition: box-shadow 0.3s;
+}
+
+.weekly-view-readonly .schedule-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.weekly-view-readonly .schedule-type {
+  font-weight: bold;
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.weekly-view-readonly .schedule-matiere {
+  font-size: 13px;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.weekly-view-readonly .schedule-time {
+  font-size: 11px;
+  color: #666;
+  margin-bottom: 4px;
+}
+
+.weekly-view-readonly .schedule-location {
+  font-size: 10px;
+  color: #999;
+}
+
+.weekly-view-readonly .empty-slot {
+  color: #bfbfbf;
+  font-size: 18px;
+}
+
+.weekly-view-readonly .week-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.weekly-view-readonly .week-navigation {
+  display: flex;
+  gap: 10px;
+}
+
+.weekly-view-readonly .class-selector {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+}

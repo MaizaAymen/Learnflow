@@ -148,7 +148,7 @@ const AutoTimeSlotGenerator = () => {
   return (
     <div style={{ padding: '24px', maxWidth: '1000px', margin: '0 auto' }}>
       <Card>
-        <h1 style={{ marginBottom: '24px' }}>⚡ Génération Automatique des Créneaux</h1>
+        <h1 style={{ marginBottom: '24px' }}> Génération Automatique des Créneaux</h1>
         <p style={{ color: '#666', marginBottom: '24px' }}>
           Créez automatiquement des créneaux horaires pour toute la semaine (Lundi à Samedi).
         </p>

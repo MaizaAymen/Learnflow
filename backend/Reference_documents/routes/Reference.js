@@ -22,20 +22,55 @@ const calendarRoutes = require('./Calendar');
 // CRUD Specialite
 router.post('/specialites', async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, departementId, code, duree_annees } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Le nom de la spécialité est requis' });
     }
-    const newSpecialite = await specialite.create({ name, description });
-    res.status(201).json(newSpecialite);
+    if (!departementId) {
+      return res.status(400).json({ error: 'Le département est requis' });
+    }
+    
+    // Verify departement exists
+    const deptExists = await Departement.findByPk(departementId);
+    if (!deptExists) {
+      return res.status(400).json({ error: 'Le département spécifié n\'existe pas' });
+    }
+    
+    const newSpecialite = await specialite.create({ 
+      name, 
+      description, 
+      departementId,
+      code,
+      duree_annees 
+    });
+    
+    // Return with departement details
+    const specWithDept = await specialite.findByPk(newSpecialite.id, {
+      include: [{ model: Departement, as: 'departement' }]
+    });
+    
+    res.status(201).json(specWithDept);
   } catch (error) {
     console.error('Error creating specialite:', error);
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ error: 'Une spécialité avec ce code existe déjà' });
+    }
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({ error: 'Le département spécifié n\'existe pas' });
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 });
+
 router.get('/specialites', async (req, res) => {
     try {
-        const spec = await specialite.findAll();
+        const spec = await specialite.findAll({
+          include: [{ 
+            model: Departement, 
+            as: 'departement',
+            attributes: ['id', 'name', 'code']
+          }]
+        });
         if (!spec){
             return res.json({message:"Aucune spécialité n'est disponible pour le moment"})
         }
@@ -270,19 +305,60 @@ router.get('/departements/filter/statut/:statut', async (req, res) => {
 // CRUD Niveau
 router.post('/niveaux', async (req, res) => {
   try {
-    const { name, description } = req.body;
+    const { name, description, specialiteId, ordre } = req.body;
     if (!name) {
       return res.status(400).json({ error: 'Le nom du niveau est requis' });
     }
-    const newNiveau = await niveau.create({ name, description });
-    res.status(201).json(newNiveau);
+    if (!specialiteId) {
+      return res.status(400).json({ error: 'La spécialité est requise' });
+    }
+    
+    // Verify specialite exists
+    const specExists = await specialite.findByPk(specialiteId);
+    if (!specExists) {
+      return res.status(400).json({ error: 'La spécialité spécifiée n\'existe pas' });
+    }
+    
+    const newNiveau = await niveau.create({ 
+      name, 
+      description, 
+      specialiteId,
+      ordre 
+    });
+    
+    // Return with specialite details
+    const nivWithSpec = await niveau.findByPk(newNiveau.id, {
+      include: [{
+        model: specialite,
+        as: 'specialite',
+        include: [{ model: Departement, as: 'departement' }]
+      }]
+    });
+    
+    res.status(201).json(nivWithSpec);
   } catch (error) {
     console.error('Error creating niveau:', error);
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({ error: 'La spécialité spécifiée n\'existe pas' });
+    }
     res.status(500).json({ error: 'Internal server error' });
-  }})
+  }
+})
+
 router.get('/niveaux', async (req, res) => {
     try {
-      const niv = await niveau.findAll();  
+      const niv = await niveau.findAll({
+        include: [{
+          model: specialite,
+          as: 'specialite',
+          attributes: ['id', 'name', 'code'],
+          include: [{
+            model: Departement,
+            as: 'departement',
+            attributes: ['id', 'name', 'code']
+          }]
+        }]
+      });  
       if (!niv) {
         return res.json({ message: "Aucun niveau n'est disponible pour le moment" });
       }
@@ -372,24 +448,57 @@ router.get('/niveaux/:id/classes', async (req, res) => {
 router.post('/classes', async (req, res) => {
   try {
     console.log('Received classe creation request:', req.body);
-    const { nom, description, effectif, niveau_id, departement_id } = req.body;
+    const { nom, description, effectif, niveau_id, annee_scolaire } = req.body;
     
     if (!nom) {
       return res.status(400).json({ error: 'Le nom de la classe est requis' });
-    }
-    if (!effectif) {
-      return res.status(400).json({ error: 'L\'effectif est requis' });
     }
     if (!niveau_id) {
       return res.status(400).json({ error: 'Le niveau est requis' });
     }
     
-    const newClasse = await Classe.create({ nom, description, effectif, niveau_id ,departement_id});
+    // Verify niveau exists
+    const niveauExists = await Niveau.findByPk(niveau_id);
+    if (!niveauExists) {
+      return res.status(400).json({ error: 'Le niveau spécifié n\'existe pas' });
+    }
+    
+    const newClasse = await Classe.create({ 
+      nom, 
+      description, 
+      effectif: effectif || 0, 
+      niveau_id,
+      annee_scolaire
+    });
+    
     console.log('Classe created successfully:', newClasse.toJSON());
-    return res.status(201).json(newClasse);
+    
+    // Return with full hierarchy
+    const classeWithDetails = await Classe.findByPk(newClasse.id, {
+      include: [{
+        model: Niveau,
+        as: 'niveau',
+        include: [{
+          model: specialite,
+          as: 'specialite',
+          include: [{
+            model: Departement,
+            as: 'departement'
+          }]
+        }]
+      }]
+    });
+    
+    return res.status(201).json(classeWithDetails);
     
   } catch (error) {
     console.error('Error creating classe:', error);
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({ error: 'Le niveau spécifié n\'existe pas' });
+    }
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ error: error.errors.map(e => e.message).join(', ') });
+    }
     res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
@@ -399,13 +508,25 @@ router.get('/classes', async (req, res) => {
         include: [
           {
             model: Niveau,
+            as: 'niveau',
             attributes: ['id', 'name'],
-            required: false
-          },
-          {
-            model: Departement,
-            attributes: ['id', 'name'],
-            required: false
+            required: false,
+            include: [
+              {
+                model: specialite,
+                as: 'specialite',
+                attributes: ['id', 'name'],
+                required: false,
+                include: [
+                  {
+                    model: Departement,
+                    as: 'departement',
+                    attributes: ['id', 'name'],
+                    required: false
+                  }
+                ]
+              }
+            ]
           }
         ]
       });
@@ -503,7 +624,7 @@ router.get('/classes/stats/summary', async (req, res) => {
 // CRUD Salle
 router.post('/salles', async (req, res) => {
   try {
-    const { nom, type, capacite, localisation, description } = req.body;
+    const { nom, type, capacite, localisation, description, departement_id, equipements, statut } = req.body;
     if (!nom) {
       return res.status(400).json({ error: 'Le nom de la salle est requis' });
     }
@@ -516,18 +637,58 @@ router.post('/salles', async (req, res) => {
     if (isNaN(capacite) || capacite <= 0) {
       return res.status(400).json({ error: 'La capacité doit être un nombre positif' });
     }
+    if (!departement_id) {
+      return res.status(400).json({ error: 'Le département est requis' });
+    }
+    
+    // Verify departement exists
+    const deptExists = await Departement.findByPk(departement_id);
+    if (!deptExists) {
+      return res.status(400).json({ error: 'Le département spécifié n\'existe pas' });
+    }
       
-    const newSalle = await salle.create({ nom, type, capacite, localisation, description });
-    res.status(201).json(newSalle);
+    const newSalle = await salle.create({ 
+      nom, 
+      type, 
+      capacite, 
+      localisation, 
+      description,
+      departement_id,
+      equipements,
+      statut: statut || 'disponible'
+    });
+    
+    // Return with departement details
+    const salleWithDept = await salle.findByPk(newSalle.id, {
+      include: [{ 
+        model: Departement, 
+        as: 'departement',
+        attributes: ['id', 'name', 'code']
+      }]
+    });
+    
+    res.status(201).json(salleWithDept);
   } catch (error) {
     console.error('Error creating salle:', error);
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ error: 'Une salle avec ce nom existe déjà' });
+    }
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({ error: 'Le département spécifié n\'existe pas' });
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 router.get('/salles', async (req, res) => {
   try {
-    const salles = await salle.findAll();
+    const salles = await salle.findAll({
+      include: [{ 
+        model: Departement, 
+        as: 'departement',
+        attributes: ['id', 'name', 'code']
+      }]
+    });
     if (!salles) {
       return res.json({ message: "Aucune salle n'est disponible pour le moment" });
     }
@@ -555,14 +716,49 @@ router.get('/salles/:id', async (req, res) => {
 
 router.put('/salles/:id', async (req, res) => {
   try {
-    const { nom, type, capacite, localisation, description } = req.body;
+    const { nom, type, capacite, localisation, description, departement_id, equipements, statut } = req.body;
     const salleToUpdate = await salle.findByPk(req.params.id);
     if (!salleToUpdate) {
       return res.status(404).json({ message: "Salle introuvable" });
     }
-    await salleToUpdate.update({ nom, type, capacite, localisation, description });
-    return res.status(200).json({ message: "Salle mise à jour avec succès" });
+    
+    // If changing departement, verify it exists
+    if (departement_id && departement_id !== salleToUpdate.departement_id) {
+      const deptExists = await Departement.findByPk(departement_id);
+      if (!deptExists) {
+        return res.status(400).json({ error: 'Le département spécifié n\'existe pas' });
+      }
+    }
+    
+    await salleToUpdate.update({ 
+      nom, 
+      type, 
+      capacite, 
+      localisation, 
+      description,
+      departement_id,
+      equipements,
+      statut
+    });
+    
+    // Return with departement details
+    const updatedSalle = await salle.findByPk(req.params.id, {
+      include: [{ 
+        model: Departement, 
+        as: 'departement',
+        attributes: ['id', 'name', 'code']
+      }]
+    });
+    
+    return res.status(200).json(updatedSalle);
   } catch (error) {
+    console.error('Error updating salle:', error);
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ error: 'Une salle avec ce nom existe déjà' });
+    }
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({ error: 'Le département spécifié n\'existe pas' });
+    }
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -577,6 +773,12 @@ router.delete('/salles/:id', async (req, res) => {
     await salleToDelete.destroy();
     return res.status(200).json({ message: "Salle supprimée avec succès" });
   } catch (error) {
+    console.error('Error deleting salle:', error);
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({ 
+        error: 'Impossible de supprimer cette salle car elle est utilisée dans des emplois du temps' 
+      });
+    }
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -592,7 +794,12 @@ router.get('/salles/search/:term', async (req, res) => {
           { nom: { [Op.like]: `%${term}%` } },
           { type: { [Op.like]: `%${term}%` } }
         ]
-      }
+      },
+      include: [{ 
+        model: Departement, 
+        as: 'departement',
+        attributes: ['id', 'name', 'code']
+      }]
     });
     return res.status(200).json(results);
   } catch (error) {
@@ -606,7 +813,12 @@ router.get('/salles/filter/type/:type', async (req, res) => {
   try {
     const { type } = req.params;
     const results = await salle.findAll({
-      where: { type }
+      where: { type },
+      include: [{ 
+        model: Departement, 
+        as: 'departement',
+        attributes: ['id', 'name', 'code']
+      }]
     });
     return res.status(200).json(results);
   } catch (error) {
@@ -625,7 +837,12 @@ router.get('/salles/filter/capacity/:minCapacity', async (req, res) => {
         capacite: {
           [Op.gte]: parseInt(minCapacity)
         }
-      }
+      },
+      include: [{ 
+        model: Departement, 
+        as: 'departement',
+        attributes: ['id', 'name', 'code']
+      }]
     });
     return res.status(200).json(results);
   } catch (error) {
@@ -644,17 +861,63 @@ router.post('/matieres', async (req, res) => {
     if (!code) {
       return res.status(400).json({ error: 'Le code de la matière est requis' });
     }
-    const newMatiere = await matiere.create({ name, description, code, credits, niveauId });
-    res.status(201).json(newMatiere);
+    if (!niveauId) {
+      return res.status(400).json({ error: 'Le niveau est requis' });
+    }
+    
+    // Verify niveau exists
+    const nivExists = await niveau.findByPk(niveauId);
+    if (!nivExists) {
+      return res.status(400).json({ error: 'Le niveau spécifié n\'existe pas' });
+    }
+    
+    const newMatiere = await matiere.create({ 
+      name, 
+      description, 
+      code: code.toUpperCase(), 
+      credits: credits || 3, 
+      niveauId 
+    });
+    
+    // Return with niveau details
+    const matWithNiv = await matiere.findByPk(newMatiere.id, {
+      include: [{
+        model: niveau,
+        as: 'niveau',
+        attributes: ['id', 'name']
+      }]
+    });
+    
+    res.status(201).json(matWithNiv);
   } catch (error) {
     console.error('Error creating matiere:', error);
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(400).json({ error: 'Une matière avec ce code existe déjà' });
+    }
+    if (error.name === 'SequelizeForeignKeyConstraintError') {
+      return res.status(400).json({ error: 'Le niveau spécifié n\'existe pas' });
+    }
+    if (error.name === 'SequelizeValidationError') {
+      return res.status(400).json({ error: error.errors.map(e => e.message).join(', ') });
+    }
     res.status(500).json({ error: 'Internal server error' });
   }
 });
 
 router.get('/matieres', async (req, res) => {
   try {
-    const matieres = await matiere.findAll();
+    const matieres = await matiere.findAll({
+      include: [{
+        model: niveau,
+        as: 'niveau',
+        attributes: ['id', 'name'],
+        include: [{
+          model: specialite,
+          as: 'specialite',
+          attributes: ['id', 'name']
+        }]
+      }]
+    });
     if (!matieres) {
       return res.json({ message: "Aucune matière n'est disponible pour le moment" });
     }

@@ -35,8 +35,15 @@ import CreateSchedule from './admin/CreateSchedule.jsx'
 import AutoTimeSlotGenerator from './admin/AutoTimeSlotGenerator.jsx'
 import ClassCalendarDashboard from './admin/ClassCalendarDashboard.jsx'
 import ClassCalendar from './admin/ClassCalendar.jsx'
+import EnhancedTimetableViewer from './admin/EnhancedTimetableViewer.jsx'
+import TimetableManager from './admin/TimetableManager.jsx'
+import WeeklyTimetableView from './admin/WeeklyTimetableView.jsx'
+import TeacherCalendar from './admin/TeacherCalendar.jsx'
+import DirectorApprovalPanel from './admin/DirectorApprovalPanel.jsx'
 import NOTFOUND from './components/NOTFOUND.JSX'
-
+import StudentBulkAssignment from './admin/StudentBulkAssignment.jsx'
+import StudentBulkAssignmentTest from './admin/StudentBulkAssignmentTest.jsx'
+import WeeklyViewReadOnly from './admin/WeeklyViewReadOnly.jsx'
 const isAuthRoute =location.pathname=== '/auth';
 function App() {
   return (
@@ -52,6 +59,8 @@ function App() {
           <Routes>
             <Route path="/" element={<ModernDashboard />} />
             <Route path="/users" element={<UserManagement />} />
+            <Route path="/students/assign" element={<StudentBulkAssignment />} />
+            <Route path="/students/assign/test" element={<StudentBulkAssignmentTest />} />
             <Route path="/profile" element={<Profile />} />
             <Route path="/admin" element={<AdminPanel />} />
             <Route path="/create-department" element={<CreateDepartment />} />
@@ -74,18 +83,22 @@ function App() {
             <Route path="/calendar" element={<CalendarDashboard />} />
             <Route path="/calendar/dashboard" element={<CalendarDashboard />} />
             <Route path="/calendar/classes" element={<ClassCalendarDashboard />} />
-            <Route path="/calendar/class/:classeId/events" element={<ClassCalendar />} />
-            <Route path="/calendar/timeslots" element={<TimeSlotManagement />} />
-            <Route path="/calendar/timeslots/auto" element={<AutoTimeSlotGenerator />} />
+            <Route path="/calendar/class/:classeId/events" element={<WeeklyViewReadOnly />} />
             <Route path="/calendar/schedules" element={<ScheduleManagementComplete />} />
             <Route path="/calendar/create" element={<CreateSchedule />} />
             <Route path="/calendar/class-schedule" element={<ClassScheduleViewer />} />
+            <Route path="/calendar/timetable" element={<EnhancedTimetableViewer />} />
+            <Route path="/calendar/timetable-manager" element={<TimetableManager />} />
+            <Route path="/calendar/weekly-view" element={<WeeklyTimetableView />} />
             <Route path="/calendar/events" element={<EventCalendar />} />
             <Route path="/calendar/weekly-schedule" element={<WeeklySchedule />} />
+            <Route path="/calendar/teacher" element={<TeacherCalendar />} />
+            <Route path="/calendar/director-approval" element={<DirectorApprovalPanel />} />
             {/* Admin Calendar Routes (alternative paths) */}
-            <Route path="/admin/calendar/timeslots" element={<TimeSlotManagement />} />
             <Route path="/admin/calendar/schedules" element={<ScheduleManagementComplete />} />
-            {/* Add more calendar routes as you create the components */}
+            <Route path="/admin/timetable" element={<TimetableManager />} />
+            <Route path="/admin/timetable/weekly" element={<WeeklyTimetableView />} />
+            
 
             {/* Test route for API */}
             <Route path="/test-api" element={<TestReferenceAPI />} />

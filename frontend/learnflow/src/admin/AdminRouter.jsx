@@ -11,6 +11,7 @@ import SalleManagement from './SalleManagement';
 import MatiereManagement from './MatiereManagement';
 import ScheduleManagementComplete from './ScheduleManagementComplete';
 import TimeSlotManagement from './TimeSlotManagement';
+import StudentManagement from './StudentManagement';
 
 const AdminRouter = () => {
   return (
@@ -28,6 +29,10 @@ const AdminRouter = () => {
         <Route path="/admin/reference/classes" element={<ClasseManagement />} />
         <Route path="/admin/reference/salles" element={<SalleManagement />} />
         <Route path="/admin/reference/matieres" element={<MatiereManagement />} />
+        
+        {/* User management routes */}
+        <Route path="/admin/users" element={<StudentManagement />} />
+        <Route path="/admin/users/students" element={<StudentManagement />} />
         
         {/* Calendar management routes */}
         <Route path="/admin/calendar/timeslots" element={<TimeSlotManagement />} />

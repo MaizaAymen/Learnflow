@@ -64,7 +64,7 @@
 
 .btn-primary {
   padding: 12px 24px;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #484848 0%, #484848 100%);
   color: white;
   border: none;
   border-radius: 8px;
@@ -118,7 +118,7 @@
   margin: 0 0 20px 0;
   color: #2c3e50;
   font-size: 20px;
-  border-bottom: 2px solid #667eea;
+  border-bottom: 2px solid #484848;
   padding-bottom: 10px;
 }
 
@@ -227,7 +227,7 @@
 }
 
 .schedules-table thead {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #484848 0%, #484848 100%);
   color: white;
 }
 
@@ -349,6 +349,92 @@
   font-size: 18px;
   color: #667eea;
   font-weight: 600;
+}
+
+/* Conflict Detection Styles */
+.conflicts-alert {
+  background: linear-gradient(135deg, #fff3cd 0%, #ffe5a0 100%);
+  border: 2px solid #ffc107;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.conflicts-alert h3 {
+  margin: 0 0 15px 0;
+  color: #856404;
+  font-size: 18px;
+}
+
+.conflicts-alert ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.conflicts-alert li {
+  background: white;
+  padding: 12px 15px;
+  margin: 10px 0;
+  border-radius: 6px;
+  border-left: 4px solid #ffc107;
+  color: #856404;
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.conflicts-alert li.conflict-salle {
+  border-left-color: #dc3545;
+}
+
+.conflicts-alert li.conflict-enseignant {
+  border-left-color: #fd7e14;
+}
+
+.conflicts-alert li.conflict-groupe {
+  border-left-color: #ffc107;
+}
+
+.no-conflicts-alert {
+  background: linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%);
+  border: 2px solid #28a745;
+  border-radius: 8px;
+  padding: 20px;
+  margin: 20px 0;
+  text-align: center;
+  color: #155724;
+  font-weight: 600;
+  font-size: 16px;
+  animation: slideDown 0.3s ease;
+}
+
+.btn-info {
+  padding: 12px 30px;
+  background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.btn-info:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 8px rgba(23, 162, 184, 0.3);
+}
+
+.btn-info:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 /* Responsive Design */

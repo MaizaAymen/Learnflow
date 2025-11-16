@@ -1,7 +1,5 @@
 const { DataTypes } = require('sequelize');
 const sequelize = require('../../auth-service/config');
-const User = require('../../auth-service/models/userModel');
-const Matiere = require('./Matiére');
 
 const Course = sequelize.define('Course', {
   id: {
@@ -10,8 +8,12 @@ const Course = sequelize.define('Course', {
     autoIncrement: true
   },
   title: {
-    type: DataTypes.STRING,
-    allowNull: false
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    validate: {
+      notEmpty: true,
+      len: [3, 255]
+    }
   },
   description: {
     type: DataTypes.TEXT,
@@ -22,21 +24,33 @@ const Course = sequelize.define('Course', {
     allowNull: true
   },
   videoUrl: {
-    type: DataTypes.STRING,
-    allowNull: true
+    type: DataTypes.STRING(500),
+    allowNull: true,
+    validate: {
+      isUrl: true
+    }
   },
   documentUrl: {
-    type: DataTypes.STRING,
+    type: DataTypes.STRING(500),
     allowNull: true
   },
   duration: {
-    type: DataTypes.INTEGER, // Duration in minutes
-    allowNull: true
+    type: DataTypes.INTEGER,
+    allowNull: true,
+    comment: 'Duration in minutes',
+    validate: {
+      min: 0,
+      max: 600 // Max 10 hours
+    }
   },
   order: {
-    type: DataTypes.INTEGER, // Order of the course in the matiere
+    type: DataTypes.INTEGER,
     allowNull: true,
-    defaultValue: 0
+    defaultValue: 0,
+    comment: 'Order of the course/lesson within the matiere',
+    validate: {
+      min: 0
+    }
   },
   isPublished: {
     type: DataTypes.BOOLEAN,
@@ -44,15 +58,19 @@ const Course = sequelize.define('Course', {
   },
   matiereId: {
     type: DataTypes.INTEGER,
-    allowNull: false,
-    references: {
-      model: 'matiere',
-      key: 'id'
-    }
+    allowNull: false
+    // IMPORTANT: Removed 'references' field to avoid FK constraint at table creation
+    // FK constraint will be added via belongsTo() relationship and models/index.js
   },
   userId: {
     type: DataTypes.INTEGER,
     allowNull: true
+    // IMPORTANT: Removed 'references' field to avoid FK constraint at table creation
+    // FK constraint will be added via belongsTo() relationship and models/index.js
+  },
+  type_contenu: {
+    type: DataTypes.ENUM('video', 'document', 'mixte', 'presentation', 'quiz'),
+    defaultValue: 'document'
   }
 }, {
   schema: 'referentiels',
@@ -60,11 +78,6 @@ const Course = sequelize.define('Course', {
   timestamps: true
 });
 
-// Define relationships
-Course.belongsTo(Matiere, { foreignKey: 'matiereId', as: 'matiere' });
-Matiere.hasMany(Course, { foreignKey: 'matiereId', as: 'courses' });
-
-Course.belongsTo(User, { foreignKey: 'userId', as: 'enseignant' });
-User.hasMany(Course, { foreignKey: 'userId', as: 'courses' });
+// Relationships are defined in models/index.js to avoid circular dependencies
 
 module.exports = Course;

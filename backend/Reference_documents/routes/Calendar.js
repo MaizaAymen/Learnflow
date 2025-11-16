@@ -7,6 +7,11 @@ const Booking = require('../models/Booking');
 const Classe = require('../models/Classe');
 const Matiere = require('../models/Matiére');
 const Salle = require('../models/Salle');
+const { 
+  detectScheduleConflicts, 
+  detectDragDropConflicts, 
+  getAvailability 
+} = require('../services/conflictDetection');
 
 // ==================== TIME SLOTS MANAGEMENT ====================
 
@@ -170,6 +175,9 @@ router.post('/schedules', async (req, res) => {
   try {
     const { 
       time_slot_id, 
+      day_of_week,
+      start_time,
+      end_time,
       classe_id, 
       matiere_id, 
       salle_id, 
@@ -181,31 +189,46 @@ router.post('/schedules', async (req, res) => {
       notes
     } = req.body;
 
-    if (!time_slot_id || !classe_id || !matiere_id || !date_debut) {
+    if (!classe_id || !matiere_id || !date_debut || !day_of_week || !start_time || !end_time) {
       return res.status(400).json({ 
-        error: 'Le créneau, la classe, la matière et la date de début sont requis' 
+        success: false,
+        error: 'La classe, la matière, le jour, les heures et la date de début sont requis' 
       });
     }
 
-    // Check for conflicts
-    const conflicts = await checkScheduleConflicts({
+    // Check for conflicts using enhanced conflict detection service
+    const conflictResult = await detectScheduleConflicts({
       time_slot_id,
+      day_of_week,
+      start_time,
+      end_time,
       classe_id,
+      matiere_id,
       salle_id,
       enseignant_id,
       date_debut,
-      date_fin
+      date_fin,
+      type_cours
     });
 
-    if (conflicts.length > 0) {
-      return res.status(409).json({ 
-        error: 'Conflit détecté dans le planning',
-        conflicts 
+    if (conflictResult.hasConflicts) {
+      // Return the first critical conflict
+      const firstConflict = conflictResult.conflicts[0];
+      return res.status(409).json({
+        success: false,
+        type: 'conflict',
+        target: firstConflict.target,
+        message: firstConflict.message,
+        allConflicts: conflictResult.conflicts,
+        conflictCount: conflictResult.conflictCount
       });
     }
 
     const newSchedule = await Schedule.create({
-      time_slot_id,
+      time_slot_id: time_slot_id || null,
+      day_of_week,
+      start_time,
+      end_time,
       classe_id,
       matiere_id,
       salle_id,
@@ -219,17 +242,27 @@ router.post('/schedules', async (req, res) => {
 
     const scheduleWithDetails = await Schedule.findByPk(newSchedule.id, {
       include: [
-        { association: 'timeSlot' },
+        { association: 'timeSlot', required: false },
         { association: 'classe' },
         { association: 'matiere' },
-        { association: 'salle' }
+        { association: 'salle' },
+        { association: 'enseignant', attributes: ['id', 'nom', 'prenom', 'email'] }
       ]
     });
 
-    res.status(201).json(scheduleWithDetails);
+    res.status(201).json({
+      success: true,
+      message: 'Planning créé avec succès',
+      data: scheduleWithDetails
+    });
   } catch (error) {
     console.error('Error creating schedule:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      success: false,
+      type: 'error',
+      error: 'Erreur interne du serveur',
+      details: error.message 
+    });
   }
 });
 
@@ -256,10 +289,11 @@ router.get('/schedules', async (req, res) => {
     const schedules = await Schedule.findAll({
       where,
       include: [
-        { association: 'timeSlot' },
+        { association: 'timeSlot', required: false },
         { association: 'classe' },
         { association: 'matiere' },
-        { association: 'salle' }
+        { association: 'salle' },
+        { association: 'enseignant', attributes: ['id', 'nom', 'prenom', 'email'] }
       ],
       order: [['date_debut', 'ASC']]
     });
@@ -367,22 +401,43 @@ router.put('/schedules/:id', async (req, res) => {
     const schedule = await Schedule.findByPk(req.params.id);
 
     if (!schedule) {
-      return res.status(404).json({ error: 'Planning introuvable' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'Planning introuvable' 
+      });
     }
 
     const updateData = req.body;
 
     // Check for conflicts if key fields are being updated
-    if (updateData.time_slot_id || updateData.salle_id || updateData.enseignant_id) {
-      const conflicts = await checkScheduleConflicts({
-        ...updateData,
+    if (updateData.time_slot_id || updateData.classe_id || updateData.matiere_id || 
+        updateData.salle_id || updateData.enseignant_id || updateData.date_debut || 
+        updateData.date_fin || updateData.type_cours) {
+      
+      const conflictResult = await detectScheduleConflicts({
+        time_slot_id: updateData.time_slot_id || schedule.time_slot_id,
+        day_of_week: updateData.day_of_week || schedule.day_of_week,
+        start_time: updateData.start_time || schedule.start_time,
+        end_time: updateData.end_time || schedule.end_time,
+        classe_id: updateData.classe_id || schedule.classe_id,
+        matiere_id: updateData.matiere_id || schedule.matiere_id,
+        salle_id: updateData.salle_id || schedule.salle_id,
+        enseignant_id: updateData.enseignant_id || schedule.enseignant_id,
+        date_debut: updateData.date_debut || schedule.date_debut,
+        date_fin: updateData.date_fin || schedule.date_fin,
+        type_cours: updateData.type_cours || schedule.type_cours,
         excludeId: req.params.id
       });
 
-      if (conflicts.length > 0) {
-        return res.status(409).json({ 
-          error: 'Conflit détecté dans le planning',
-          conflicts 
+      if (conflictResult.hasConflicts) {
+        const firstConflict = conflictResult.conflicts[0];
+        return res.status(409).json({
+          success: false,
+          type: 'conflict',
+          target: firstConflict.target,
+          message: firstConflict.message,
+          allConflicts: conflictResult.conflicts,
+          conflictCount: conflictResult.conflictCount
         });
       }
     }
@@ -391,53 +446,66 @@ router.put('/schedules/:id', async (req, res) => {
     
     const updatedSchedule = await Schedule.findByPk(req.params.id, {
       include: [
-        { association: 'timeSlot' },
+        { association: 'timeSlot', required: false },
         { association: 'classe' },
         { association: 'matiere' },
-        { association: 'salle' }
+        { association: 'salle' },
+        { association: 'enseignant', attributes: ['id', 'nom', 'prenom', 'email'] }
       ]
     });
 
     res.status(200).json({ 
+      success: true,
       message: 'Planning mis à jour avec succès',
       data: updatedSchedule 
     });
   } catch (error) {
     console.error('Error updating schedule:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      success: false,
+      type: 'error',
+      error: 'Erreur interne du serveur',
+      details: error.message 
+    });
   }
 });
 
 // Drag and drop schedule update (minimal backend change)
 router.patch('/schedules/:id/drag-drop', async (req, res) => {
   try {
+    const { time_slot_id, classe_id, salle_id } = req.body;
+
+    // Use specialized drag-drop conflict detection
+    const conflictResult = await detectDragDropConflicts(
+      req.params.id,
+      time_slot_id,
+      classe_id,
+      salle_id
+    );
+
+    if (conflictResult.hasConflicts) {
+      const firstConflict = conflictResult.conflicts[0];
+      return res.status(409).json({
+        success: false,
+        type: 'conflict',
+        target: firstConflict.target,
+        message: firstConflict.message,
+        allConflicts: conflictResult.conflicts,
+        conflictCount: conflictResult.conflictCount
+      });
+    }
+
     const schedule = await Schedule.findByPk(req.params.id);
 
     if (!schedule) {
-      return res.status(404).json({ error: 'Planning introuvable' });
+      return res.status(404).json({ 
+        success: false,
+        error: 'Planning introuvable' 
+      });
     }
 
-    const { time_slot_id, classe_id, salle_id } = req.body;
-
-    // Check for conflicts only if moving to different time slot
+    // Apply updates
     if (time_slot_id && time_slot_id !== schedule.time_slot_id) {
-      const conflicts = await checkScheduleConflicts({
-        time_slot_id,
-        classe_id: classe_id || schedule.classe_id,
-        salle_id: salle_id || schedule.salle_id,
-        enseignant_id: schedule.enseignant_id,
-        date_debut: schedule.date_debut,
-        date_fin: schedule.date_fin,
-        excludeId: req.params.id
-      });
-
-      if (conflicts.length > 0) {
-        return res.status(409).json({ 
-          error: 'Conflit détecté - impossible de déplacer le cours',
-          conflicts 
-        });
-      }
-
       schedule.time_slot_id = time_slot_id;
     }
 
@@ -456,17 +524,24 @@ router.patch('/schedules/:id/drag-drop', async (req, res) => {
         { association: 'timeSlot' },
         { association: 'classe' },
         { association: 'matiere' },
-        { association: 'salle' }
+        { association: 'salle' },
+        { association: 'enseignant', attributes: ['id', 'nom', 'prenom', 'email'] }
       ]
     });
 
     res.status(200).json({ 
+      success: true,
       message: 'Planning déplacé avec succès',
       data: updatedSchedule 
     });
   } catch (error) {
     console.error('Error drag-drop updating schedule:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ 
+      success: false,
+      type: 'error',
+      error: 'Erreur interne du serveur',
+      details: error.message 
+    });
   }
 });
 
@@ -771,66 +846,331 @@ router.get('/bookings/schedule/:schedule_id/attendance', async (req, res) => {
   }
 });
 
-// ==================== HELPER FUNCTIONS ====================
+// ==================== BULK OPERATIONS ====================
 
-// Function to check for schedule conflicts
-async function checkScheduleConflicts(params) {
-  const {
-    time_slot_id,
-    classe_id,
-    salle_id,
-    enseignant_id,
-    date_debut,
-    date_fin,
-    excludeId
-  } = params;
+// Bulk create schedules (useful for semester planning)
+router.post('/schedules/bulk', async (req, res) => {
+  try {
+    const { schedules } = req.body;
 
-  const conflicts = [];
-  const where = {
-    time_slot_id,
-    date_debut: { [Op.lte]: date_fin || date_debut },
-    [Op.or]: [
-      { date_fin: { [Op.gte]: date_debut } },
-      { date_fin: null }
-    ],
-    statut: { [Op.ne]: 'annule' }
-  };
-
-  if (excludeId) {
-    where.id = { [Op.ne]: excludeId };
-  }
-
-  // Check classe conflict
-  if (classe_id) {
-    const classeConflict = await Schedule.findOne({
-      where: { ...where, classe_id }
-    });
-    if (classeConflict) {
-      conflicts.push({ type: 'classe', message: 'La classe a déjà un cours à ce créneau' });
+    if (!Array.isArray(schedules) || schedules.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Un tableau de plannings est requis'
+      });
     }
-  }
 
-  // Check salle conflict
-  if (salle_id) {
-    const salleConflict = await Schedule.findOne({
-      where: { ...where, salle_id }
-    });
-    if (salleConflict) {
-      conflicts.push({ type: 'salle', message: 'La salle est déjà occupée à ce créneau' });
+    const results = {
+      created: [],
+      conflicts: [],
+      errors: []
+    };
+
+    // Process each schedule
+    for (let i = 0; i < schedules.length; i++) {
+      const scheduleData = schedules[i];
+
+      try {
+        // Validate required fields
+        if (!scheduleData.time_slot_id || !scheduleData.classe_id || 
+            !scheduleData.matiere_id || !scheduleData.date_debut) {
+          results.errors.push({
+            index: i,
+            data: scheduleData,
+            error: 'Données incomplètes'
+          });
+          continue;
+        }
+
+        // Check conflicts
+        const conflictResult = await detectScheduleConflicts(scheduleData);
+
+        if (conflictResult.hasConflicts) {
+          results.conflicts.push({
+            index: i,
+            data: scheduleData,
+            conflicts: conflictResult.conflicts
+          });
+          continue;
+        }
+
+        // Create schedule
+        const newSchedule = await Schedule.create(scheduleData);
+        results.created.push({
+          index: i,
+          id: newSchedule.id,
+          data: newSchedule
+        });
+
+      } catch (error) {
+        results.errors.push({
+          index: i,
+          data: scheduleData,
+          error: error.message
+        });
+      }
     }
-  }
 
-  // Check enseignant conflict
-  if (enseignant_id) {
-    const enseignantConflict = await Schedule.findOne({
-      where: { ...where, enseignant_id }
+    res.status(200).json({
+      success: true,
+      summary: {
+        total: schedules.length,
+        created: results.created.length,
+        conflicts: results.conflicts.length,
+        errors: results.errors.length
+      },
+      details: results
     });
-    if (enseignantConflict) {
-      conflicts.push({ type: 'enseignant', message: 'L\'enseignant a déjà un cours à ce créneau' });
-    }
-  }
 
-  return conflicts;
-}
+  } catch (error) {
+    console.error('Error bulk creating schedules:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la création en masse',
+      details: error.message
+    });
+  }
+});
+
+// Get complete timetable for a class (with all details)
+router.get('/timetable/classe/:classe_id', async (req, res) => {
+  try {
+    const { classe_id } = req.params;
+    const { date_debut, date_fin } = req.query;
+
+    const where = {
+      classe_id,
+      statut: { [Op.ne]: 'annule' }
+    };
+
+    if (date_debut) {
+      where.date_debut = { [Op.lte]: date_debut };
+      where[Op.or] = [
+        { date_fin: { [Op.gte]: date_debut } },
+        { date_fin: null }
+      ];
+    }
+
+    const schedules = await Schedule.findAll({
+      where,
+      include: [
+        { 
+          association: 'timeSlot',
+          attributes: ['id', 'day_of_week', 'start_time', 'end_time']
+        },
+        { 
+          association: 'matiere',
+          attributes: ['id', 'name', 'code', 'credits']
+        },
+        { 
+          association: 'salle',
+          attributes: ['id', 'nom', 'type', 'capacite', 'localisation']
+        },
+        { 
+          association: 'enseignant',
+          attributes: ['id', 'nom', 'prenom', 'email']
+        }
+      ],
+      order: [
+        [{ association: 'timeSlot' }, 'day_of_week', 'ASC'],
+        [{ association: 'timeSlot' }, 'start_time', 'ASC']
+      ]
+    });
+
+    // Group by day of week
+    const timetableByDay = {};
+    const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+    
+    days.forEach(day => {
+      timetableByDay[day] = schedules.filter(s => s.timeSlot?.day_of_week === day);
+    });
+
+    res.status(200).json({
+      success: true,
+      classe_id,
+      totalSchedules: schedules.length,
+      schedules,
+      timetableByDay
+    });
+
+  } catch (error) {
+    console.error('Error fetching class timetable:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la récupération de l\'emploi du temps',
+      details: error.message
+    });
+  }
+});
+
+// Get complete timetable for a teacher
+router.get('/timetable/enseignant/:enseignant_id', async (req, res) => {
+  try {
+    const { enseignant_id } = req.params;
+    const { date_debut, date_fin } = req.query;
+
+    const where = {
+      enseignant_id,
+      statut: { [Op.ne]: 'annule' }
+    };
+
+    if (date_debut) {
+      where.date_debut = { [Op.lte]: date_debut };
+      where[Op.or] = [
+        { date_fin: { [Op.gte]: date_debut } },
+        { date_fin: null }
+      ];
+    }
+
+    const schedules = await Schedule.findAll({
+      where,
+      include: [
+        { 
+          association: 'timeSlot',
+          attributes: ['id', 'day_of_week', 'start_time', 'end_time']
+        },
+        { 
+          association: 'matiere',
+          attributes: ['id', 'name', 'code', 'credits']
+        },
+        { 
+          association: 'classe',
+          attributes: ['id', 'nom', 'effectif'],
+          include: [{
+            association: 'niveau',
+            attributes: ['id', 'name']
+          }]
+        },
+        { 
+          association: 'salle',
+          attributes: ['id', 'nom', 'type', 'capacite', 'localisation']
+        }
+      ],
+      order: [
+        [{ association: 'timeSlot' }, 'day_of_week', 'ASC'],
+        [{ association: 'timeSlot' }, 'start_time', 'ASC']
+      ]
+    });
+
+    // Group by day of week
+    const timetableByDay = {};
+    const days = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi', 'Dimanche'];
+    
+    days.forEach(day => {
+      timetableByDay[day] = schedules.filter(s => s.timeSlot?.day_of_week === day);
+    });
+
+    res.status(200).json({
+      success: true,
+      enseignant_id,
+      totalSchedules: schedules.length,
+      schedules,
+      timetableByDay
+    });
+
+  } catch (error) {
+    console.error('Error fetching teacher timetable:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la récupération de l\'emploi du temps',
+      details: error.message
+    });
+  }
+});
+
+// ==================== VALIDATION ENDPOINTS ====================
+
+// Check conflicts before creating/updating a schedule
+router.post('/schedules/check-conflicts', async (req, res) => {
+  try {
+    const {
+      time_slot_id,
+      classe_id,
+      matiere_id,
+      salle_id,
+      enseignant_id,
+      date_debut,
+      date_fin,
+      type_cours,
+      excludeId
+    } = req.body;
+
+    if (!time_slot_id || !classe_id || !matiere_id || !date_debut) {
+      return res.status(400).json({
+        success: false,
+        error: 'Données insuffisantes pour vérifier les conflits'
+      });
+    }
+
+    const conflictResult = await detectScheduleConflicts({
+      time_slot_id,
+      classe_id,
+      matiere_id,
+      salle_id,
+      enseignant_id,
+      date_debut,
+      date_fin,
+      type_cours,
+      excludeId
+    });
+
+    if (conflictResult.hasConflicts) {
+      return res.status(200).json({
+        success: false,
+        hasConflicts: true,
+        conflicts: conflictResult.conflicts,
+        conflictCount: conflictResult.conflictCount
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      hasConflicts: false,
+      message: 'Aucun conflit détecté'
+    });
+  } catch (error) {
+    console.error('Error checking conflicts:', error);
+    res.status(500).json({
+      success: false,
+      type: 'error',
+      error: 'Erreur lors de la vérification des conflits',
+      details: error.message
+    });
+  }
+});
+
+// Get availability for a time slot
+router.get('/availability/:time_slot_id', async (req, res) => {
+  try {
+    const { time_slot_id } = req.params;
+    const { date, departementId, niveauId, specialiteId } = req.query;
+
+    if (!date) {
+      return res.status(400).json({
+        success: false,
+        error: 'La date est requise'
+      });
+    }
+
+    const availabilityResult = await getAvailability(
+      parseInt(time_slot_id),
+      date,
+      {
+        departementId: departementId ? parseInt(departementId) : undefined,
+        niveauId: niveauId ? parseInt(niveauId) : undefined,
+        specialiteId: specialiteId ? parseInt(specialiteId) : undefined
+      }
+    );
+
+    res.status(200).json(availabilityResult);
+  } catch (error) {
+    console.error('Error getting availability:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Erreur lors de la récupération des disponibilités',
+      details: error.message
+    });
+  }
+});
 
 module.exports = router;

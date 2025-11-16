@@ -249,28 +249,37 @@ const items1 = [
   { key: '3', label: 'Reports' }
 ];
 
-const items2 = [
-  {
-    key: 'users',
-    icon: React.createElement(UserOutlined),
-    label: 'User Management',
-    children: [
-      { key: 'show-users', label: 'Show Users' },
-      { key: 'add-user', label: 'Add User' },
-    ],
-  },
-  {
-    key: 'reference',
-    icon: React.createElement(LaptopOutlined),
-    label: 'Reference Data',
-    children: [
-      { key: 'specialites', label: 'Spécialités' },
-      { key: 'departements', label: 'Départements' },
-      { key: 'niveaux', label: 'Niveaux' },
-      { key: 'classes', label: 'Classes' },
-    ],
-  },
-];
+  const onClickMenu = (e) => {
+    if (e.key === 'specialites') {
+      navigate('/reference/specialites');
+    } else if (e.key === 'classes') {
+      navigate('/reference/classes');
+    } else if (e.key === 'departements') {
+      navigate('/reference/departements');
+    } else if (e.key === 'niveaux') {
+      navigate('/reference/niveaux');
+    } else if (e.key === 'matieres') {
+      navigate('/reference/matieres');
+    } else if (e.key === 'salles') {
+      navigate('/reference/salles');
+    }
+  };
+
+  const items2 = [
+    {
+      key: 'reference',
+      icon: React.createElement(LaptopOutlined),
+      label: 'Données de Référence',
+      children: [
+        { key: 'specialites', label: 'Spécialités' },
+        { key: 'departements', label: 'Départements' },
+        { key: 'niveaux', label: 'Niveaux' },
+        { key: 'classes', label: 'Classes' },
+        { key: 'salles', label: 'Salles' },
+        { key: 'matieres', label: 'Matières' },
+      ],
+    },
+  ];
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -281,6 +290,7 @@ const items2 = [
           defaultOpenKeys={["reference"]}
           style={{ height: "100%", borderRight: 0 }}
           items={items2}
+          onClick={onClickMenu}
         />
       </Sider>
 

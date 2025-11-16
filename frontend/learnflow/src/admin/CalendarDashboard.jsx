@@ -43,6 +43,13 @@ const CalendarDashboard = () => {
       color: '#764ba2'
     },
     {
+      title: '📊 Emploi du Temps Complet',
+      description: 'Visualiser les emplois du temps avec détection de conflits',
+      icon: '📊',
+      path: '/calendar/timetable',
+      color: '#667eea'
+    },
+    {
       title: 'Planning par Classe',
       description: 'Voir le planning hebdomadaire des classes',
       icon: '🏫',

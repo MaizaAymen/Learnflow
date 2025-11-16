@@ -27,12 +27,18 @@ const User =sequelize.define('User',{
 
 
   // Informations spécifiques aux étudiants
-  adresse: { type: DataTypes.STRING, allowNull: true }, // pour les étudiants
+  numero_etudiant: { type: DataTypes.STRING(50), allowNull: true, unique: true }, // Numéro unique de l'étudiant
+  adresse: { type: DataTypes.TEXT, allowNull: true }, // pour les étudiants
   ville: { type: DataTypes.STRING, allowNull: true }, // pour les étudiants
   pays: { type: DataTypes.STRING, allowNull: true }, // pour les étudiants
   niveau_etude: { type: DataTypes.STRING, allowNull: true }, // pour les étudiants
   parcours: { type: DataTypes.STRING, allowNull: true }, // pour les étudiants
-
+  niveau_id: { type: DataTypes.INTEGER, allowNull: true }, // Foreign key vers referentiels.niveau
+  classe_id: { type: DataTypes.INTEGER, allowNull: true }, // Foreign key vers referentiels.classe
+  statut: { type: DataTypes.STRING, allowNull: true, defaultValue: 'actif' }, // Statut de l'étudiant (uses auth.user_statut ENUM in DB)
+  notes: { type: DataTypes.TEXT, allowNull: true }, // Notes supplémentaires sur l'étudiant
+  is_temporary: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }, // Indicateur pour import CSV temporaire
+  import_batch_id: { type: DataTypes.UUID, allowNull: true }, // ID du batch d'import CSV
 
   //
   interets: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true }, // pour les étudiants // hedi zidtha fi 7alit inha letudiant kan 3indah interets mo3ayana jima club 

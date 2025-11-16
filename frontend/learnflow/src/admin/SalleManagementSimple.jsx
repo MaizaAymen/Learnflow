@@ -10,6 +10,7 @@ import {
   Form,
   Input,
   InputNumber,
+  Select,
   message,
   Space,
   Popconfirm,
@@ -29,28 +30,30 @@ import {
 
 const { Content, Sider } = Layout;
 const { TextArea } = Input;
+const { Option } = Select;
 
 const SalleManagementSimple = () => {
   const [salles, setSalles] = useState([]);
+  const [departements, setDepartements] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingSalle, setEditingSalle] = useState(null);
   const [form] = Form.useForm();
   const navigate = useNavigate();
-const onClickMenu = (e) => {
+  const onClickMenu = (e) => {
     if (e.key === 'specialites') {
       navigate('/reference/specialites');
     } else if (e.key === 'classes') {
-      navigate('/CreationClasse');
+      navigate('/reference/classes');
     } else if (e.key === 'departements') {
       navigate('/reference/departements');
     } else if (e.key === 'niveaux') {
       navigate('/reference/niveaux');
     } else if (e.key === 'matieres') {
       navigate('/reference/matieres');
+    } else if (e.key === 'salles') {
+      navigate('/reference/salles');
     }
-
-    // Add other navigation cases as needed
   };
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -63,7 +66,11 @@ const onClickMenu = (e) => {
       const response = await fetch("http://localhost:3000/api/reference/salles");
       const data = await response.json();
       if (response.ok) {
-        setSalles(data);
+        const formatted = data.map(s => ({
+          ...s,
+          departement_nom: s.departement?.name || "—"
+        }));
+        setSalles(formatted);
       } else {
         message.error(data.message || "Failed to fetch salles");
       }
@@ -75,8 +82,22 @@ const onClickMenu = (e) => {
     }
   };
 
+  // Fetch departements for dropdown
+  const fetchDepartements = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/api/reference/departements");
+      const data = await response.json();
+      if (response.ok) {
+        setDepartements(data);
+      }
+    } catch (error) {
+      console.error("Error fetching departements:", error);
+    }
+  };
+
   useEffect(() => {
     fetchSalles();
+    fetchDepartements();
   }, []);
 
   // Handle create/update
@@ -171,19 +192,25 @@ const onClickMenu = (e) => {
       title: "Type",
       dataIndex: "type",
       key: "type",
-      width: 120,
+      width: 100,
+    },
+    {
+      title: "Département",
+      dataIndex: "departement_nom",
+      key: "departement_nom",
+      width: 130,
     },
     {
       title: "Capacité",
       dataIndex: "capacite",
       key: "capacite",
-      width: 100,
+      width: 90,
     },
     {
       title: "Localisation",
       dataIndex: "localisation",
       key: "localisation",
-      width: 150,
+      width: 130,
     },
     {
       title: "Actions",
@@ -222,30 +249,21 @@ const items1 = [
   { key: '3', label: 'Reports' }
 ];
 
-const items2 = [
-  {
-    key: 'users',
-    icon: React.createElement(UserOutlined),
-    label: 'User Management',
-    children: [
-      { key: 'show-users', label: 'Show Users' },
-      { key: 'add-user', label: 'Add User' },
-    ],
-  },
-  {
-    key: 'reference',
-    icon: React.createElement(LaptopOutlined),
-    label: 'Reference Data',
-    children: [
-      { key: 'specialites', label: 'Spécialités' },
-      { key: 'departements', label: 'Départements' },
-      { key: 'niveaux', label: 'Niveaux' },
-      { key: 'classes', label: 'Classes' },
-      { key: 'salles', label: 'Salles' },
-      { key: 'matieres', label: 'Matières' },
-    ],
-  },
-];
+  const items2 = [
+    {
+      key: 'reference',
+      icon: React.createElement(LaptopOutlined),
+      label: 'Données de Référence',
+      children: [
+        { key: 'specialites', label: 'Spécialités' },
+        { key: 'departements', label: 'Départements' },
+        { key: 'niveaux', label: 'Niveaux' },
+        { key: 'classes', label: 'Classes' },
+        { key: 'salles', label: 'Salles' },
+        { key: 'matieres', label: 'Matières' },
+      ],
+    },
+  ];
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -408,6 +426,25 @@ const items2 = [
               placeholder="Entrez la capacité" 
               style={{ width: '100%' }}
             />
+          </Form.Item>
+
+          <Form.Item
+            label="Département"
+            name="departement_id"
+            rules={[
+              {
+                required: true,
+                message: "Please select a département!",
+              },
+            ]}
+          >
+            <Select placeholder="Sélectionnez le département">
+              {departements.map(dept => (
+                <Option key={dept.id} value={dept.id}>
+                  {dept.name}
+                </Option>
+              ))}
+            </Select>
           </Form.Item>
 
           <Form.Item

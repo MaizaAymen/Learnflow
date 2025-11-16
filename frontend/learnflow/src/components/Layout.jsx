@@ -122,10 +122,12 @@ const AppLayout = ({ children }) => {
       label: <Link to="/users">Utilisateurs</Link>,
     },
     {
-      key: 'reference',
+      key: '/reference/departements',
       icon: <LaptopOutlined />,
-      label: 'Données de Référence',
-      children: [
+      label: <Link to="/reference/departements">Données de Référence</Link>
+      /*label: 'Données de Référence',*/
+      
+     /*, children: [
         {
           key: '/reference',
           icon: <DashboardOutlined />,
@@ -161,7 +163,7 @@ const AppLayout = ({ children }) => {
           icon: <BookOutlined />,
           label: <Link to="/reference/matieres">Matières</Link>,
         },
-      ],
+      ],*/
     },
     {
       key: 'calendar',
@@ -175,42 +177,42 @@ const AppLayout = ({ children }) => {
         },
         {
           key: '/calendar/classes',
-          icon: <span>📚</span>,
+          icon: <span></span>,
           label: <Link to="/calendar/classes">Calendriers par Classe</Link>,
         },
         {
           key: '/calendar/timeslots/auto',
-          icon: <span>⚡</span>,
+          icon: <span></span>,
           label: <Link to="/calendar/timeslots/auto">Créneaux Auto</Link>,
         },
         {
           key: '/calendar/timeslots',
-          icon: <span>🕐</span>,
+          icon: <span></span>,
           label: <Link to="/calendar/timeslots">Gérer Créneaux</Link>,
         },
         {
           key: '/calendar/create',
-          icon: <span>➕</span>,
+          icon: <span></span>,
           label: <Link to="/calendar/create">Créer Planning</Link>,
         },
         {
           key: '/calendar/schedules',
-          icon: <span>📅</span>,
+          icon: <span></span>,
           label: <Link to="/calendar/schedules">Tous les Plannings</Link>,
         },
         {
           key: '/calendar/events',
-          icon: <span>📆</span>,
+          icon: <span></span>,
           label: <Link to="/calendar/events">Vue Calendrier</Link>,
         },
         {
           key: '/calendar/class-schedule',
-          icon: <span>🏫</span>,
+          icon: <span></span>,
           label: <Link to="/calendar/class-schedule">Planning par Classe</Link>,
         },
         {
           key: '/calendar/weekly-schedule',
-          icon: <span>📋</span>,
+          icon: <span></span>,
           label: <Link to="/calendar/weekly-schedule">Planning Hebdo</Link>,
         },
       ],
@@ -224,7 +226,8 @@ const AppLayout = ({ children }) => {
       key: '/admin',
       icon: <SettingOutlined />,
       label: <Link to="/admin">Administration</Link>,
-    },{
+    },
+    {
       key: '/upload-students',
       icon: <VerticalAlignTopOutlined />,
       label: <Link to="/upload-students">Téléverser Étudiants</Link>,
@@ -331,16 +334,7 @@ const AppLayout = ({ children }) => {
         collapsed={collapsed}
         onCollapse={(value) => setCollapsed(value)}
       >
-        <div className="logo">
-          {collapsed ? (
-            <img src={alex} alt="L" style={{ width: '80px', height: '40px', objectFit: 'contain' }} />
-          ) : (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '0px' }}>
-              <img src={alex} alt="LEARNFLOW" style={{ width: '500px', height: '100px', objectFit: 'contain' }} />
-              <span style={{ color: '#ffffffff', fontWeight: 'bold', fontSize: '18px' }}>LEARNFLOW</span>
-            </div>
-          )}
-        </div>
+        
         <Menu 
           theme="dark"
           mode="inline" 

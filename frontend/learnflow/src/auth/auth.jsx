@@ -436,8 +436,12 @@ const Auth = () => {
         .then(data=>{
             console.log(data);
             if (data.message && data.message.trim() === "Connexion réussie") {
-            alert("Login successful");
-            navigate("/profile");
+              // Store token from response body
+              if (data.token) {
+                localStorage.setItem('token', data.token);
+              }
+              alert("Login successful");
+              navigate("/");
     } else {
       alert(data.error || "Invalid credentials");
     }

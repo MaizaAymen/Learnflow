@@ -28,6 +28,10 @@ const ScheduleManagementComplete = () => {
     notes: '',
     statut: 'planifie'
   });
+  
+  const [conflicts, setConflicts] = useState(null);
+  const [checkingConflicts, setCheckingConflicts] = useState(false);
+  const [teachers, setTeachers] = useState([]);
 
   const api = new CalendarAPI();
   const courseTypes = ['Cours', 'TD', 'TP', 'Examen', 'Soutien'];
@@ -78,6 +82,15 @@ const ScheduleManagementComplete = () => {
       } catch (err) {
         console.warn('Could not fetch rooms:', err);
       }
+
+      // Fetch teachers (from auth service)
+      try {
+        const teachersRes = await fetch('http://localhost:4000/api/auth/users?role=enseignant');
+        const teachersData = await teachersRes.json();
+        setTeachers(Array.isArray(teachersData) ? teachersData : []);
+      } catch (err) {
+        console.warn('Could not fetch teachers:', err);
+      }
     } catch (err) {
       setError('Erreur lors du chargement des données: ' + err.message);
       console.error('Error fetching data:', err);
@@ -92,11 +105,41 @@ const ScheduleManagementComplete = () => {
       ...prev,
       [name]: value
     }));
+    // Clear conflicts when form changes
+    if (conflicts) setConflicts(null);
+  };
+
+  const handleCheckConflicts = async () => {
+    if (!formData.time_slot_id || !formData.classe_id || !formData.matiere_id) {
+      setError('Veuillez remplir au moins: créneau, classe et matière');
+      return;
+    }
+
+    setCheckingConflicts(true);
+    setError('');
+    setConflicts(null);
+
+    try {
+      const result = await api.checkConflicts(formData);
+      
+      if (result.hasConflicts) {
+        setConflicts(result.conflicts);
+        setError('⚠️ Des conflits ont été détectés!');
+      } else {
+        setConflicts([]);
+        alert('✅ Aucun conflit détecté! Vous pouvez créer ce planning.');
+      }
+    } catch (err) {
+      setError('Erreur lors de la vérification: ' + err.message);
+    } finally {
+      setCheckingConflicts(false);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    setConflicts(null);
 
     // Validation
     if (!formData.time_slot_id || !formData.classe_id || !formData.matiere_id) {
@@ -107,11 +150,11 @@ const ScheduleManagementComplete = () => {
     try {
       if (editingId) {
         await api.updateSchedule(editingId, formData);
-        alert('Planning mis à jour avec succès!');
+        alert('✅ Planning mis à jour avec succès!');
         setEditingId(null);
       } else {
         await api.createSchedule(formData);
-        alert('Planning créé avec succès!');
+        alert('✅ Planning créé avec succès!');
       }
       
       setShowForm(false);
@@ -130,7 +173,12 @@ const ScheduleManagementComplete = () => {
       });
       fetchAllData();
     } catch (err) {
-      setError('Erreur: ' + err.message);
+      if (err.type === 'conflict') {
+        setConflicts(err.conflicts || [{ type: err.target, message: err.message }]);
+        setError('⚠️ CONFLIT DÉTECTÉ: ' + err.message);
+      } else {
+        setError('❌ Erreur: ' + err.message);
+      }
       console.error('Error:', err);
     }
   };
@@ -328,14 +376,19 @@ const ScheduleManagementComplete = () => {
             </div>
 
             <div className="form-group">
-              <label>Enseignant ID</label>
-              <input
-                type="number"
+              <label>Enseignant</label>
+              <select
                 name="enseignant_id"
                 value={formData.enseignant_id}
                 onChange={handleInputChange}
-                placeholder="ID de l'enseignant"
-              />
+              >
+                <option value="">-- Optionnel --</option>
+                {teachers.map(teacher => (
+                  <option key={teacher.id} value={teacher.id}>
+                    {teacher.prenom} {teacher.nom}
+                  </option>
+                ))}
+              </select>
             </div>
 
             <div className="form-group">
@@ -409,7 +462,36 @@ const ScheduleManagementComplete = () => {
             </div>
           </div>
 
+          {conflicts && conflicts.length > 0 && (
+            <div className="conflicts-alert">
+              <h3>⚠️ Conflits Détectés:</h3>
+              <ul>
+                {conflicts.map((conflict, idx) => (
+                  <li key={idx} className={`conflict-${conflict.type}`}>
+                    <strong>{conflict.type === 'salle' ? '🏫 Salle' : conflict.type === 'enseignant' ? '👨‍🏫 Enseignant' : '👥 Groupe'}:</strong>
+                    <br />
+                    {conflict.message}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {conflicts && conflicts.length === 0 && (
+            <div className="no-conflicts-alert">
+              ✅ Aucun conflit - Prêt à créer!
+            </div>
+          )}
+
           <div className="form-actions">
+            <button 
+              type="button" 
+              className="btn-info"
+              onClick={handleCheckConflicts}
+              disabled={checkingConflicts}
+            >
+              {checkingConflicts ? '🔄 Vérification...' : '🔍 Vérifier les Conflits'}
+            </button>
             <button type="submit" className="btn-success">
               {editingId ? '✓ Mettre à jour' : '✓ Créer le Planning'}
             </button>

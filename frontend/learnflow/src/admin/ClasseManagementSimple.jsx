@@ -18,7 +18,9 @@ import {
   Row,
   Col,
   theme,
-  Tag
+  Tag,
+  Empty,
+  Spin
 } from "antd";
 import {
   PlusOutlined,
@@ -27,6 +29,7 @@ import {
   ArrowLeftOutlined,
   UserOutlined,
   LaptopOutlined,
+  TeamOutlined,
 } from "@ant-design/icons";
 const { Content, Sider } = Layout;
 const { TextArea } = Input;
@@ -38,23 +41,26 @@ const ClasseManagementSimple = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingClasse, setEditingClasse] = useState(null);
-  const [departements, setDepartements] = useState([]);
+  const [studentsModalVisible, setStudentsModalVisible] = useState(false);
+  const [selectedClassStudents, setSelectedClassStudents] = useState([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
+  const [selectedClassName, setSelectedClassName] = useState("");
   const [form] = Form.useForm();
   const navigate = useNavigate();
   const onClickMenu = (e) => {
     if (e.key === 'specialites') {
       navigate('/reference/specialites');
     } else if (e.key === 'classes') {
-      navigate('/CreationClasse');
+      navigate('/reference/classes');
     } else if (e.key === 'departements') {
       navigate('/reference/departements');
     } else if (e.key === 'niveaux') {
       navigate('/reference/niveaux');
     } else if (e.key === 'matieres') {
       navigate('/reference/matieres');
+    } else if (e.key === 'salles') {
+      navigate('/reference/salles');
     }
-
-    // Add other navigation cases as needed
   };
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -71,7 +77,8 @@ const fetchClasses = async () => {
       const formatted = data.map(c => ({
         ...c,
         niveau_nom: c.niveau?.name || "—",
-        departement_nom: c.departement?.name || "—",
+        specialite_nom: c.niveau?.specialite?.name || "—",
+        departement_nom: c.niveau?.specialite?.departement?.name || "—",
       }));
       setClasses(formatted);
     } else {
@@ -86,20 +93,7 @@ const fetchClasses = async () => {
 };
 
 
-  const fetchDepartements= async () => {
-    try {
-      const response = await fetch("http://localhost:3000/api/reference/departements");
-      const data = await response.json();
-
-      if (response.ok) {
-        setDepartements(data);
-      }
-    } catch (error) {
-      console.error("Error fetching departements:", error);
-    }
-  };
-
-  // Fetch niveaux for dropdown
+  // Fetch niveaux for dropdown with full hierarchy
   const fetchNiveaux = async () => {
     try {
       const response = await fetch("http://localhost:3000/api/reference/niveaux");
@@ -115,7 +109,6 @@ const fetchClasses = async () => {
   useEffect(() => {
     fetchClasses();
     fetchNiveaux();
-    fetchDepartements();
   }, []);
 
   // Handle create/update
@@ -194,6 +187,32 @@ const fetchClasses = async () => {
     setModalVisible(true);
   };
 
+  // Fetch students by class
+  const handleViewStudents = async (classe) => {
+    setSelectedClassName(classe.nom);
+    setStudentsModalVisible(true);
+    setLoadingStudents(true);
+    
+    try {
+      const response = await fetch("http://localhost:4000/api/auth/getallstudents");
+      
+      if (response.ok) {
+        const data = await response.json();
+        const studentsInClass = data.filter(student => student.classe_id === classe.id);
+        setSelectedClassStudents(studentsInClass);
+      } else {
+        message.error("Failed to fetch students");
+        setSelectedClassStudents([]);
+      }
+    } catch (error) {
+      console.error("Error fetching students:", error);
+      message.error("Error fetching students");
+      setSelectedClassStudents([]);
+    } finally {
+      setLoadingStudents(false);
+    }
+  };
+
   const columns = [
     {
       title: "ID",
@@ -211,13 +230,35 @@ const fetchClasses = async () => {
       title: "Niveau",
       dataIndex: "niveau_nom",
       key: "niveau_nom",
-      width: 150,
+      width: 130,
+    },
+    {
+      title: "Spécialité",
+      dataIndex: "specialite_nom",
+      key: "specialite_nom",
+      width: 130,
     },
     {
       title: "Département",
       dataIndex: "departement_nom",
       key: "departement_nom",
-      width: 150,
+      width: 130,
+    },
+    {
+      title: "Étudiants",
+      key: "students",
+      width: 120,
+      align: "center",
+      render: (_, record) => (
+        <Button
+          type="default"
+          icon={<TeamOutlined />}
+          size="small"
+          onClick={() => handleViewStudents(record)}
+        >
+          Voir
+        </Button>
+      ),
     },
     {
       title: "Actions",
@@ -255,28 +296,21 @@ const items1 = [
   { key: '3', label: 'Reports' }
 ];
 
-const items2 = [
-  {
-    key: 'users',
-    icon: React.createElement(UserOutlined),
-    label: 'User Management',
-    children: [
-      { key: 'show-users', label: 'Show Users' },
-      { key: 'add-user', label: 'Add User' },
-    ],
-  },
-  {
-    key: 'reference',
-    icon: React.createElement(LaptopOutlined),
-    label: 'Reference Data',
-    children: [
-      { key: 'specialites', label: 'Spécialités' },
-      { key: 'departements', label: 'Départements' },
-      { key: 'niveaux', label: 'Niveaux' },
-      { key: 'classes', label: 'Classes' },
-    ],
-  },
-];
+  const items2 = [
+    {
+      key: 'reference',
+      icon: React.createElement(LaptopOutlined),
+      label: 'Données de Référence',
+      children: [
+        { key: 'specialites', label: 'Spécialités' },
+        { key: 'departements', label: 'Départements' },
+        { key: 'niveaux', label: 'Niveaux' },
+        { key: 'classes', label: 'Classes' },
+        { key: 'salles', label: 'Salles' },
+        { key: 'matieres', label: 'Matières' },
+      ],
+    },
+  ];
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -445,35 +479,34 @@ const items2 = [
               },
             ]}
           >
-            <Select placeholder="Sélectionnez le niveau">
+            <Select 
+              placeholder="Sélectionnez le niveau"
+              showSearch
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                option.children.toLowerCase().includes(input.toLowerCase())
+              }
+            >
               {niveaux.map(niveau => (
                 <Option key={niveau.id} value={niveau.id}>
                   {niveau.name}
+                  {niveau.specialite && niveau.specialite.name && ` (${niveau.specialite.name})`}
+                  {niveau.specialite && niveau.specialite.departement && niveau.specialite.departement.name && ` - ${niveau.specialite.departement.name}`}
                 </Option>
               ))}
             </Select>
-
           </Form.Item>
-          <Form.Item
-            label="département"
-            name="departement_id"
-            rules={[
-              {
-                required: true,
-                message: "Please select a département!",
-              },
-            ]}
-          >
-
-            <Select placeholder="Sélectionnez le département">
-              {departements.map(departement => (
-                <Option key={departement.id} value={departement.id}>
-                  {departement.name}
-                </Option>
-              ))}
-            </Select>
-            
-
+          
+          <Form.Item label="Info" style={{ marginBottom: 8 }}>
+            <div style={{ 
+              padding: '8px 12px', 
+              background: '#f0f2f5', 
+              borderRadius: '4px',
+              fontSize: '12px',
+              color: '#595959'
+            }}>
+              ℹ️ Le département et la spécialité sont déterminés automatiquement par le niveau sélectionné
+            </div>
           </Form.Item>
           <Form.Item style={{ marginBottom: 0, textAlign: "right" }}>
             <Space>
@@ -492,6 +525,90 @@ const items2 = [
             </Space>
           </Form.Item>
         </Form>
+      </Modal>
+
+      {/* Modal for Viewing Students */}
+      <Modal
+        title={
+          <Space>
+            <TeamOutlined />
+            <span>Étudiants de la classe: {selectedClassName}</span>
+          </Space>
+        }
+        open={studentsModalVisible}
+        onCancel={() => {
+          setStudentsModalVisible(false);
+          setSelectedClassStudents([]);
+          setSelectedClassName("");
+        }}
+        footer={[
+          <Button
+            key="close"
+            type="primary"
+            onClick={() => {
+              setStudentsModalVisible(false);
+              setSelectedClassStudents([]);
+              setSelectedClassName("");
+            }}
+          >
+            Fermer
+          </Button>
+        ]}
+        width={800}
+      >
+        {loadingStudents ? (
+          <div style={{ textAlign: "center", padding: "40px 0" }}>
+            <Spin size="large" />
+            <p style={{ marginTop: 16 }}>Chargement des étudiants...</p>
+          </div>
+        ) : selectedClassStudents.length === 0 ? (
+          <Empty
+            description="Aucun étudiant assigné à cette classe"
+            image={Empty.PRESENTED_IMAGE_SIMPLE}
+          />
+        ) : (
+          <Table
+            dataSource={selectedClassStudents}
+            rowKey="id"
+            pagination={{
+              pageSize: 10,
+              showTotal: (total) => `${total} étudiant(s) au total`,
+            }}
+            columns={[
+              {
+                title: "ID",
+                dataIndex: "id",
+                key: "id",
+                width: 60,
+              },
+              {
+                title: "Nom",
+                dataIndex: "nom",
+                key: "nom",
+                width: 120,
+              },
+              {
+                title: "Prénom",
+                dataIndex: "prenom",
+                key: "prenom",
+                width: 120,
+              },
+              {
+                title: "Email",
+                dataIndex: "email",
+                key: "email",
+                ellipsis: true,
+              },
+              {
+                title: "Spécialité",
+                dataIndex: "specialite",
+                key: "specialite",
+                width: 150,
+                render: (text) => text || "—",
+              },
+            ]}
+          />
+        )}
       </Modal>
     </Layout>
   );

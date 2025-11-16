@@ -56,24 +56,56 @@ export class CalendarAPI {
   async getSchedules(filters = {}) {
     const params = new URLSearchParams(filters);
     const response = await fetch(`${this.baseURL}/schedules?${params}`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
   }
 
   async getClassWeeklySchedule(classeId, date = null) {
     const dateParam = date ? `?date=${date}` : '';
     const response = await fetch(`${this.baseURL}/schedules/classe/${classeId}/week${dateParam}`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return response.json();
+  }
+
+  async getClassTimetable(classeId) {
+    const response = await fetch(`${this.baseURL}/timetable/classe/${classeId}`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
   }
 
   async getTeacherSchedule(enseignantId, filters = {}) {
     const params = new URLSearchParams(filters);
     const response = await fetch(`${this.baseURL}/schedules/teacher/${enseignantId}?${params}`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return response.json();
+  }
+
+  async getTeacherTimetable(enseignantId) {
+    const response = await fetch(`${this.baseURL}/timetable/enseignant/${enseignantId}`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
   }
 
   async checkAvailability(date, filters = {}) {
     const params = new URLSearchParams({ date, ...filters });
     const response = await fetch(`${this.baseURL}/schedules/availability/timeslots?${params}`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return response.json();
+  }
+
+  async getAvailability(timeSlotId, date) {
+    const response = await fetch(`${this.baseURL}/availability/${timeSlotId}?date=${date}`);
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+    return response.json();
+  }
+
+  async checkConflicts(scheduleData) {
+    const response = await fetch(`${this.baseURL}/schedules/check-conflicts`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(scheduleData)
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
   }
 
@@ -83,6 +115,28 @@ export class CalendarAPI {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
+    const result = await response.json();
+    
+    // Handle conflict response
+    if (!result.success && result.type === 'conflict') {
+      const error = new Error(result.message);
+      error.type = 'conflict';
+      error.target = result.target;
+      error.conflicts = result.conflicts;
+      throw error;
+    }
+    
+    if (!response.ok) throw new Error(result.message || `HTTP error! status: ${response.status}`);
+    return result;
+  }
+
+  async bulkCreateSchedules(schedules) {
+    const response = await fetch(`${this.baseURL}/schedules/bulk`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ schedules })
+    });
+    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
     return response.json();
   }
 
@@ -101,7 +155,19 @@ export class CalendarAPI {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data)
     });
-    return response.json();
+    const result = await response.json();
+    
+    // Handle conflict response
+    if (!result.success && result.type === 'conflict') {
+      const error = new Error(result.message);
+      error.type = 'conflict';
+      error.target = result.target;
+      error.conflicts = result.conflicts;
+      throw error;
+    }
+    
+    if (!response.ok) throw new Error(result.message || `HTTP error! status: ${response.status}`);
+    return result;
   }
 
   async cancelSchedule(id) {

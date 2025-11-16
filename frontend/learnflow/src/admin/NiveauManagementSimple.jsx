@@ -9,6 +9,7 @@ import {
   Modal,
   Form,
   Input,
+  Select,
   message,
   Space,
   Popconfirm,
@@ -28,9 +29,11 @@ import {
 
 const { Content, Sider } = Layout;
 const { TextArea } = Input;
+const { Option } = Select;
 
 const NiveauManagement = () => {
   const [niveaux, setNiveaux] = useState([]);
+  const [specialites, setSpecialites] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingNiveau, setEditingNiveau] = useState(null);
@@ -48,7 +51,12 @@ const NiveauManagement = () => {
       const response = await fetch("http://localhost:3000/api/reference/niveaux");
       const data = await response.json();
       if (response.ok) {
-        setNiveaux(data);
+        const formatted = data.map(n => ({
+          ...n,
+          specialite_nom: n.specialite?.name || "—",
+          departement_nom: n.specialite?.departement?.name || "—"
+        }));
+        setNiveaux(formatted);
       } else {
         message.error(data.message || "Failed to fetch niveaux");
       }
@@ -60,8 +68,22 @@ const NiveauManagement = () => {
     }
   };
 
+  // Fetch specialites for dropdown
+  const fetchSpecialites = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/api/reference/specialites");
+      const data = await response.json();
+      if (response.ok) {
+        setSpecialites(data);
+      }
+    } catch (error) {
+      console.error("Error fetching specialites:", error);
+    }
+  };
+
   useEffect(() => {
     fetchNiveaux();
+    fetchSpecialites();
   }, []);
 
   // Handle create/update
@@ -81,6 +103,7 @@ const NiveauManagement = () => {
         body: JSON.stringify({
           name: values.name,
           description: values.description,
+          specialiteId: values.specialiteId,
         }),
       });
 
@@ -134,6 +157,7 @@ const NiveauManagement = () => {
     form.setFieldsValue({
       name: niveau.name,
       description: niveau.description,
+      specialiteId: niveau.specialiteId,
     });
     setModalVisible(true);
   };
@@ -156,6 +180,18 @@ const NiveauManagement = () => {
       title: "Nom",
       dataIndex: "name",
       key: "name",
+      width: 150,
+    },
+    {
+      title: "Spécialité",
+      dataIndex: "specialite_nom",
+      key: "specialite_nom",
+      width: 150,
+    },
+    {
+      title: "Département",
+      dataIndex: "departement_nom",
+      key: "departement_nom",
       width: 150,
     },
     {
@@ -201,30 +237,37 @@ const items1 = [
   { key: '3', label: 'Reports' }
 ];
 
-const items2 = [
-  {
-    key: 'users',
-    icon: React.createElement(UserOutlined),
-    label: 'User Management',
-    children: [
-      { key: 'show-users', label: 'Show Users' },
-      { key: 'add-user', label: 'Add User' },
-    ],
-  },
-  {
-    key: 'reference',
-    icon: React.createElement(LaptopOutlined),
-    label: 'Reference Data',
-    children: [
-      { key: 'specialites', label: 'Spécialités' },
-      { key: 'departements', label: 'Départements' },
-      { key: 'niveaux', label: 'Niveaux' },
-      { key: 'classes', label: 'Classes' },
-      { key: 'salles', label: 'Salles' },
-      { key: 'matieres', label: 'Matières' },
-    ],
-  },
-];
+  const onClickMenu = (e) => {
+    if (e.key === 'specialites') {
+      navigate('/reference/specialites');
+    } else if (e.key === 'classes') {
+      navigate('/reference/classes');
+    } else if (e.key === 'departements') {
+      navigate('/reference/departements');
+    } else if (e.key === 'niveaux') {
+      navigate('/reference/niveaux');
+    } else if (e.key === 'matieres') {
+      navigate('/reference/matieres');
+    } else if (e.key === 'salles') {
+      navigate('/reference/salles');
+    }
+  };
+
+  const items2 = [
+    {
+      key: 'reference',
+      icon: React.createElement(LaptopOutlined),
+      label: 'Données de Référence',
+      children: [
+        { key: 'specialites', label: 'Spécialités' },
+        { key: 'departements', label: 'Départements' },
+        { key: 'niveaux', label: 'Niveaux' },
+        { key: 'classes', label: 'Classes' },
+        { key: 'salles', label: 'Salles' },
+        { key: 'matieres', label: 'Matières' },
+      ],
+    },
+  ];
 
   return (
     <Layout style={{ minHeight: "100vh" }}>
@@ -235,6 +278,7 @@ const items2 = [
           defaultOpenKeys={["reference"]}
           style={{ height: "100%", borderRight: 0 }}
           items={items2}
+          onClick={onClickMenu}
         />
       </Sider>
 
@@ -350,6 +394,33 @@ const items2 = [
             ]}
           >
             <Input placeholder="Entrez le nom du niveau" />
+          </Form.Item>
+
+          <Form.Item
+            label="Spécialité"
+            name="specialiteId"
+            rules={[
+              {
+                required: true,
+                message: "Please select a spécialité!",
+              },
+            ]}
+          >
+            <Select 
+              placeholder="Sélectionnez la spécialité"
+              showSearch
+              optionFilterProp="children"
+              filterOption={(input, option) =>
+                option.children.toLowerCase().includes(input.toLowerCase())
+              }
+            >
+              {specialites.map(spec => (
+                <Option key={spec.id} value={spec.id}>
+                  {spec.name}
+                  {spec.departement && spec.departement.name && ` (${spec.departement.name})`}
+                </Option>
+              ))}
+            </Select>
           </Form.Item>
 
           <Form.Item

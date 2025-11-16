@@ -1,0 +1,16 @@
+nom,prenom,email,numero_etudiant,date_naissance,phone,niveau_id,statut,mdp_hash
+Benali,Ahmed,ahmed.benali@example.com,20230001,2000-05-15,+216 20 123 456,1,actif,$2b$10$dummyHashForImportOnlyChangeAfter
+Trabelsi,Fatma,fatma.trabelsi@example.com,20230002,2001-03-20,+216 22 234 567,1,actif,$2b$10$dummyHashForImportOnlyChangeAfter
+Khelifi,Mohamed,mohamed.khelifi@example.com,20230003,2000-11-10,+216 24 345 678,2,actif,$2b$10$dummyHashForImportOnlyChangeAfter
+Gharbi,Amira,amira.gharbi@example.com,20230004,2001-07-25,+216 26 456 789,2,actif,$2b$10$dummyHashForImportOnlyChangeAfter
+Jebali,Sami,sami.jebali@example.com,20230005,2000-09-30,+216 28 567 890,1,actif,$2b$10$dummyHashForImportOnlyChangeAfter
+Mansouri,Nour,nour.mansouri@example.com,20230006,2001-01-14,+216 29 678 901,3,actif,$2b$10$dummyHashForImportOnlyChangeAfter
+Hamdi,Youssef,youssef.hamdi@example.com,20230007,2000-12-05,+216 21 789 012,3,actif,$2b$10$dummyHashForImportOnlyChangeAfter
+Belgacem,Salma,salma.belgacem@example.com,20230008,2001-04-18,+216 23 890 123,1,actif,$2b$10$dummyHashForImportOnlyChangeAfter
+Romdhani,Khalil,khalil.romdhani@example.com,20230009,2000-08-22,+216 25 901 234,2,actif,$2b$10$dummyHashForImportOnlyChangeAfter
+Nciri,Mariem,mariem.nciri@example.com,20230010,2001-06-12,+216 27 012 345,1,actif,$2b$10$dummyHashForImportOnlyChangeAfter
+Bouzid,Rami,rami.bouzid@example.com,20230011,2000-10-08,+216 90 123 456,2,actif,$2b$10$dummyHashForImportOnlyChangeAfter
+Sassi,Ines,ines.sassi@example.com,20230012,2001-02-28,+216 92 234 567,3,actif,$2b$10$dummyHashForImportOnlyChangeAfter
+Chouchane,Tarek,tarek.chouchane@example.com,20230013,2000-07-17,+216 94 345 678,1,actif,$2b$10$dummyHashForImportOnlyChangeAfter
+Saidi,Leila,leila.saidi@example.com,20230014,2001-09-03,+216 96 456 789,2,actif,$2b$10$dummyHashForImportOnlyChangeAfter
+Mahjoub,Aymen,aymen.mahjoub@example.com,20230015,2000-04-26,+216 98 567 890,3,actif,$2b$10$dummyHashForImportOnlyChangeAfter

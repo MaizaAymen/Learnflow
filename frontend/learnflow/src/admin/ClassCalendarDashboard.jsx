@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Card, Row, Col, Spin, message, Button, Empty } from 'antd';
+import { Card, Spin, message, Button, Empty, Table, Space, Tag } from 'antd';
 import { useNavigate } from 'react-router-dom';
-import { CalendarOutlined, EyeOutlined } from '@ant-design/icons';
+import { CalendarOutlined, EyeOutlined, PlusOutlined } from '@ant-design/icons';
 import './ClassCalendarDashboard.css';
 
 /**
@@ -92,128 +92,131 @@ const ClassCalendarDashboard = () => {
     );
   }
 
+  const columns = [
+    {
+      title: 'Classe',
+      dataIndex: 'nom',
+      key: 'nom',
+      render: (text, record) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '50%',
+            background: 'linear-gradient(135deg, #000000ff 0%, #000000ff 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            fontSize: '18px',
+            color: 'white',
+            fontWeight: 'bold',
+          }}>
+            {text.charAt(0)}
+          </div>
+          <strong style={{ fontSize: '16px' }}>{text}</strong>
+        </div>
+      ),
+    },
+    {
+      title: 'Niveau',
+      dataIndex: 'niveau',
+      key: 'niveau',
+      render: (niveau) => niveau ? niveau.nom : '-',
+    },
+    {
+      title: 'Spécialité',
+      dataIndex: 'specialite',
+      key: 'specialite',
+      render: (specialite) => specialite ? specialite.nom : '-',
+    },
+    {
+      title: 'Cours Planifiés',
+      key: 'total',
+      align: 'center',
+      render: (_, record) => {
+        const stats = scheduleStats[record.id] || { total: 0, active: 0, cancelled: 0 };
+        return (
+          <div>
+            <div style={{ fontSize: '20px', fontWeight: 'bold', color: '#1890ff' }}>
+              {stats.total}
+            </div>
+            <div style={{ fontSize: '12px', color: '#666' }}>cours</div>
+          </div>
+        );
+      },
+    },
+    {
+      title: 'Statut',
+      key: 'status',
+      align: 'center',
+      render: (_, record) => {
+        const stats = scheduleStats[record.id] || { total: 0, active: 0, cancelled: 0 };
+        return (
+          <Space direction="vertical" size={0}>
+            {stats.active > 0 && (
+              <Tag color="success" icon={<CalendarOutlined />}>
+                {stats.active} Actifs
+              </Tag>
+            )}
+            {stats.cancelled > 0 && (
+              <Tag color="error">
+                {stats.cancelled} Annulés
+              </Tag>
+            )}
+            {stats.total === 0 && (
+              <Tag color="default">Aucun cours</Tag>
+            )}
+          </Space>
+        );
+      },
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      align: 'center',
+      render: (_, record) => (
+        <Space size="middle">
+          <Button
+            type="primary"
+            icon={<EyeOutlined />}
+            onClick={() => viewClassCalendar(record.id)}
+          >
+            Voir Calendrier
+          </Button>
+          <Button
+            icon={<PlusOutlined />}
+            onClick={() => createScheduleForClass(record.id)}
+          >
+            Créer Planning
+          </Button>
+        </Space>
+      ),
+    },
+  ];
+
   return (
     <div style={{ padding: '24px' }}>
       <div style={{ marginBottom: '24px' }}>
-        <h1>📚 Calendriers par Classe</h1>
+        <h1> Calendriers par Classe</h1>
         <p style={{ color: '#666', fontSize: '16px' }}>
           Consultez le calendrier de chaque classe. Total: <strong>{classes.length} classes</strong>
         </p>
       </div>
 
-      <Row gutter={[16, 16]}>
-        {classes.map((classe) => {
-          const stats = scheduleStats[classe.id] || { total: 0, active: 0, cancelled: 0 };
-          
-          return (
-            <Col xs={24} sm={12} md={8} lg={6} key={classe.id}>
-              <Card
-                hoverable
-                className="class-calendar-card"
-                style={{
-                  borderRadius: '12px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  transition: 'all 0.3s ease',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'translateY(-5px)';
-                  e.currentTarget.style.boxShadow = '0 4px 16px rgba(0,0,0,0.15)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = '0 2px 8px rgba(0,0,0,0.1)';
-                }}
-              >
-                <div style={{ textAlign: 'center' }}>
-                  {/* Class Icon */}
-                  <div style={{
-                    width: '80px',
-                    height: '80px',
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    margin: '0 auto 16px',
-                    fontSize: '36px',
-                    color: 'white',
-                    fontWeight: 'bold',
-                  }}>
-                    {classe.nom.charAt(0)}
-                  </div>
-
-                  {/* Class Name */}
-                  <h3 style={{ 
-                    fontSize: '20px', 
-                    fontWeight: 'bold', 
-                    marginBottom: '8px',
-                    color: '#1890ff'
-                  }}>
-                    {classe.nom}
-                  </h3>
-
-                  {/* Class Details */}
-                  {classe.niveau && (
-                    <p style={{ color: '#666', fontSize: '14px', marginBottom: '4px' }}>
-                      Niveau: {classe.niveau.nom}
-                    </p>
-                  )}
-                  {classe.specialite && (
-                    <p style={{ color: '#666', fontSize: '14px', marginBottom: '16px' }}>
-                      {classe.specialite.nom}
-                    </p>
-                  )}
-
-                  {/* Statistics */}
-                  <div style={{
-                    background: '#f5f5f5',
-                    padding: '12px',
-                    borderRadius: '8px',
-                    marginBottom: '16px'
-                  }}>
-                    <div style={{ marginBottom: '8px' }}>
-                      <CalendarOutlined style={{ marginRight: '8px', color: '#1890ff' }} />
-                      <strong>{stats.total}</strong> cours planifiés
-                    </div>
-                    {stats.total > 0 && (
-                      <div style={{ fontSize: '12px', color: '#666' }}>
-                        <span style={{ color: '#52c41a' }}>✓ {stats.active} actifs</span>
-                        {stats.cancelled > 0 && (
-                          <span style={{ marginLeft: '8px', color: '#ff4d4f' }}>
-                            ✗ {stats.cancelled} annulés
-                          </span>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Actions */}
-                  <Button
-                    type="primary"
-                    icon={<EyeOutlined />}
-                    onClick={() => viewClassCalendar(classe.id)}
-                    block
-                    size="large"
-                    style={{ marginBottom: '8px' }}
-                  >
-                    Voir Calendrier
-                  </Button>
-
-                  <Button
-                    type="default"
-                    onClick={() => createScheduleForClass(classe.id)}
-                    block
-                  >
-                    ➕ Créer Planning
-                  </Button>
-                </div>
-              </Card>
-            </Col>
-          );
-        })}
-      </Row>
-
-      {/* Quick Actions */}
+      <Card>
+        <Table
+          dataSource={classes}
+          columns={columns}
+          rowKey="id"
+          pagination={{
+            pageSize: 10,
+            showSizeChanger: true,
+            showTotal: (total) => `Total: ${total} classes`,
+          }}
+          bordered
+        />
+      </Card>
+      *{/* Quick Actions 
       <Card style={{ marginTop: '24px', background: '#f0f9ff' }}>
         <h3>Actions Rapides</h3>
         <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
@@ -230,7 +233,7 @@ const ClassCalendarDashboard = () => {
             📆 Voir Tous les Calendriers
           </Button>
         </div>
-      </Card>
+      </Card>*/}
     </div>
   );
 };

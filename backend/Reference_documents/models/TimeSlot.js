@@ -24,7 +24,7 @@ const TimeSlot = sequelize.define('TimeSlot', {
     defaultValue: true
   },
   description: { 
-    type: DataTypes.STRING, 
+    type: DataTypes.STRING(255), 
     allowNull: true
   }
 }, {
@@ -36,7 +36,22 @@ const TimeSlot = sequelize.define('TimeSlot', {
       unique: true,
       fields: ['day_of_week', 'start_time', 'end_time']
     }
-  ]
+  ],
+  validate: {
+    // Custom validation to ensure end_time > start_time
+    endTimeAfterStartTime() {
+      if (this.start_time && this.end_time) {
+        const start = this.start_time.split(':').map(Number);
+        const end = this.end_time.split(':').map(Number);
+        const startMinutes = start[0] * 60 + start[1];
+        const endMinutes = end[0] * 60 + end[1];
+        
+        if (endMinutes <= startMinutes) {
+          throw new Error('La heure de fin doit être après la heure de début');
+        }
+      }
+    }
+  }
 });
 
 module.exports = TimeSlot;

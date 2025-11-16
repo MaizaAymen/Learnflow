@@ -9,6 +9,7 @@ import {
   Modal,
   Form,
   Input,
+  Select,
   message,
   Space,
   Popconfirm,
@@ -26,57 +27,13 @@ import {
   LaptopOutlined,
 } from "@ant-design/icons";
 
-const onClickMenu = (e) => {
-    if (e.key === 'specialites') {
-      navigate('/reference/specialites');
-    } else if (e.key === 'classes') {
-      navigate('/CreationClasse');
-    } else if (e.key === 'departements') {
-      navigate('/reference/departements');
-    } else if (e.key === 'niveaux') {
-      navigate('/reference/niveaux');
-    } else if (e.key === 'matieres') {
-      navigate('/reference/matieres');
-    }
-
-    // Add other navigation cases as needed
-  };
 const { Content, Sider } = Layout;
 const { TextArea } = Input;
-
-const items1 = [
-  { key: '1', label: 'Dashboard' },
-  { key: '2', label: 'Users' },
-  { key: '3', label: 'Reports' }
-];
-
-const items2 = [
-  {
-    key: 'users',
-    icon: React.createElement(UserOutlined),
-    label: 'User Management',
-    children: [
-      { key: 'show-users', label: 'Show Users' },
-      { key: 'add-user', label: 'Add User' },
-    ],
-  },
-  {
-    key: 'reference',
-    icon: React.createElement(LaptopOutlined),
-    label: 'Reference Data',
-    children: [
-      { key: 'specialites', label: 'Spécialités' },
-      { key: 'departements', label: 'Départements' },
-      { key: 'niveaux', label: 'Niveaux' },
-      { key: 'classes', label: 'Classes' },
-      { key: 'salles', label: 'Salles' },
-      { key: 'matieres', label: 'Matières' },
-    ],
-  },
-];
+const { Option } = Select;
 
 const SpecialiteManagementSimple = () => {
   const [specialites, setSpecialites] = useState([]);
+  const [departements, setDepartements] = useState([]);
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingSpecialite, setEditingSpecialite] = useState(null);
@@ -95,7 +52,11 @@ const SpecialiteManagementSimple = () => {
       if (response.ok) {
         const data = await response.json();
         console.log("Fetched specialites:", data);
-        setSpecialites(data);
+        const formatted = data.map(s => ({
+          ...s,
+          departement_nom: s.departement?.name || "—"
+        }));
+        setSpecialites(formatted);
       } else {
         message.error("Failed to fetch specialites");
       }
@@ -107,8 +68,22 @@ const SpecialiteManagementSimple = () => {
     }
   };
 
+  // Fetch departements for dropdown
+  const fetchDepartements = async () => {
+    try {
+      const response = await fetch("http://localhost:3000/api/reference/departements");
+      const data = await response.json();
+      if (response.ok) {
+        setDepartements(data);
+      }
+    } catch (error) {
+      console.error("Error fetching departements:", error);
+    }
+  };
+
   useEffect(() => {
     fetchSpecialites();
+    fetchDepartements();
   }, []);
 
   // Handle create/update
@@ -128,6 +103,7 @@ const SpecialiteManagementSimple = () => {
         body: JSON.stringify({
           name: values.name,
           description: values.description,
+          departementId: values.departementId,
         }),
       });
 
@@ -178,8 +154,9 @@ const SpecialiteManagementSimple = () => {
   const handleEdit = (specialite) => {
     setEditingSpecialite(specialite);
     form.setFieldsValue({
-      nom: specialite.nom,
+      name: specialite.name,
       description: specialite.description,
+      departementId: specialite.departementId,
     });
     setModalVisible(true);
   };
@@ -195,6 +172,38 @@ const SpecialiteManagementSimple = () => {
     console.log("Logging out...");
   };
 
+  const onClickMenu = (e) => {
+    if (e.key === 'specialites') {
+      navigate('/reference/specialites');
+    } else if (e.key === 'classes') {
+      navigate('/reference/classes');
+    } else if (e.key === 'departements') {
+      navigate('/reference/departements');
+    } else if (e.key === 'niveaux') {
+      navigate('/reference/niveaux');
+    } else if (e.key === 'matieres') {
+      navigate('/reference/matieres');
+    } else if (e.key === 'salles') {
+      navigate('/reference/salles');
+    }
+  };
+
+  const items2 = [
+    {
+      key: 'reference',
+      icon: React.createElement(LaptopOutlined),
+      label: 'Données de Référence',
+      children: [
+        { key: 'specialites', label: 'Spécialités' },
+        { key: 'departements', label: 'Départements' },
+        { key: 'niveaux', label: 'Niveaux' },
+        { key: 'classes', label: 'Classes' },
+        { key: 'salles', label: 'Salles' },
+        { key: 'matieres', label: 'Matières' },
+      ],
+    },
+  ];
+
   const columns = [
     {
       title: "ID",
@@ -203,9 +212,15 @@ const SpecialiteManagementSimple = () => {
       width: 60,
     },
     {
-      title: "name",
+      title: "Nom",
       dataIndex: "name",
       key: "name",
+      width: 150,
+    },
+    {
+      title: "Département",
+      dataIndex: "departement_nom",
+      key: "departement_nom",
       width: 150,
     },
     {
@@ -360,7 +375,7 @@ const SpecialiteManagementSimple = () => {
           style={{ marginTop: 20 }}
         >
           <Form.Item
-            label="name"
+            label="Nom"
             name="name"
             rules={[
               { required: true, message: "Please enter the name!" },
@@ -368,6 +383,22 @@ const SpecialiteManagementSimple = () => {
             ]}
           >
             <Input placeholder="Entrez le nom de la spécialité" />
+          </Form.Item>
+
+          <Form.Item
+            label="Département"
+            name="departementId"
+            rules={[
+              { required: true, message: "Please select a département!" },
+            ]}
+          >
+            <Select placeholder="Sélectionnez le département">
+              {departements.map(dept => (
+                <Option key={dept.id} value={dept.id}>
+                  {dept.name}
+                </Option>
+              ))}
+            </Select>
           </Form.Item>
 
           <Form.Item
