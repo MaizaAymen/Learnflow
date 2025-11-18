@@ -15,6 +15,8 @@ const MatiereEnseignant = require('./MatiereEnseignant');
 const MatiereClasse = require('./MatiereClasse');
 const Absence = require('./Absence');
 const Rattrapage = require('./Rattrapage');
+const Student = require('./Student');
+const StudentAbsence = require('./StudentAbsence');
 
 // Import User model from auth-service for cross-schema relationships
 // Students are users with role='etudiant'
@@ -378,6 +380,71 @@ Rattrapage.belongsTo(User, {
 });
 
 // ============================================================================
+// STUDENT ABSENCE RELATIONSHIPS
+// ============================================================================
+
+// StudentAbsence → Schedule (Many-to-One)
+StudentAbsence.belongsTo(Schedule, {
+  foreignKey: 'schedule_id',
+  allowNull: false,
+  as: 'schedule',
+  constraints: false
+});
+Schedule.hasMany(StudentAbsence, {
+  foreignKey: 'schedule_id',
+  as: 'attendance'
+});
+
+// StudentAbsence → Student (Many-to-One)
+// Note: Changed to reference User model since students are Users with role='etudiant' from auth schema
+StudentAbsence.belongsTo(User, {
+  foreignKey: 'student_id',
+  allowNull: false,
+  as: 'student',
+  constraints: false
+});
+User.hasMany(StudentAbsence, {
+  foreignKey: 'student_id',
+  as: 'student_absences'
+});
+
+// StudentAbsence → Teacher (Enseignant) (Many-to-One)
+StudentAbsence.belongsTo(User, {
+  foreignKey: 'enseignant_id',
+  allowNull: false,
+  as: 'teacher',
+  constraints: false
+});
+User.hasMany(StudentAbsence, {
+  foreignKey: 'enseignant_id',
+  as: 'marked_absences'
+});
+
+// ============================================================================
+// STUDENT RELATIONSHIPS
+// ============================================================================
+
+// Student → Classe (Many-to-One)
+Student.belongsTo(Classe, {
+  foreignKey: 'classe_id',
+  allowNull: true,
+  as: 'classe',
+  constraints: false
+});
+Classe.hasMany(Student, {
+  foreignKey: 'classe_id',
+  as: 'directStudents'
+});
+
+// Student → Niveau (Many-to-One)
+Student.belongsTo(Niveau, {
+  foreignKey: 'niveau_id',
+  allowNull: true,
+  as: 'niveau',
+  constraints: false
+});
+
+// ============================================================================
 // EXPORTS
 // ============================================================================
 
@@ -396,5 +463,7 @@ module.exports = {
   MatiereClasse,
   Absence,
   Rattrapage,
+  Student,
+  StudentAbsence,
   User // Students are Users with role='etudiant'
 };

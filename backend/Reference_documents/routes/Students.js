@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { Classe, Niveau, Specialite, Departement } = require('../models');
+const { Classe, Niveau, Specialite, Departement, StudentAbsence, Schedule } = require('../models');
 const { Parser } = require('json2csv');
 const multer = require('multer');
 const csv = require('csv-parser');
@@ -714,6 +714,56 @@ router.delete('/batch/:batchId', async (req, res) => {
   } catch (error) {
     console.error('Error deleting batch:', error);
     res.status(500).json({ error: 'Failed to delete batch' });
+  }
+});
+
+// ============================================================================
+// GET STUDENT ABSENCES - Called by auth service
+// ============================================================================
+
+/**
+ * GET /api/student/absences/:studentId
+ * Fetch all absences for a specific student
+ * Called by auth-service which proxies from frontend
+ */
+router.get('/absences/:studentId', async (req, res) => {
+  try {
+    const { studentId } = req.params;
+
+    if (!studentId) {
+      return res.status(400).json({ error: 'Student ID is required' });
+    }
+
+    console.log(`📝 Fetching absences for student ID: ${studentId}`);
+
+    // Fetch student absences with related schedule and matiere information
+    const absences = await StudentAbsence.findAll({
+      where: { student_id: studentId },
+      include: [
+        {
+          model: Schedule,
+          as: 'schedule',
+          attributes: ['id', 'date_debut', 'matiere_id', 'enseignant_id'],
+          include: [
+            {
+              model: require('../models').Matiere,
+              as: 'matiere',
+              attributes: ['id', 'name', 'code']
+            }
+          ]
+        }
+      ],
+      order: [['createdAt', 'DESC']],
+      raw: false
+    });
+
+    console.log(`✅ Found ${absences.length} absences for student ${studentId}`);
+
+    res.json(absences || []);
+
+  } catch (error) {
+    console.error('❌ Error fetching student absences:', error);
+    res.status(500).json({ error: 'Failed to fetch student absences', details: error.message });
   }
 });
 

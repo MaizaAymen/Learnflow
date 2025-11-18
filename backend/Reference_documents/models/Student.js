@@ -1,5 +1,5 @@
 const { DataTypes } = require('sequelize');
-const sequelize = require('../config/index');
+const sequelize = require('../../auth-service/config');
 
 const Student = sequelize.define('student', {
   id: {
@@ -24,7 +24,6 @@ const Student = sequelize.define('student', {
   email: {
     type: DataTypes.STRING(255),
     allowNull: false,
-    unique: true,
     validate: {
       isEmail: true
     }
@@ -32,7 +31,6 @@ const Student = sequelize.define('student', {
   numero_etudiant: {
     type: DataTypes.STRING(50),
     allowNull: false,
-    unique: true,
     comment: 'Unique student ID number'
   },
   date_naissance: {

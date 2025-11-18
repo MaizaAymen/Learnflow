@@ -1,0 +1,76 @@
+.attendance-viewer {
+  .stat-card {
+    text-align: center;
+  }
+
+  .statistics-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 12px;
+    margin-bottom: 20px;
+
+    @media (max-width: 1200px) {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    @media (max-width: 768px) {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+}
+
+.mb-3 {
+  margin-bottom: 16px;
+}
+
+.attendance-table {
+  .ant-table {
+    font-size: 12px;
+  }
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+
+  &.present {
+    background-color: #f6ffed;
+    color: #52c41a;
+    border: 1px solid #b7eb8f;
+  }
+
+  &.absent {
+    background-color: #fff1f0;
+    color: #ff4d4f;
+    border: 1px solid #ffccc7;
+  }
+
+  &.excused {
+    background-color: #fffbe6;
+    color: #faad14;
+    border: 1px solid #ffe58f;
+  }
+
+  &.late {
+    background-color: #e6f7ff;
+    color: #1890ff;
+    border: 1px solid #91d5ff;
+  }
+
+  &.left_early {
+    background-color: #f9f0ff;
+    color: #722ed1;
+    border: 1px solid #d3adf7;
+  }
+}
+
+.edit-modal {
+  .ant-form-item-label {
+    label {
+      font-weight: 500;
+    }
+  }
+}

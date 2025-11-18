@@ -13,10 +13,44 @@ const fs = require("fs");
 const XLSX = require("xlsx");
 const { send } = require("process");
 
-// Import models for automatic class assignment
+// Import models for automatic class assignment and student absence handling
 const { Specialite, Niveau, Classe, Student } = require("../../Reference_documents/models");
 
+// UUID generator for student absence records
+const crypto = require('crypto');
+const generateUUID = () => crypto.randomUUID();
+
 const upload = multer({ dest: "uploads/" });
+
+/**
+ * Helper function to extract teacher ID from Authorization header or cookies
+ */
+const getTeacherIdFromRequest = (req) => {
+  // Try Authorization header first (Bearer token)
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.substring(7);
+    try {
+      const decoded = jwt.verify(token, secretKey);
+      return decoded.id;
+    } catch (error) {
+      console.error('Authorization header token verification error:', error.message);
+    }
+  }
+
+  // Fall back to cookies
+  const token = req.cookies?.token;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, secretKey);
+      return decoded.id;
+    } catch (error) {
+      console.error('Cookie token verification error:', error.message);
+    }
+  }
+
+  return null;
+};
 
 // Helper function to auto-assign student to class based on specialite
 async function autoAssignToClass(studentData) {
@@ -805,6 +839,151 @@ router.post("/assign-students-to-class", async (req, res) => {
   } catch (error) {
     console.error('❌ Error assigning students:', error);
     res.status(500).json({ error: 'Failed to assign students', details: error.message });
+  }
+});
+
+/**
+ * GET /api/auth/classes/:classId/students
+ * Get all students in a specific class
+ * Used by StudentAbsenceModal to fetch class students
+ */
+router.get('/classes/:classId/students', async (req, res) => {
+  try {
+    const { classId } = req.params;
+
+    if (!classId) {
+      return res.status(400).json({ error: 'Class ID is required' });
+    }
+
+    // Verify the class exists
+    const classe = await Classe.findByPk(classId);
+    if (!classe) {
+      return res.status(404).json({ error: 'Class not found' });
+    }
+
+    // Get all students (Users with role='etudiant') assigned to this class
+    const students = await utilisateur.findAll({
+      where: {
+        classe_id: classId,
+        role: 'etudiant'
+      },
+      attributes: ['id', 'nom', 'prenom', 'email', 'numero_etudiant'],
+      order: [['nom', 'ASC'], ['prenom', 'ASC']]
+    });
+
+    console.log(`✅ Found ${students.length} students in class ${classId}`);
+    res.json(students || []);
+  } catch (error) {
+    console.error('Error fetching class students:', error);
+    res.status(500).json({ error: 'Failed to fetch students', details: error.message });
+  }
+});
+
+/**
+ * GET /api/auth/student/absences
+ * Get all absences for the authenticated student
+ */
+router.get('/student/absences', async (req, res) => {
+  try {
+    console.log('🚨 GET /student/absences called!');
+    
+    const token = req.cookies?.token || req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Decode token to get student ID
+    jwt.verify(token, secretKey, async (err, decoded) => {
+      if (err) {
+        return res.status(403).json({ error: 'Token invalide' });
+      }
+
+      const studentId = decoded.id;
+      console.log('📝 Fetching absences for student ID:', studentId);
+
+      // Forward the request to the Reference_documents service
+      const referenceServiceUrl = `http://localhost:3000/api/student/absences/${studentId}`;
+      console.log(`📤 Forwarding request to Reference service: ${referenceServiceUrl}`);
+
+      try {
+        const response = await fetch(referenceServiceUrl, {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          }
+        });
+
+        if (!response.ok) {
+          console.error('❌ Reference service returned error:', response.status);
+          return res.status(response.status).json({ error: 'Failed to fetch absences from reference service' });
+        }
+
+        const data = await response.json();
+        console.log('✅ Successfully fetched student absences:', data?.length || 0);
+        res.json(data);
+
+      } catch (fetchError) {
+        console.error('❌ Error calling reference service:', fetchError.message);
+        // If reference service is down, return empty array
+        res.json([]);
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error in GET /student/absences:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/auth/teacher/mark-student-absences
+ * Mark attendance/absence for multiple students in a lesson
+ * Proxies the request to the Reference_documents service on port 3000
+ */
+router.post('/teacher/mark-student-absences', async (req, res) => {
+  console.log('🚨 POST /teacher/mark-student-absences called (Auth Service)!');
+  
+  try {
+    const token = req.headers.authorization;
+    const { schedule_id, absences } = req.body;
+
+    if (!token) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    console.log('📝 Request data:', { schedule_id, absenceCount: absences?.length });
+
+    // Forward the request to the Reference_documents service
+    const referenceServiceUrl = 'http://localhost:3000/api/teacher/mark-student-absences';
+    console.log(`📤 Forwarding request to Reference service: ${referenceServiceUrl}`);
+
+    const response = await fetch(referenceServiceUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': token
+      },
+      body: JSON.stringify({
+        schedule_id,
+        absences
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      console.error('❌ Reference service error:', error);
+      return res.status(response.status).json(error);
+    }
+
+    const data = await response.json();
+    console.log('✅ Successfully marked student absences:', data);
+    res.status(response.status).json(data);
+
+  } catch (error) {
+    console.error('❌ Error in POST /teacher/mark-student-absences:', error.message);
+    console.error('Stack:', error.stack);
+    res.status(500).json({ error: error.message });
   }
 });
 

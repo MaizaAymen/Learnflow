@@ -482,8 +482,9 @@ const ClassCalendarContent = () => {
             </Button>
           ]}
         >
-          {selectedSchedule && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <Form form={form}>
+            {selectedSchedule && (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
                 <strong>Matière:</strong> {selectedSchedule.matiere?.nom || selectedSchedule.matiere?.name || 'Non spécifiée'}
               </div>
@@ -522,8 +523,9 @@ const ClassCalendarContent = () => {
                 <strong>Période:</strong> {selectedSchedule.date_debut} 
                 {selectedSchedule.date_fin ? ` au ${selectedSchedule.date_fin}` : ' (sans fin spécifiée)'}
               </div>
-            </div>
-          )}
+              </div>
+            )}
+          </Form>
         </Modal>
       </div>
     </ConfigProvider>

@@ -17,7 +17,8 @@ import {
   DatePicker,
   message,
   Modal,
-  Upload
+  Upload,
+  Tabs
 } from 'antd';
 import {
   UserOutlined,
@@ -30,8 +31,10 @@ import {
   EditOutlined,
   SaveOutlined,
   PlusOutlined,
-  UploadOutlined
+  UploadOutlined,
+  ExclamationCircleOutlined
 } from '@ant-design/icons';
+import StudentAbsencesTab from './StudentAbsencesTab';
 
 const { Title, Text, Paragraph } = Typography;
 const { Option } = Select;
@@ -92,7 +95,6 @@ const handleCompleteProfile = (values) => {
   })
   .then(data => {
       if (data.message || data.user) {
-        // Update local state instead of page reload
         setProfile({ ...profile, ...values });
         message.success({ 
           content: 'Votre profil a été mis à jour avec succès !', 
@@ -190,69 +192,17 @@ const handleCompleteProfile = (values) => {
     );
   }
 
-  return (
-    <div className="page-wrapper animate-fadeInUp">
-      <div className="app-container">
-        {/* Header Card */}
-        <Card 
-          className="data-card hover-lift"
-          style={{ marginBottom: 'var(--space-6)' }}
-          bodyStyle={{ padding: 'var(--space-8)' }}
-        >
-          <Row align="middle" justify="space-between" gutter={24}>
-            <Col>
-              <Row align="middle" gutter={24}>
-                <Col>
-                  <Avatar 
-                    size={100} 
-                    src={profile.image} 
-                    icon={<UserOutlined />}
-                    className="status-online hover-glow"
-                    style={{ 
-                      backgroundColor: 'var(--primary-500)',
-                      border: '4px solid var(--bg-primary)',
-                      boxShadow: 'var(--shadow-lg)'
-                    }}
-                  />
-                </Col>
-                <Col>
-                  <Title level={1} className="form-title" style={{ margin: 0, fontSize: 'var(--font-size-4xl)' }}>
-                    {profile.nom} {profile.prenom}
-                  </Title>
-                  <Space size="large" style={{ marginTop: 'var(--space-3)' }}>
-                    <div className={`status-badge status-badge--${getRoleColor(profile.role) === 'red' ? 'error' : getRoleColor(profile.role) === 'blue' ? 'info' : 'success'}`}>
-                      {profile.role?.toUpperCase()}
-                    </div>
-                    {profile.specialite && (
-                      <div className="status-badge status-badge--warning">
-                        {profile.specialite}
-                      </div>
-                    )}
-                  </Space>
-                </Col>
-              </Row>
-            </Col>
-            <Col>
-              <Button 
-                type="primary" 
-                size="large"
-                icon={isEditing ? <SaveOutlined /> : <EditOutlined />}
-                onClick={() => setIsEditing(!isEditing)}
-                className="hover-lift"
-                style={{
-                  height: 'var(--space-12)',
-                  paddingLeft: 'var(--space-6)',
-                  paddingRight: 'var(--space-6)'
-                }}
-              >
-                {isEditing ? 'Annuler' : 'Modifier le profil'}
-              </Button>
-            </Col>
-          </Row>
-        </Card>
-
+  const tabItems = [
+    {
+      key: '1',
+      label: (
+        <span>
+          <UserOutlined />
+          Informations Personnelles
+        </span>
+      ),
+      children: (
         <Row gutter={[24, 24]}>
-          {/* Personal Information */}
           <Col xs={24} lg={12}>
             <Card 
               title={
@@ -309,7 +259,6 @@ const handleCompleteProfile = (values) => {
             </Card>
           </Col>
 
-          {/* Location & Academic Info */}
           <Col xs={24} lg={12}>
             <Card 
               title={
@@ -384,7 +333,6 @@ const handleCompleteProfile = (values) => {
             </Card>
           </Col>
 
-          {/* Professional Info (for teachers) */}
           {profile.role === 'enseignant' && (
             <Col xs={24}>
               <Card 
@@ -424,7 +372,6 @@ const handleCompleteProfile = (values) => {
             </Col>
           )}
 
-          {/* Interests & Skills (for students) */}
           {profile.role === 'etudiant' && (profile.interets || profile.competences) && (
             <Col xs={24}>
               <Card 
@@ -468,8 +415,85 @@ const handleCompleteProfile = (values) => {
             </Col>
           )}
         </Row>
+      )
+    }
+  ];
+
+  if (profile.role === 'etudiant') {
+    tabItems.push({
+      key: '2',
+      label: (
+        <span>
+          <ExclamationCircleOutlined />
+          Mes Absences & Éliminations
+        </span>
+      ),
+      children: <StudentAbsencesTab studentId={profile.id} />
+    });
+  }
+
+  return (
+    <div className="page-wrapper animate-fadeInUp">
+      <div className="app-container">
+        <Card 
+          className="data-card hover-lift"
+          style={{ marginBottom: 'var(--space-6)' }}
+          bodyStyle={{ padding: 'var(--space-8)' }}
+        >
+          <Row align="middle" justify="space-between" gutter={24}>
+            <Col>
+              <Row align="middle" gutter={24}>
+                <Col>
+                  <Avatar 
+                    size={100} 
+                    src={profile.image} 
+                    icon={<UserOutlined />}
+                    className="status-online hover-glow"
+                    style={{ 
+                      backgroundColor: 'var(--primary-500)',
+                      border: '4px solid var(--bg-primary)',
+                      boxShadow: 'var(--shadow-lg)'
+                    }}
+                  />
+                </Col>
+                <Col>
+                  <Title level={1} className="form-title" style={{ margin: 0, fontSize: 'var(--font-size-4xl)' }}>
+                    {profile.nom} {profile.prenom}
+                  </Title>
+                  <Space size="large" style={{ marginTop: 'var(--space-3)' }}>
+                    <div className={`status-badge status-badge--${getRoleColor(profile.role) === 'red' ? 'error' : getRoleColor(profile.role) === 'blue' ? 'info' : 'success'}`}>
+                      {profile.role?.toUpperCase()}
+                    </div>
+                    {profile.specialite && (
+                      <div className="status-badge status-badge--warning">
+                        {profile.specialite}
+                      </div>
+                    )}
+                  </Space>
+                </Col>
+              </Row>
+            </Col>
+            <Col>
+              <Button 
+                type="primary" 
+                size="large"
+                icon={isEditing ? <SaveOutlined /> : <EditOutlined />}
+                onClick={() => setIsEditing(!isEditing)}
+                className="hover-lift"
+                style={{
+                  height: 'var(--space-12)',
+                  paddingLeft: 'var(--space-6)',
+                  paddingRight: 'var(--space-6)'
+                }}
+              >
+                {isEditing ? 'Annuler' : 'Modifier le profil'}
+              </Button>
+            </Col>
+          </Row>
+        </Card>
+
+        <Tabs defaultActiveKey="1" items={tabItems} />
         
-        {/* Edit Profile Modal */}
         <Modal
           title={
             <div>

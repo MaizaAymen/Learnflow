@@ -326,4 +326,354 @@ router.get('/subjects', async (req, res) => {
   }
 });
 
+/**
+ * GET /api/teacher/classes/:classId/students - removed in favor of /:classId/students
+ * Route now available at /api/classes/:classId/students when using /api/classes prefix
+ */
+
+/**
+ * GET /api/classes/:classId/students
+ * Alternative endpoint for getting class students (public route for modals)
+ */
+router.get('/:classId/students', async (req, res) => {
+  try {
+    const models = req.app.get('models');
+    if (!models) {
+      return res.status(500).json({ error: 'Models not loaded in app' });
+    }
+
+    const { Classe, Student, User } = models;
+    const classId = req.params.classId;
+
+    if (!classId) {
+      return res.status(400).json({ error: 'Class ID is required' });
+    }
+
+    // Find the class
+    const classe = await Classe.findByPk(classId);
+    if (!classe) {
+      return res.status(404).json({ error: 'Class not found' });
+    }
+
+    // Try to get students from Student model first
+    let students = await Student.findAll({
+      where: { classe_id: classId },
+      attributes: ['id', 'nom', 'prenom', 'email', 'numero_etudiant'],
+      order: [['nom', 'ASC'], ['prenom', 'ASC']]
+    });
+
+    // If no students found in Student model, try User model (students are Users with role='etudiant')
+    if (!students || students.length === 0) {
+      console.log('📍 No students found in Student model, checking User model for classe_id:', classId);
+      students = await User.findAll({
+        where: { classe_id: classId, role: 'etudiant' },
+        attributes: ['id', 'nom', 'prenom', 'email', 'numero_etudiant'],
+        order: [['nom', 'ASC'], ['prenom', 'ASC']]
+      });
+    }
+
+    console.log(`✅ Found ${students?.length || 0} students for class ${classId}`);
+    res.json(students || []);
+  } catch (error) {
+    console.error('Error fetching class students:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * POST /api/teacher/mark-student-absences
+ * Mark attendance/absence for multiple students in a lesson
+ */
+router.post('/mark-student-absences', async (req, res) => {
+  console.log('🚨 POST /mark-student-absences called!');
+  
+  try {
+    const models = req.app.get('models');
+    if (!models) {
+      console.error('❌ Models not found in app');
+      return res.status(500).json({ error: 'Models not loaded in app' });
+    }
+
+    const { StudentAbsence, Schedule } = models;
+    const enseignantId = getTeacherIdFromRequest(req);
+    const { schedule_id, absences } = req.body;
+
+    console.log('📝 Request data:', { schedule_id, totalStudents: absences?.length, enseignantId });
+    console.log('📋 Full absences array:');
+    absences?.forEach((a, idx) => {
+      console.log(`  [${idx}] Student ${a.student_id}: ${a.absence_type}`);
+    });
+
+    if (!enseignantId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    if (!StudentAbsence) {
+      console.error('❌ StudentAbsence model not found');
+      return res.status(500).json({ error: 'StudentAbsence model not loaded' });
+    }
+
+    if (!Schedule) {
+      console.error('❌ Schedule model not found');
+      return res.status(500).json({ error: 'Schedule model not loaded' });
+    }
+
+    if (!Array.isArray(absences) || absences.length === 0) {
+      return res.status(400).json({ error: 'Invalid absences data' });
+    }
+
+    // Verify schedule belongs to the teacher
+    const schedule = await Schedule.findByPk(schedule_id);
+    if (!schedule) {
+      return res.status(404).json({ error: 'Schedule not found' });
+    }
+
+    if (schedule.enseignant_id !== enseignantId) {
+      return res.status(403).json({ error: 'Unauthorized: Schedule belongs to another teacher' });
+    }
+
+    console.log('✅ Authorization passed. Processing', absences.length, 'absence records...');
+
+    // Process each absence record individually
+    // Only update/create records for absent/excused/late/left_early students
+    const recordsToProcess = absences.filter(a => a.absence_type !== 'present');
+    console.log(`📝 Processing ${recordsToProcess.length} non-present students out of ${absences.length}`);
+
+    // Delete ALL previous records for this schedule to avoid duplicates
+    const deletedCount = await StudentAbsence.destroy({
+      where: { 
+        schedule_id
+      }
+    });
+    console.log(`🗑️ Deleted ${deletedCount} previous records for schedule ${schedule_id}`);
+
+    // Bulk create absence records only for non-present students
+    const createdAbsences = await StudentAbsence.bulkCreate(
+      recordsToProcess.map(absence => ({
+        id: generateUUID(),
+        schedule_id,
+        student_id: absence.student_id,
+        enseignant_id: enseignantId,
+        absence_type: absence.absence_type || 'absent',
+        motif: absence.motif || null,
+        marked_at: new Date(),
+        statut: 'pending'
+      }))
+    );
+
+    console.log('✅ Created', createdAbsences.length, 'attendance records (only for non-present students)');
+    res.status(201).json({
+      message: 'Student absences marked successfully',
+      count: createdAbsences.length,
+      data: createdAbsences
+    });
+  } catch (error) {
+    console.error('❌ Error in POST /mark-student-absences:', error.message);
+    console.error('Stack:', error.stack);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/teacher/schedule/:scheduleId/absences
+ * Get attendance records for a specific lesson
+ */
+router.get('/schedule/:scheduleId/absences', async (req, res) => {
+  try {
+    const models = req.app.get('models');
+    if (!models) {
+      return res.status(500).json({ error: 'Models not loaded in app' });
+    }
+
+    const { StudentAbsence, Schedule } = models;
+    const enseignantId = getTeacherIdFromRequest(req);
+    const { scheduleId } = req.params;
+
+    if (!enseignantId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    // Verify schedule belongs to teacher
+    const schedule = await Schedule.findByPk(scheduleId);
+    if (!schedule) {
+      return res.status(404).json({ error: 'Schedule not found' });
+    }
+
+    if (schedule.enseignant_id !== enseignantId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    // Get attendance records
+    const absences = await StudentAbsence.findAll({
+      where: { schedule_id: scheduleId },
+      include: [
+        {
+          model: models.User,
+          as: 'student',
+          attributes: ['id', 'nom', 'prenom', 'email']
+        }
+      ],
+      order: [['marked_at', 'DESC']]
+    });
+
+    res.json(absences);
+  } catch (error) {
+    console.error('Error fetching absence records:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * PUT /api/teacher/student-absence/:absenceId
+ * Update an attendance record
+ */
+router.put('/student-absence/:absenceId', async (req, res) => {
+  try {
+    const models = req.app.get('models');
+    if (!models) {
+      return res.status(500).json({ error: 'Models not loaded in app' });
+    }
+
+    const { StudentAbsence } = models;
+    const enseignantId = getTeacherIdFromRequest(req);
+    const { absenceId } = req.params;
+    const { absence_type, motif } = req.body;
+
+    if (!enseignantId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const absence = await StudentAbsence.findByPk(absenceId);
+    if (!absence) {
+      return res.status(404).json({ error: 'Absence record not found' });
+    }
+
+    if (absence.enseignant_id !== enseignantId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    await absence.update({
+      absence_type: absence_type || absence.absence_type,
+      motif: motif !== undefined ? motif : absence.motif
+    });
+
+    res.json(absence);
+  } catch (error) {
+    console.error('Error updating absence record:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * DELETE /api/teacher/student-absence/:absenceId
+ * Delete an attendance record
+ */
+router.delete('/student-absence/:absenceId', async (req, res) => {
+  try {
+    const models = req.app.get('models');
+    if (!models) {
+      return res.status(500).json({ error: 'Models not loaded in app' });
+    }
+
+    const { StudentAbsence } = models;
+    const enseignantId = getTeacherIdFromRequest(req);
+    const { absenceId } = req.params;
+
+    if (!enseignantId) {
+      return res.status(401).json({ error: 'Not authenticated' });
+    }
+
+    const absence = await StudentAbsence.findByPk(absenceId);
+    if (!absence) {
+      return res.status(404).json({ error: 'Absence record not found' });
+    }
+
+    if (absence.enseignant_id !== enseignantId) {
+      return res.status(403).json({ error: 'Unauthorized' });
+    }
+
+    await absence.destroy();
+    res.json({ message: 'Attendance record deleted' });
+  } catch (error) {
+    console.error('Error deleting absence record:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/student/absences/:studentId
+ * Get all absences for a specific student (for student profile view)
+ */
+router.get('/student/absences/:studentId', async (req, res) => {
+  try {
+    console.log('🚨 GET /student/absences/:studentId called!');
+    
+    const { studentId } = req.params;
+    const models = req.app.get('models');
+
+    if (!models) {
+      console.error('❌ Models not found in app');
+      return res.status(500).json({ error: 'Models not loaded in app' });
+    }
+
+    const { StudentAbsence, Schedule, Matiere, User } = models;
+
+    if (!StudentAbsence || !Schedule || !Matiere) {
+      console.error('❌ Required models not found');
+      return res.status(500).json({ error: 'Required models not loaded' });
+    }
+
+    console.log('📝 Fetching absences for student ID:', studentId);
+
+    // Fetch all absences for the student
+    const absences = await StudentAbsence.findAll({
+      where: { student_id: studentId },
+      include: [
+        {
+          model: Schedule,
+          as: 'schedule',
+          attributes: ['id', 'date_debut', 'date_fin', 'enseignant_id'],
+          include: [
+            {
+              model: Matiere,
+              as: 'matiere',
+              attributes: ['id', 'name', 'code']
+            }
+          ]
+        }
+      ],
+      order: [['marked_at', 'DESC']]
+    });
+
+    console.log(`✅ Found ${absences.length} absence records for student ${studentId}`);
+    
+    // Format response
+    const formattedAbsences = absences.map(absence => ({
+      id: absence.id,
+      schedule_id: absence.schedule_id,
+      student_id: absence.student_id,
+      enseignant_id: absence.enseignant_id,
+      absence_type: absence.absence_type,
+      motif: absence.motif,
+      marked_at: absence.marked_at,
+      notes: absence.notes,
+      statut: absence.statut,
+      schedule: absence.schedule ? {
+        id: absence.schedule.id,
+        date_debut: absence.schedule.date_debut,
+        date_fin: absence.schedule.date_fin,
+        enseignant_id: absence.schedule.enseignant_id,
+        matiere: absence.schedule.matiere
+      } : null
+    }));
+
+    res.json(formattedAbsences);
+
+  } catch (error) {
+    console.error('❌ Error fetching student absences:', error.message);
+    console.error('Stack:', error.stack);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 module.exports = router;

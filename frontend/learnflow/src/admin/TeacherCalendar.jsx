@@ -19,7 +19,9 @@ import {
   Spin,
   message,
   Checkbox,
-  Space
+  Space,
+  Popover,
+  Tooltip
 } from 'antd';
 import {
   ClockCircleOutlined,
@@ -28,10 +30,15 @@ import {
   BookOutlined,
   PlusOutlined,
   CalendarOutlined,
-  FileTextOutlined
+  FileTextOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
+  EyeOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
+import StudentAbsenceModal from './StudentAbsenceModal';
+import StudentAttendanceViewer from './StudentAttendanceViewer';
 import './TeacherCalendar.css';
 
 dayjs.extend(isBetween);
@@ -46,6 +53,8 @@ const TeacherCalendar = () => {
   const [detailsModalVisible, setDetailsModalVisible] = useState(false);
   const [absenceModalVisible, setAbsenceModalVisible] = useState(false);
   const [rattrapageModalVisible, setRattrapageModalVisible] = useState(false);
+  const [studentAbsenceModalVisible, setStudentAbsenceModalVisible] = useState(false);
+  const [attendanceViewerVisible, setAttendanceViewerVisible] = useState(false);
   const [filterSubject, setFilterSubject] = useState(null);
   const [form] = Form.useForm();
   const [absenceForm] = Form.useForm();
@@ -423,6 +432,28 @@ const TeacherCalendar = () => {
             Close
           </Button>,
           <Button
+            key="attendance"
+            type="primary"
+            onClick={() => {
+              setDetailsModalVisible(false);
+              setAttendanceViewerVisible(true);
+            }}
+            icon={<EyeOutlined />}
+          >
+            View Attendance
+          </Button>,
+          <Button
+            key="mark"
+            type="primary"
+            onClick={() => {
+              setDetailsModalVisible(false);
+              setStudentAbsenceModalVisible(true);
+            }}
+            icon={<CheckCircleOutlined />}
+          >
+            Mark Absences
+          </Button>,
+          <Button
             key="absence"
             type="primary"
             danger
@@ -431,7 +462,7 @@ const TeacherCalendar = () => {
               setAbsenceModalVisible(true);
             }}
           >
-            Declare Absence
+            Declare Teacher Absence
           </Button>,
           <Button
             key="rattrapage"
@@ -512,6 +543,27 @@ const TeacherCalendar = () => {
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Student Absence Modal */}
+      <StudentAbsenceModal
+        visible={studentAbsenceModalVisible}
+        onCancel={() => setStudentAbsenceModalVisible(false)}
+        onSubmit={() => {
+          fetchTeacherData();
+          message.success('Student absences recorded successfully');
+        }}
+        schedule={selectedSchedule}
+        loading={loading}
+      />
+
+      {/* Attendance Viewer Modal */}
+      <StudentAttendanceViewer
+        visible={attendanceViewerVisible}
+        onCancel={() => setAttendanceViewerVisible(false)}
+        schedule={selectedSchedule}
+        loading={loading}
+        onRefresh={fetchTeacherData}
+      />
     </div>
   );
 };

@@ -44,6 +44,12 @@ import NOTFOUND from './components/NOTFOUND.JSX'
 import StudentBulkAssignment from './admin/StudentBulkAssignment.jsx'
 import StudentBulkAssignmentTest from './admin/StudentBulkAssignmentTest.jsx'
 import WeeklyViewReadOnly from './admin/WeeklyViewReadOnly.jsx'
+
+// Import Department Head components
+import DepartmentHeadDashboard from './components/DepartmentHeadDashboard.jsx'
+import StudentDetailPage from './components/StudentDetailPage.jsx'
+import DepartmentStatistics from './components/DepartmentStatistics.jsx'
+
 const isAuthRoute =location.pathname=== '/auth';
 function App() {
   return (
@@ -102,6 +108,12 @@ function App() {
 
             {/* Test route for API */}
             <Route path="/test-api" element={<TestReferenceAPI />} />
+            
+            {/* Department Head Routes */}
+            <Route path="/department-head" element={<DepartmentHeadDashboard />} />
+            <Route path="/department-head/student/:studentId" element={<StudentDetailPage />} />
+            <Route path="/department-head/statistics" element={<DepartmentStatistics />} />
+            
               <Route path="*" element={<NOTFOUND />} />
           </Routes>
         </AppLayout>
