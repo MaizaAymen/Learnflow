@@ -44,7 +44,7 @@ import NOTFOUND from './components/NOTFOUND.JSX'
 import StudentBulkAssignment from './admin/StudentBulkAssignment.jsx'
 import StudentBulkAssignmentTest from './admin/StudentBulkAssignmentTest.jsx'
 import WeeklyViewReadOnly from './admin/WeeklyViewReadOnly.jsx'
-
+import Messaging from './pages/Messaging.jsx'
 // Import Department Head components
 import DepartmentHeadDashboard from './components/DepartmentHeadDashboard.jsx'
 import StudentDetailPage from './components/StudentDetailPage.jsx'
@@ -104,6 +104,7 @@ function App() {
             <Route path="/admin/calendar/schedules" element={<ScheduleManagementComplete />} />
             <Route path="/admin/timetable" element={<TimetableManager />} />
             <Route path="/admin/timetable/weekly" element={<WeeklyTimetableView />} />
+            <Route path="/messaging" element={<Messaging />} />
             
 
             {/* Test route for API */}

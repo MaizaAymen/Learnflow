@@ -440,6 +440,10 @@ const Auth = () => {
               if (data.token) {
                 localStorage.setItem('token', data.token);
               }
+              // Store user data
+              if (data.user) {
+                localStorage.setItem('user', JSON.stringify(data.user));
+              }
               alert("Login successful");
               navigate("/");
     } else {

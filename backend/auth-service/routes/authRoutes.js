@@ -640,10 +640,17 @@ router.post("/login", async (req, res) => {
         maxAge: 1000 * 60 * 60*60 // 1 hour
       });
       
-      // Return token in response body for cross-domain requests
+      // Return token and user data in response body for cross-domain requests
       return res.status(200).json({ 
         message: "Connexion réussie",
-        token: token
+        token: token,
+        user: {
+          id: user.id,
+          email: user.email,
+          nom: user.nom,
+          prenom: user.prenom,
+          role: user.role
+        }
       });
 
     } catch (error) {
