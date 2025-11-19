@@ -5,6 +5,8 @@ import UserManagement from './admin/UserManagement.jsx'
 import { Route, Routes } from "react-router-dom"
 import Profile from './user/Profile.jsx'
 import AdminPanel from './admin/adminpanel.jsx'
+import { NotificationProvider } from './hooks/useNotifications.jsx'
+import NotificationsCenter from './pages/NotificationsCenter.jsx'
 import CreationClasse from './admin/creationclasse.jsx'
 import CreateDepartment from './admin/CreateDepartement.jsx'
 import Showdepartments from './admin/showdepar.jsx'
@@ -45,10 +47,14 @@ import StudentBulkAssignment from './admin/StudentBulkAssignment.jsx'
 import StudentBulkAssignmentTest from './admin/StudentBulkAssignmentTest.jsx'
 import WeeklyViewReadOnly from './admin/WeeklyViewReadOnly.jsx'
 import Messaging from './pages/Messaging.jsx'
+import EventsViewer from './pages/EventsViewer.jsx'
 // Import Department Head components
 import DepartmentHeadDashboard from './components/DepartmentHeadDashboard.jsx'
 import StudentDetailPage from './components/StudentDetailPage.jsx'
 import DepartmentStatistics from './components/DepartmentStatistics.jsx'
+// Import Events Management
+import EventsManagement from './admin/EventsManagement.jsx'
+import EventsStudentDashboard from './pages/EventsStudentDashboard.jsx'
 
 const isAuthRoute =location.pathname=== '/auth';
 function App() {
@@ -60,9 +66,10 @@ function App() {
           <Route path="/auth" element={<Auth />} />
         </Routes>
       ) : (
-        <div id="app">
-          <AppLayout>
-          <Routes>
+        <NotificationProvider>
+          <div id="app">
+            <AppLayout>
+            <Routes>
             <Route path="/" element={<ModernDashboard />} />
             <Route path="/users" element={<UserManagement />} />
             <Route path="/students/assign" element={<StudentBulkAssignment />} />
@@ -105,6 +112,10 @@ function App() {
             <Route path="/admin/timetable" element={<TimetableManager />} />
             <Route path="/admin/timetable/weekly" element={<WeeklyTimetableView />} />
             <Route path="/messaging" element={<Messaging />} />
+            <Route path="/events" element={<EventsViewer />} />
+            <Route path="/student/events" element={<EventsStudentDashboard />} />
+            <Route path="/admin/events" element={<EventsManagement />} />
+            <Route path="/notifications" element={<NotificationsCenter />} />
             
 
             {/* Test route for API */}
@@ -119,6 +130,7 @@ function App() {
           </Routes>
         </AppLayout>
       </div>
+        </NotificationProvider>
       )}
     </>
   )

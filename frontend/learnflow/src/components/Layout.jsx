@@ -16,8 +16,10 @@ import {
   BellOutlined,
   CalendarOutlined,
   DashboardOutlined,
-  VerticalAlignTopOutlined
+  VerticalAlignTopOutlined,
+  AlertOutlined
 } from '@ant-design/icons';
+import NotificationBell from './NotificationBell';
 import examenLogo from './examen.png';
 import Capture from './Capture.png';
 import alex from './alex.png';
@@ -232,6 +234,28 @@ const AppLayout = ({ children }) => {
       icon: <VerticalAlignTopOutlined />,
       label: <Link to="/upload-students">Téléverser Étudiants</Link>,
     },
+    {
+      key: 'events',
+      icon: <AlertOutlined />,
+      label: 'Événements',
+      children: [
+        {
+          key: '/student/events',
+          icon: <span></span>,
+          label: <Link to="/student/events">Mes Événements</Link>,
+        },
+        {
+          key: '/events',
+          icon: <span></span>,
+          label: <Link to="/events">Consulter Événements</Link>,
+        },
+        {
+          key: '/admin/events',
+          icon: <span></span>,
+          label: <Link to="/admin/events">Gérer Événements</Link>,
+        },
+      ],
+    },
   ];
 
   const getBreadcrumbItems = () => {
@@ -293,7 +317,8 @@ const AppLayout = ({ children }) => {
             label = 'Créer';
             break;
           case 'events':
-            label = 'Vue Calendrier';
+            // Distinguish between calendar events and events management
+            label = pathSegments.includes('calendar') ? 'Vue Calendrier' : 'Événements';
             break;
           case 'class-schedule':
             label = 'Planning par Classe';
@@ -352,14 +377,9 @@ const AppLayout = ({ children }) => {
           </div>
 
           <div className="header-right">
-            <Badge count={5} size="small">
-              <Button 
-                type="text" 
-                icon={<BellOutlined />} 
-                className="notification-badge"
-                onClick={() => message.info('Notifications à venir')}
-              />
-            </Badge>
+            <Link to="/notifications" title="View all notifications">
+              <NotificationBell />
+            </Link>
             
             <Dropdown
               menu={{ items: userMenuItems }}

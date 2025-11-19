@@ -1,0 +1,127 @@
+.events-student-dashboard {
+  padding: 24px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+}
+
+.dashboard-header {
+  margin-bottom: 32px;
+  text-align: center;
+}
+
+.dashboard-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: #222;
+}
+
+.dashboard-header p {
+  margin: 0;
+  font-size: 16px;
+  color: #666;
+}
+
+.events-sections {
+  display: grid;
+  gap: 24px;
+}
+
+.events-section {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 16px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.section-header h2 {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #222;
+}
+
+.event-list-item {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  border-radius: 8px;
+}
+
+.event-list-item:hover {
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.12);
+  transform: translateY(-2px);
+}
+
+.event-item-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.event-item-left {
+  flex: 1;
+}
+
+.event-item-left h3 {
+  margin: 10px 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #222;
+}
+
+.event-date {
+  margin: 8px 0 !important;
+  color: #666;
+  font-size: 14px;
+}
+
+.event-preview {
+  margin: 8px 0 0 0 !important;
+  color: #999;
+  font-style: italic;
+  font-size: 13px;
+}
+
+.event-item-right {
+  flex-shrink: 0;
+  text-align: right;
+}
+
+.event-passed {
+  opacity: 0.8;
+  background-color: #fafafa;
+}
+
+.events-section-passed {
+  background-color: #f9f9f9;
+}
+
+.event-description-full {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.6;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .events-student-dashboard {
+    padding: 16px;
+  }
+
+  .event-item-content {
+    flex-direction: column;
+  }
+
+  .event-item-right {
+    text-align: left;
+    width: 100%;
+  }
+}

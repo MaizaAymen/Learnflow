@@ -12,6 +12,7 @@ const csv = require("csv-parser");
 const fs = require("fs");
 const XLSX = require("xlsx");
 const { send } = require("process");
+const NotificationClient = require("../../Service de Notifications/services/NotificationClient");
 
 // Import models for automatic class assignment and student absence handling
 const { Specialite, Niveau, Classe, Student } = require("../../Reference_documents/models");
@@ -759,11 +760,25 @@ router.put("/updateuser/:id", async (req, res) => {
           const updateData = { nom, prenom, email, role, phone, bio, specialite, ville };
     
           const motDePasse = mdp || password;
+          let passwordChanged = false;
+          
           if (motDePasse) {
             updateData.mdp_hash = await bcrypt.hash(motDePasse, 10);
+            passwordChanged = true;
           }
           
           await user.update(updateData);
+          
+          // 📢 Send notification if password was changed
+          if (passwordChanged) {
+            try {
+              await NotificationClient.notifyPasswordChanged(id, user.prenom || 'User');
+            } catch (notifError) {
+              console.warn('⚠️ Could not send password change notification:', notifError.message);
+              // Don't fail the update if notification fails
+            }
+          }
+          
           sendEmail({
             to: email,
             subject: "Mise à jour de votre compte Learnflow",
