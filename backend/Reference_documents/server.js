@@ -1,8 +1,24 @@
 const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
+const multer = require("multer");
+const crypto = require('crypto');
+const path = require('path');
+
+// Helper function to generate UUID v4
+const uuidv4 = () => {
+  return crypto.randomUUID ? crypto.randomUUID() : 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+    var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+};
+
 // Use the shared sequelize instance from auth-service
 const sequelize = require("../auth-service/config");
+
+// ⭐ JWT Secret - Must match auth-service secret
+const JWT_SECRET = process.env.JWT_SECRET || "alex";
 
 // ⭐ IMPORTANT: Require models BEFORE routes to establish relationships
 const models = require("./models");
@@ -23,22 +39,89 @@ const {
   Rattrapage,
   Student,
   StudentAbsence,
-  User
+  User,
+  Grade,
+  Exam,
+  Document,
+  StudentRequest,
+  Internship,
+  Project,
+  Announcement,
+  Comment,
+  AuditLog
 } = models;
 
+// ✅ Authentication middleware
+const authenticate = (req, res, next) => {
+  const token = req.headers.authorization?.split(" ")[1] || req.cookies?.token;
+  
+  if (!token) {
+    return res.status(401).json({ error: "Unauthorized - no token" });
+  }
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    return res.status(401).json({ error: "Invalid token" });
+  }
+};
+
+// ✅ Audit logging helper
+const logAudit = async (data) => {
+  try {
+    await AuditLog.create({
+      id: uuidv4(),
+      userId: data.userId,
+      userName: data.userName || "Unknown",
+      action: data.action,
+      entityType: data.entityType,
+      entityId: data.entityId,
+      description: data.description || "",
+      oldValues: data.oldValues || null,
+      newValues: data.newValues || null,
+      status: data.status || "success",
+      ipAddress: data.ipAddress || null,
+      userAgent: data.userAgent || null,
+      timestamp: new Date(),
+    });
+  } catch (error) {
+    console.error("Error logging audit:", error);
+  }
+};
+
+// ✅ Import existing routes
 const ReferenceRoutes = require("./routes/Reference");
 const CalendarRoutes = require("./routes/Calendar");
 const StudentsRoutes = require("./routes/Students");
 const TeacherCalendarRoutes = require("./routes/TeacherCalendar");
 const DirectorApprovalRoutes = require("./routes/DirectorApproval");
 
+// ✅ Import new professional feature routes
+const GradesRoutes = require("./routes/Grades");
+const ExamsRoutes = require("./routes/Exams");
+const DocumentsRoutes = require("./routes/Documents");
+const StudentRequestsRoutes = require("./routes/StudentRequests");
+const InternshipsRoutes = require("./routes/Internships");
+const ProjectsRoutes = require("./routes/Projects");
+const AnnouncementsRoutes = require("./routes/Announcements");
+const CommentsRoutes = require("./routes/Comments");
+const AuditRoutes = require("./routes/Audit");
+const DebugRoutes = require("./routes/Debug");
+
 const app = express();
 app.use(express.json());
 app.use(cookieParser()); // Parse cookies
 
+// ✅ Serve uploaded files statically
+app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+
 app.use(cors({ origin: "http://localhost:5173", 
   methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
   credentials: true }));
+
+// ✅ Mount existing routes
 app.use("/api/reference", ReferenceRoutes);
 app.use("/api/calendar", CalendarRoutes);
 app.use("/api/students", StudentsRoutes);
@@ -46,6 +129,20 @@ app.use("/api/student", StudentsRoutes);  // ✅ Alternative path for auth servi
 app.use("/api/teacher", TeacherCalendarRoutes);
 app.use("/api/classes", TeacherCalendarRoutes);
 app.use("/api/director", DirectorApprovalRoutes);
+
+// ✅ Mount new professional feature routes with middleware
+// Pass an object with models property for access to all models
+const db = { models };
+app.use("/api/grades", GradesRoutes(db, authenticate, logAudit));
+app.use("/api/exams", ExamsRoutes(db, authenticate, logAudit));
+app.use("/api/documents", DocumentsRoutes(db, authenticate, logAudit));
+app.use("/api/requests", StudentRequestsRoutes(db, authenticate, logAudit));
+app.use("/api/internships", InternshipsRoutes(db, authenticate, logAudit));
+app.use("/api/projects", ProjectsRoutes(db, authenticate, logAudit));
+app.use("/api/announcements", AnnouncementsRoutes(db, authenticate, logAudit));
+app.use("/api/comments", CommentsRoutes(db, authenticate, logAudit));
+app.use("/api/audit", AuditRoutes(db, authenticate, logAudit));
+app.use("/api/debug", DebugRoutes(db, authenticate, logAudit));
 
 // Initialize database with proper sync order
 async function initializeDatabase() {

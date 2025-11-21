@@ -17,7 +17,14 @@ import {
   CalendarOutlined,
   DashboardOutlined,
   VerticalAlignTopOutlined,
-  AlertOutlined
+  AlertOutlined,
+  FileTextOutlined,
+  FilePdfOutlined,
+  FileExcelOutlined,
+  FileWordOutlined,
+  FormOutlined,
+  ProjectOutlined,
+  NotificationOutlined
 } from '@ant-design/icons';
 import NotificationBell from './NotificationBell';
 import examenLogo from './examen.png';
@@ -119,21 +126,19 @@ const AppLayout = ({ children }) => {
       label: <Link to="/">Tableau de Bord</Link>,
     },
     {
-      key: '/users',
-      icon: <TeamOutlined />,
-      label: <Link to="/users">Utilisateurs</Link>,
-    },
-    {
-      key: '/reference/departements',
+      key: 'reference',
       icon: <LaptopOutlined />,
-      label: <Link to="/reference/departements">Données de Référence</Link>
-      /*label: 'Données de Référence',*/
-      
-     /*, children: [
+      label: 'Données de Référence',
+      children: [
         {
           key: '/reference',
           icon: <DashboardOutlined />,
           label: <Link to="/reference">Vue d'ensemble</Link>,
+        },
+        {
+          key: '/reference/dashboard',
+          icon: <span></span>,
+          label: <Link to="/reference/dashboard">Tableau de Bord</Link>,
         },
         {
           key: '/reference/specialites',
@@ -165,7 +170,7 @@ const AppLayout = ({ children }) => {
           icon: <BookOutlined />,
           label: <Link to="/reference/matieres">Matières</Link>,
         },
-      ],*/
+      ],
     },
     {
       key: 'calendar',
@@ -178,24 +183,19 @@ const AppLayout = ({ children }) => {
           label: <Link to="/calendar">Vue d'ensemble</Link>,
         },
         {
+          key: '/calendar/dashboard',
+          icon: <span></span>,
+          label: <Link to="/calendar/dashboard">Tableau de Bord</Link>,
+        },
+        {
           key: '/calendar/classes',
           icon: <span></span>,
           label: <Link to="/calendar/classes">Calendriers par Classe</Link>,
         },
         {
-          key: '/calendar/timeslots/auto',
+          key: '/calendar/class/:classeId/events',
           icon: <span></span>,
-          label: <Link to="/calendar/timeslots/auto">Créneaux Auto</Link>,
-        },
-        {
-          key: '/calendar/timeslots',
-          icon: <span></span>,
-          label: <Link to="/calendar/timeslots">Gérer Créneaux</Link>,
-        },
-        {
-          key: '/calendar/create',
-          icon: <span></span>,
-          label: <Link to="/calendar/create">Créer Planning</Link>,
+          label: <Link to="/calendar/class/1/events">Événements par Classe</Link>,
         },
         {
           key: '/calendar/schedules',
@@ -203,9 +203,9 @@ const AppLayout = ({ children }) => {
           label: <Link to="/calendar/schedules">Tous les Plannings</Link>,
         },
         {
-          key: '/calendar/events',
+          key: '/calendar/create',
           icon: <span></span>,
-          label: <Link to="/calendar/events">Vue Calendrier</Link>,
+          label: <Link to="/calendar/create">Créer Planning</Link>,
         },
         {
           key: '/calendar/class-schedule',
@@ -213,26 +213,63 @@ const AppLayout = ({ children }) => {
           label: <Link to="/calendar/class-schedule">Planning par Classe</Link>,
         },
         {
+          key: '/calendar/timetable',
+          icon: <span></span>,
+          label: <Link to="/calendar/timetable">Emploi du Temps Amélioré</Link>,
+        },
+        {
+          key: '/calendar/timetable-manager',
+          icon: <span></span>,
+          label: <Link to="/calendar/timetable-manager">Gestionnaire Emploi du Temps</Link>,
+        },
+        {
+          key: '/calendar/weekly-view',
+          icon: <span></span>,
+          label: <Link to="/calendar/weekly-view">Vue Hebdomadaire</Link>,
+        },
+        {
+          key: '/calendar/events',
+          icon: <span></span>,
+          label: <Link to="/calendar/events">Vue Calendrier</Link>,
+        },
+        {
           key: '/calendar/weekly-schedule',
           icon: <span></span>,
           label: <Link to="/calendar/weekly-schedule">Planning Hebdo</Link>,
         },
+        {
+          key: '/calendar/teacher',
+          icon: <span></span>,
+          label: <Link to="/calendar/teacher">Calendrier Enseignant</Link>,
+        },
+        {
+          key: '/calendar/director-approval',
+          icon: <span></span>,
+          label: <Link to="/calendar/director-approval">Approbation Directeur</Link>,
+        },
       ],
     },
     {
-      key: '/profile',
-      icon: <UserOutlined />,
-      label: <Link to="/profile">Mon Profil</Link>,
-    },
-    {
-      key: '/admin',
-      icon: <SettingOutlined />,
-      label: <Link to="/admin">Administration</Link>,
-    },
-    {
-      key: '/upload-students',
-      icon: <VerticalAlignTopOutlined />,
-      label: <Link to="/upload-students">Téléverser Étudiants</Link>,
+      key: 'students',
+      icon: <TeamOutlined />,
+      label: 'Gestion Étudiants',
+      children: [
+        {
+          key: '/users',
+          icon: <span></span>,
+          label: <Link to="/users">Utilisateurs</Link>,
+        },
+        {
+          key: '/students/assign',
+          icon: <span></span>,
+          label: <Link to="/students/assign">Assigner aux Classes</Link>,
+        },
+        {
+          key: '/upload-students',
+          icon: <span></span>,
+          label: <Link to="/upload-students">Importer Étudiants</Link>,
+        },
+      ],
     },
     {
       key: 'events',
@@ -255,6 +292,112 @@ const AppLayout = ({ children }) => {
           label: <Link to="/admin/events">Gérer Événements</Link>,
         },
       ],
+    },
+    {
+      key: '/messaging',
+      icon: <BookOutlined />,
+      label: <Link to="/messaging">Messagerie</Link>,
+    },
+    {
+      key: '/notifications',
+      icon: <BellOutlined />,
+      label: <Link to="/notifications">Notifications</Link>,
+    },
+    {
+      key: 'professional',
+      icon: <FileTextOutlined />,
+      label: 'Système Académique',
+      children: [
+        {
+          key: '/grades',
+          icon: <FileExcelOutlined />,
+          label: <Link to="/grades">Gestion des Notes</Link>,
+        },
+        {
+          key: '/documents',
+          icon: <FilePdfOutlined />,
+          label: <Link to="/documents">Dépôt de Documents</Link>,
+        },
+        {
+          key: '/requests',
+          icon: <FormOutlined />,
+          label: <Link to="/requests">Demandes d'Étudiants</Link>,
+        },
+        {
+          key: '/projects',
+          icon: <ProjectOutlined />,
+          label: <Link to="/projects">Gestion de Projets</Link>,
+        },
+        {
+          key: '/announcements',
+          icon: <NotificationOutlined />,
+          label: <Link to="/announcements">Annonces</Link>,
+        },
+      ],
+    },
+    {
+      key: 'admin',
+      icon: <SettingOutlined />,
+      label: 'Administration',
+      children: [
+        {
+          key: '/admin',
+          icon: <span></span>,
+          label: <Link to="/admin">Panneau Admin</Link>,
+        },
+        {
+          key: '/admin/calendar/schedules',
+          icon: <span></span>,
+          label: <Link to="/admin/calendar/schedules">Plannings Admin</Link>,
+        },
+        {
+          key: '/admin/timetable',
+          icon: <span></span>,
+          label: <Link to="/admin/timetable">Emploi du Temps Admin</Link>,
+        },
+        {
+          key: '/admin/timetable/weekly',
+          icon: <span></span>,
+          label: <Link to="/admin/timetable/weekly">Vue Hebdo Admin</Link>,
+        },
+        {
+          key: '/create-department',
+          icon: <span></span>,
+          label: <Link to="/create-department">Créer Département</Link>,
+        },
+        {
+          key: '/show-departments',
+          icon: <span></span>,
+          label: <Link to="/show-departments">Voir Départements</Link>,
+        },
+        {
+          key: '/CreationClasse',
+          icon: <span></span>,
+          label: <Link to="/CreationClasse">Créer Classe</Link>,
+        },
+      ],
+    },
+    {
+      key: 'department-head',
+      icon: <UserOutlined />,
+      label: 'Chef de Département',
+      children: [
+        {
+          key: '/department-head',
+          icon: <span></span>,
+          label: <Link to="/department-head">Tableau de Bord</Link>,
+        },
+        {
+          key: '/department-head/statistics',
+          icon: <span></span>,
+          label: <Link to="/department-head/statistics">Statistiques</Link>,
+        },
+      ],
+    },
+    {
+      key: '/profile',
+      icon: <UserOutlined />,
+      label: <Link to="/profile">Mon Profil</Link>,
     },
   ];
 
@@ -294,6 +437,21 @@ const AppLayout = ({ children }) => {
             break;
           case 'matieres':
             label = 'Matières';
+            break;
+          case 'announcements':
+            label = 'Annonces';
+            break;
+          case 'requests':
+            label = 'Demandes';
+            break;
+          case 'projects':
+            label = 'Projets';
+            break;
+          case 'documents':
+            label = 'Documents';
+            break;
+          case 'grades':
+            label = 'Notes';
             break;
           case 'profile':
             label = 'Mon Profil';
@@ -364,7 +522,7 @@ const AppLayout = ({ children }) => {
           theme="dark"
           mode="inline" 
           selectedKeys={[location.pathname]}
-          defaultOpenKeys={['reference', 'calendar']}
+          defaultOpenKeys={['reference', 'calendar', 'students', 'events', 'professional', 'admin', 'department-head']}
           items={menuItems}
           style={{ border: 'none' }}
         />

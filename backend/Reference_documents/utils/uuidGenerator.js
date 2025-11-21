@@ -9,4 +9,7 @@ function generateUUID() {
   });
 }
 
-module.exports = { generateUUID };
+// Alias for uuidv4 compatibility
+const uuidv4 = generateUUID;
+
+module.exports = { generateUUID, uuidv4 };

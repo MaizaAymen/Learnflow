@@ -2,7 +2,7 @@ import './App.css'
 import Auth from './auth/auth.jsx'
 import ShowUsers from './admin/showusers.jsx'
 import UserManagement from './admin/UserManagement.jsx'
-import { Route, Routes } from "react-router-dom"
+import { Route, Routes, useLocation } from "react-router-dom"
 import Profile from './user/Profile.jsx'
 import AdminPanel from './admin/adminpanel.jsx'
 import { NotificationProvider } from './hooks/useNotifications.jsx'
@@ -55,9 +55,17 @@ import DepartmentStatistics from './components/DepartmentStatistics.jsx'
 // Import Events Management
 import EventsManagement from './admin/EventsManagement.jsx'
 import EventsStudentDashboard from './pages/EventsStudentDashboard.jsx'
+import ForgotPassword from './auth/ForgotPassword.jsx'
+// Import Professional System Components
+import GradeManagement from './components/GradeManagement/GradeManagement.jsx'
+import DocumentRepository from './components/Documents/DocumentRepository.jsx'
+import StudentRequests from './components/StudentRequests/StudentRequests.jsx'
+import AnnouncementsFeed from './components/Announcements/AnnouncementsFeed.jsx'
+import ProjectManagement from './components/Projects/ProjectManagement.jsx'
 
-const isAuthRoute =location.pathname=== '/auth';
 function App() {
+  const location = useLocation();
+  const isAuthRoute = location.pathname === '/auth';
   return (
     <>
     {
@@ -116,7 +124,14 @@ function App() {
             <Route path="/student/events" element={<EventsStudentDashboard />} />
             <Route path="/admin/events" element={<EventsManagement />} />
             <Route path="/notifications" element={<NotificationsCenter />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
             
+            {/* Professional System Routes */}
+            <Route path="/grades" element={<GradeManagement />} />
+            <Route path="/documents" element={<DocumentRepository />} />
+            <Route path="/requests" element={<StudentRequests />} />
+            <Route path="/announcements" element={<AnnouncementsFeed />} />
+            <Route path="/projects" element={<ProjectManagement />} />
 
             {/* Test route for API */}
             <Route path="/test-api" element={<TestReferenceAPI />} />

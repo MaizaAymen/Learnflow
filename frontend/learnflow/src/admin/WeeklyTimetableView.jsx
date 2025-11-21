@@ -25,7 +25,9 @@ import {
   HomeOutlined,
   BookOutlined,
   ClockCircleOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  ExclamationCircleOutlined,
+  WarningOutlined
 } from '@ant-design/icons';
 import dayjs from 'dayjs';
 import isBetween from 'dayjs/plugin/isBetween';
@@ -73,6 +75,465 @@ const WeeklyTimetableViewContent = () => {
   ];
 
   const weekDays = ['Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'];
+
+  // Color palette for courses - diverse and distinct colors
+  const courseTypeColors = {
+    'Cours': '#1890ff',
+    'TD': '#faad14',
+    'TP': '#52c41a',
+    'Examen': '#ff4d4f',
+    'Soutien': '#8c8c8c'
+  };
+
+  const classColors = [
+    '#1890ff', '#ff4d4f', '#52c41a', '#faad14', '#13c2c2',
+    '#722ed1', '#eb2f96', '#fa541c', '#45b039', '#2f54eb'
+  ];
+
+  // Get unique color for each class
+  const getClassColor = useCallback((classId) => {
+    if (!classId || typeof classId !== 'string') return '#8c8c8c';
+    // Use class ID to determine color index consistently
+    const index = (classId.charCodeAt(0) + classId.length) % classColors.length;
+    return classColors[index];
+  }, []);
+
+  // Conflict Detection Service
+  const detectConflicts = useCallback((scheduleData, existingSchedules = [], excludeScheduleId = null) => {
+    const conflicts = [];
+
+    const {
+      classe_id,
+      matiere_id,
+      salle_id,
+      enseignant_id,
+      start_time,
+      end_time,
+      day_of_week,
+      date_debut
+    } = scheduleData;
+
+    // Helper: Convert time string HH:MM or HH:MM:SS to minutes
+    const timeToMinutes = (time) => {
+      if (!time) return 0;
+      const parts = time.split(':');
+      return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+    };
+
+    // Helper: Check if two time ranges overlap
+    const timesOverlap = (start1, end1, start2, end2) => {
+      const startMin1 = timeToMinutes(start1);
+      const endMin1 = timeToMinutes(end1);
+      const startMin2 = timeToMinutes(start2);
+      const endMin2 = timeToMinutes(end2);
+      
+      return startMin1 < endMin2 && startMin2 < endMin1;
+    };
+
+    // Filter schedules to check (same date and day)
+    const schedulesToCheck = existingSchedules.filter(sch => {
+      // Exclude the current schedule if editing
+      if (excludeScheduleId && sch.id === excludeScheduleId) return false;
+      
+      // Only check active schedules (not cancelled)
+      if (sch.statut === 'annule') return false;
+
+      // Check if dates match
+      if (sch.day_of_week !== day_of_week) return false;
+      
+      // Check if the schedule is in the date range
+      if (date_debut) {
+        const checkDate = dayjs(date_debut);
+        const startDate = sch.date_debut ? dayjs(sch.date_debut) : null;
+        const endDate = sch.date_fin ? dayjs(sch.date_fin) : null;
+        
+        if (!startDate?.isValid()) return false;
+        
+        const isInRange = checkDate.isSameOrAfter(startDate, 'day') && 
+                         (!endDate || !endDate.isValid() || checkDate.isSameOrBefore(endDate, 'day'));
+        if (!isInRange) return false;
+      }
+
+      return true;
+    });
+
+    // Check each conflict type
+    for (const sch of schedulesToCheck) {
+      // 1. Salle déjà occupée (same room at same time)
+      if (salle_id && sch.salle_id === salle_id) {
+        if (timesOverlap(start_time, end_time, sch.start_time, sch.end_time)) {
+          conflicts.push({
+            type: 'SALLE_OCCUPEE',
+            message: `Salle ${sch.salle?.nom || 'unknown'} déjà occupée à cet horaire (${sch.start_time} - ${sch.end_time})`,
+            severity: 'critical'
+          });
+        }
+      }
+
+      // 2. Enseignant occupé (same teacher at same time)
+      if (enseignant_id && sch.enseignant_id === enseignant_id) {
+        if (timesOverlap(start_time, end_time, sch.start_time, sch.end_time)) {
+          conflicts.push({
+            type: 'ENSEIGNANT_OCCUPE',
+            message: `Enseignant ${sch.enseignant?.prenom} ${sch.enseignant?.nom} occupé à cet horaire (${sch.start_time} - ${sch.end_time})`,
+            severity: 'critical'
+          });
+        }
+      }
+
+      // 3. Groupe occupé (same class at same time)
+      if (classe_id && sch.classe_id === classe_id) {
+        if (timesOverlap(start_time, end_time, sch.start_time, sch.end_time)) {
+          conflicts.push({
+            type: 'GROUPE_OCCUPE',
+            message: `Groupe ${sch.classe?.nom || 'unknown'} occupé à cet horaire (${sch.start_time} - ${sch.end_time})`,
+            severity: 'critical'
+          });
+        }
+      }
+
+      // 4. Matière en double (same subject for same class on same time)
+      if (matiere_id && classe_id && 
+          sch.matiere_id === matiere_id && 
+          sch.classe_id === classe_id &&
+          sch.type_cours === scheduleData.type_cours) {
+        if (timesOverlap(start_time, end_time, sch.start_time, sch.end_time)) {
+          conflicts.push({
+            type: 'MATIERE_DOUBLE',
+            message: `Matière ${sch.matiere?.nom || 'unknown'} déjà programmée pour cette classe à cet horaire`,
+            severity: 'major'
+          });
+        }
+      }
+
+      // 5. Chevauchement d'horaires (general overlap for same class)
+      if (classe_id && sch.classe_id === classe_id) {
+        if (timesOverlap(start_time, end_time, sch.start_time, sch.end_time)) {
+          // Only add if not already flagged above
+          if (!conflicts.some(c => c.type === 'GROUPE_OCCUPE')) {
+            conflicts.push({
+              type: 'CHEVAUCHEMENT',
+              message: `Chevauchement d'horaires détecté avec ${sch.matiere?.nom || 'unknown'} (${sch.start_time} - ${sch.end_time})`,
+              severity: 'major'
+            });
+          }
+        }
+      }
+    }
+
+    return conflicts;
+  }, []);
+
+  // TEACHER CONFLICT MANAGEMENT SYSTEM
+
+  // Helper: Convert time string HH:MM or HH:MM:SS to minutes
+  const timeToMinutes = useCallback((time) => {
+    if (!time) return 0;
+    const parts = time.split(':');
+    return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+  }, []);
+
+  // Helper: Check if two time ranges overlap
+  const timesOverlap = useCallback((start1, end1, start2, end2) => {
+    const startMin1 = timeToMinutes(start1);
+    const endMin1 = timeToMinutes(end1);
+    const startMin2 = timeToMinutes(start2);
+    const endMin2 = timeToMinutes(end2);
+    return startMin1 < endMin2 && startMin2 < endMin1;
+  }, [timeToMinutes]);
+
+  // Detect if a teacher is busy at a specific time
+  const detectTeacherConflict = useCallback((enseignant_id, scheduleData, existingSchedules, excludeScheduleId = null) => {
+    if (!enseignant_id) return null;
+
+    const {
+      start_time,
+      end_time,
+      day_of_week,
+      date_debut
+    } = scheduleData;
+
+    // Filter schedules where this teacher is already assigned
+    const teacherSchedules = existingSchedules.filter(sch => {
+      if (excludeScheduleId && sch.id === excludeScheduleId) return false;
+      if (sch.statut === 'annule') return false;
+      if (sch.enseignant_id !== enseignant_id) return false;
+      if (sch.day_of_week !== day_of_week) return false;
+
+      // Check date match
+      if (date_debut) {
+        const checkDate = dayjs(date_debut);
+        const startDate = sch.date_debut ? dayjs(sch.date_debut) : null;
+        if (!startDate?.isValid()) return false;
+        if (!checkDate.isSame(startDate, 'day')) return false;
+      }
+
+      return true;
+    });
+
+    // Check for time overlap with any of teacher's existing courses
+    for (const sch of teacherSchedules) {
+      if (timesOverlap(start_time, end_time, sch.start_time, sch.end_time)) {
+        return {
+          conflictingSchedule: sch,
+          message: `❌ Ce professeur est déjà occupé sur cette plage horaire (${sch.start_time} - ${sch.end_time})`
+        };
+      }
+    }
+
+    return null;
+  }, [timesOverlap]);
+
+  // Get teacher's available time slots
+  const getTeacherAvailableSlots = useCallback((enseignant_id, day, existingSchedules) => {
+    if (!enseignant_id) return defaultTimeSlots;
+
+    const teacherSchedules = existingSchedules.filter(sch => 
+      sch.enseignant_id === enseignant_id && 
+      sch.day_of_week === day &&
+      sch.statut !== 'annule'
+    );
+
+    return defaultTimeSlots.map(slot => ({
+      ...slot,
+      isBusy: teacherSchedules.some(sch => 
+        timesOverlap(slot.start, slot.end, sch.start_time, sch.end_time)
+      )
+    }));
+  }, [defaultTimeSlots, timesOverlap]);
+
+  // Find nearest available time slot
+  const findNearestFreeSlot = useCallback((enseignant_id, day, scheduleData, existingSchedules) => {
+    const availableSlots = getTeacherAvailableSlots(enseignant_id, day, existingSchedules);
+    
+    // Find slots that don't have conflict
+    const freeSlots = availableSlots.filter(slot => !slot.isBusy);
+    
+    if (freeSlots.length > 0) {
+      // Return the first available slot
+      return freeSlots[0];
+    }
+
+    // If no free slots on this day, suggest next day
+    const dayIndex = weekDays.indexOf(day);
+    if (dayIndex >= 0 && dayIndex < weekDays.length - 1) {
+      const nextDay = weekDays[dayIndex + 1];
+      const nextDaySlots = getTeacherAvailableSlots(enseignant_id, nextDay, existingSchedules);
+      const nextFreeSlots = nextDaySlots.filter(slot => !slot.isBusy);
+      if (nextFreeSlots.length > 0) {
+        return { ...nextFreeSlots[0], suggestedDay: nextDay };
+      }
+    }
+
+    return null;
+  }, [getTeacherAvailableSlots, weekDays]);
+
+  // Get teacher's schedule for the week (for sidebar display)
+  const getTeacherWeekSchedule = useCallback((enseignant_id) => {
+    if (!enseignant_id || schedules.length === 0) return [];
+
+    return schedules.filter(sch => 
+      sch.enseignant_id === enseignant_id && 
+      sch.statut !== 'annule'
+    );
+  }, [schedules]);
+
+  // ============ STUDENT GROUP CONFLICT DETECTION ============
+  // Detect if a student group already has a course at this time
+  const detectStudentGroupConflict = useCallback((classe_id, scheduleData, existingSchedules, excludeScheduleId = null) => {
+    if (!classe_id) return null;
+
+    const {
+      start_time,
+      end_time,
+      day_of_week,
+      date_debut
+    } = scheduleData;
+
+    // Filter schedules where this group is already assigned
+    const groupSchedules = existingSchedules.filter(sch => {
+      if (excludeScheduleId && sch.id === excludeScheduleId) return false;
+      if (sch.statut === 'annule') return false;
+      if (sch.classe_id !== classe_id) return false;
+      if (sch.day_of_week !== day_of_week) return false;
+
+      // Check date match
+      if (date_debut) {
+        const checkDate = dayjs(date_debut);
+        const startDate = sch.date_debut ? dayjs(sch.date_debut) : null;
+        if (!startDate?.isValid()) return false;
+        if (!checkDate.isSame(startDate, 'day')) return false;
+      }
+
+      return true;
+    });
+
+    // Check for time overlap with any of group's existing courses
+    for (const sch of groupSchedules) {
+      if (timesOverlap(start_time, end_time, sch.start_time, sch.end_time)) {
+        return {
+          conflictingSchedule: sch,
+          message: `❌ Ce groupe a déjà un cours sur cette plage horaire (${sch.start_time} - ${sch.end_time})`
+        };
+      }
+    }
+
+    return null;
+  }, [timesOverlap]);
+
+  // Get group's available time slots
+  const getGroupAvailableSlots = useCallback((classe_id, day, existingSchedules) => {
+    if (!classe_id) return defaultTimeSlots;
+
+    const groupSchedules = existingSchedules.filter(sch => 
+      sch.classe_id === classe_id && 
+      sch.day_of_week === day &&
+      sch.statut !== 'annule'
+    );
+
+    return defaultTimeSlots.map(slot => ({
+      ...slot,
+      isBusy: groupSchedules.some(sch => 
+        timesOverlap(slot.start, slot.end, sch.start_time, sch.end_time)
+      )
+    }));
+  }, [defaultTimeSlots, timesOverlap]);
+
+  // Get group's schedule for the week
+  const getGroupWeekSchedule = useCallback((classe_id) => {
+    if (!classe_id || schedules.length === 0) return [];
+
+    return schedules.filter(sch => 
+      sch.classe_id === classe_id && 
+      sch.statut !== 'annule'
+    );
+  }, [schedules]);
+
+  // ============ ROOM CONFLICT DETECTION ============
+  // Detect if a room is already booked at this time
+  const detectRoomConflict = useCallback((salle_id, scheduleData, existingSchedules, excludeScheduleId = null) => {
+    if (!salle_id) return null;
+
+    const {
+      start_time,
+      end_time,
+      day_of_week,
+      date_debut
+    } = scheduleData;
+
+    // Filter schedules where this room is already assigned
+    const roomSchedules = existingSchedules.filter(sch => {
+      if (excludeScheduleId && sch.id === excludeScheduleId) return false;
+      if (sch.statut === 'annule') return false;
+      if (sch.salle_id !== salle_id) return false;
+      if (sch.day_of_week !== day_of_week) return false;
+
+      // Check date match
+      if (date_debut) {
+        const checkDate = dayjs(date_debut);
+        const startDate = sch.date_debut ? dayjs(sch.date_debut) : null;
+        if (!startDate?.isValid()) return false;
+        if (!checkDate.isSame(startDate, 'day')) return false;
+      }
+
+      return true;
+    });
+
+    // Check for time overlap with any of room's existing courses
+    for (const sch of roomSchedules) {
+      if (timesOverlap(start_time, end_time, sch.start_time, sch.end_time)) {
+        return {
+          conflictingSchedule: sch,
+          message: `❌ Cette salle est déjà occupée sur cette plage horaire (${sch.start_time} - ${sch.end_time})`
+        };
+      }
+    }
+
+    return null;
+  }, [timesOverlap]);
+
+  // Get room's available time slots
+  const getRoomAvailableSlots = useCallback((salle_id, day, existingSchedules) => {
+    if (!salle_id) return defaultTimeSlots;
+
+    const roomSchedules = existingSchedules.filter(sch => 
+      sch.salle_id === salle_id && 
+      sch.day_of_week === day &&
+      sch.statut !== 'annule'
+    );
+
+    return defaultTimeSlots.map(slot => ({
+      ...slot,
+      isBusy: roomSchedules.some(sch => 
+        timesOverlap(slot.start, slot.end, sch.start_time, sch.end_time)
+      )
+    }));
+  }, [defaultTimeSlots, timesOverlap]);
+
+  // Get room's schedule for the week
+  const getRoomWeekSchedule = useCallback((salle_id) => {
+    if (!salle_id || schedules.length === 0) return [];
+
+    return schedules.filter(sch => 
+      sch.salle_id === salle_id && 
+      sch.statut !== 'annule'
+    );
+  }, [schedules]);
+
+  // ============ ROOM SUGGESTIONS ============
+  // Find nearest available room with sufficient capacity
+  const findNearestFreeRoom = useCallback((scheduleData, existingSchedules, excludeScheduleId = null) => {
+    if (!scheduleData.start_time || !scheduleData.end_time) return [];
+
+    // Get the group's size to determine room capacity needed
+    const groupe = classes.find(c => c.id === scheduleData.classe_id);
+    const groupSize = groupe?.effectif || 30; // Default to 30 if not found
+
+    // Filter rooms by capacity
+    const suitableRooms = salles.filter(room => 
+      room.capacite >= groupSize
+    );
+
+    // Mark each room with availability status
+    const roomsWithStatus = suitableRooms.map(room => {
+      const conflict = detectRoomConflict(room.id, scheduleData, existingSchedules, excludeScheduleId);
+      return {
+        ...room,
+        isAvailable: !conflict,
+        status: conflict ? 'occupied' : 'free'
+      };
+    });
+
+    // Sort: available rooms first, then by capacity
+    return roomsWithStatus.sort((a, b) => {
+      if (a.isAvailable !== b.isAvailable) {
+        return a.isAvailable ? -1 : 1;
+      }
+      return a.capacite - b.capacite;
+    });
+  }, [classes, salles, detectRoomConflict]);
+
+  // Get room availability color coding
+  const getRoomAvailabilityColor = useCallback((room, day, timeSlot, existingSchedules) => {
+    if (!room || !day || !timeSlot) return '#8c8c8c'; // grey - unknown
+
+    const scheduleData = {
+      start_time: timeSlot.start,
+      end_time: timeSlot.end,
+      day_of_week: day
+    };
+
+    const conflict = detectRoomConflict(room.id, scheduleData, existingSchedules);
+
+    if (conflict) return '#ff4d4f'; // red - occupied
+    
+    // Check if room is almost busy (adjacent slots busy)
+    const availableSlots = getRoomAvailableSlots(room.id, day, existingSchedules);
+    const slotStatus = availableSlots.find(s => s.start === timeSlot.start);
+    if (slotStatus?.isBusy) return '#faad14'; // yellow - almost busy
+
+    return '#52c41a'; // green - free
+  }, [detectRoomConflict, getRoomAvailableSlots]);
 
   // Mémoized callbacks pour optimiser les performances
   const fetchClasses = useCallback(async () => {
@@ -221,7 +682,60 @@ const WeeklyTimetableViewContent = () => {
     return matchingSchedule || null;
   }, [schedules, getWeekDates]);
 
-  const getCourseTypeColor = (type) => {
+  // Check if a time slot has any conflicts (for visual highlighting)
+  const getSlotConflicts = useCallback((day, timeSlot) => {
+    const weekDates = getWeekDates();
+    const dayDate = weekDates.find(d => d.day === day)?.date;
+    
+    if (!dayDate) return [];
+
+    const conflictingSchedules = [];
+
+    // Find any schedules that overlap this slot
+    for (const sch of schedules) {
+      try {
+        if (sch.statut === 'annule') continue;
+        if (sch.day_of_week !== day) continue;
+
+        const startDate = sch.date_debut ? dayjs(sch.date_debut) : null;
+        const endDate = sch.date_fin ? dayjs(sch.date_fin) : null;
+        
+        if (!startDate?.isValid()) continue;
+        
+        const isInRange = dayDate.isSameOrAfter(startDate, 'day') && 
+                         (!endDate || !endDate.isValid() || dayDate.isSameOrBefore(endDate, 'day'));
+        
+        if (!isInRange) continue;
+
+        // Check time overlap
+        const timeToMinutes = (time) => {
+          if (!time) return 0;
+          const parts = time.split(':');
+          return parseInt(parts[0]) * 60 + parseInt(parts[1]);
+        };
+
+        const slotStartMin = timeToMinutes(timeSlot.start);
+        const slotEndMin = timeToMinutes(timeSlot.end);
+        const schStartMin = timeToMinutes(sch.start_time);
+        const schEndMin = timeToMinutes(sch.end_time);
+
+        if (schStartMin < slotEndMin && slotStartMin < schEndMin) {
+          conflictingSchedules.push(sch);
+        }
+      } catch (e) {
+        // Skip on error
+      }
+    }
+
+    return conflictingSchedules;
+  }, [schedules, getWeekDates]);
+
+  const getCourseTypeColor = (type, classId = null) => {
+    // If classId is provided, use class-based color
+    if (classId) {
+      return getClassColor(classId);
+    }
+    // Otherwise use type-based color
     const colors = {
       'Cours': '#1890ff',
       'TD': '#faad14',
@@ -326,6 +840,163 @@ const WeeklyTimetableViewContent = () => {
         date_fin: allValues.date_fin?.format ? allValues.date_fin.format('YYYY-MM-DD') : allValues.date_fin || null
       };
 
+      // Check for conflicts BEFORE submitting
+      const conflicts = detectConflicts(
+        scheduleData,
+        schedules,
+        modalMode === 'edit' ? selectedSchedule.id : null
+      );
+
+      // Check for teacher-specific conflicts
+      const teacherConflict = detectTeacherConflict(
+        scheduleData.enseignant_id,
+        scheduleData,
+        schedules,
+        modalMode === 'edit' ? selectedSchedule.id : null
+      );
+
+      // Check for student group conflicts
+      const groupConflict = detectStudentGroupConflict(
+        scheduleData.classe_id,
+        scheduleData,
+        schedules,
+        modalMode === 'edit' ? selectedSchedule.id : null
+      );
+
+      // Check for room conflicts
+      const roomConflict = detectRoomConflict(
+        scheduleData.salle_id,
+        scheduleData,
+        schedules,
+        modalMode === 'edit' ? selectedSchedule.id : null
+      );
+
+      if (conflicts.length > 0 || teacherConflict || groupConflict || roomConflict) {
+        setLoading(false);
+        
+        // Prepare all conflict messages
+        const allConflicts = [
+          ...conflicts,
+          ...(groupConflict ? [{
+            type: 'GROUP_CONFLICT',
+            message: groupConflict.message,
+            severity: 'critical'
+          }] : []),
+          ...(teacherConflict ? [{
+            type: 'TEACHER_CONFLICT',
+            message: teacherConflict.message,
+            severity: 'critical'
+          }] : []),
+          ...(roomConflict ? [{
+            type: 'ROOM_CONFLICT',
+            message: roomConflict.message,
+            severity: 'critical'
+          }] : [])
+        ];
+
+        // Find suggestions based on conflicts
+        let suggestions = [];
+        
+        if (groupConflict && scheduleData.classe_id) {
+          const availableSlots = getGroupAvailableSlots(
+            scheduleData.classe_id,
+            scheduleData.day_of_week,
+            schedules
+          );
+          const freeSlots = availableSlots.filter(s => !s.isBusy).slice(0, 2);
+          if (freeSlots.length > 0) {
+            suggestions.push({
+              type: 'group',
+              label: '💡 Créneaux disponibles pour ce groupe:',
+              items: freeSlots.map(s => s.label)
+            });
+          }
+        }
+
+        if (roomConflict && scheduleData.salle_id) {
+          const alternativeRooms = findNearestFreeRoom(scheduleData, schedules, modalMode === 'edit' ? selectedSchedule.id : null);
+          const availableRooms = alternativeRooms.filter(r => r.isAvailable).slice(0, 3);
+          if (availableRooms.length > 0) {
+            suggestions.push({
+              type: 'room',
+              label: '🏛️ Salles disponibles (même créneau):',
+              items: availableRooms.map(r => `${r.nom} (capacité: ${r.capacite})`)
+            });
+          }
+        }
+
+        if (teacherConflict && scheduleData.enseignant_id) {
+          const nearestSlot = findNearestFreeSlot(
+            scheduleData.enseignant_id,
+            scheduleData.day_of_week,
+            scheduleData,
+            schedules
+          );
+          if (nearestSlot) {
+            suggestions.push({
+              type: 'teacher',
+              label: '💡 Créneau disponible pour ce professeur:',
+              items: [nearestSlot.suggestedDay ? `${nearestSlot.suggestedDay} ${nearestSlot.label}` : nearestSlot.label]
+            });
+          }
+        }
+
+        // Show conflict modal with suggestions
+        Modal.error({
+          title: '⚠️ Conflit d\'horaire détecté',
+          icon: <ExclamationCircleOutlined />,
+          content: (
+            <div className="conflict-modal-content">
+              <p style={{ marginBottom: '16px', color: '#ff4d4f', fontWeight: '600' }}>
+                Impossible d'enregistrer cette séance. Conflits détectés:
+              </p>
+              <ul style={{ marginLeft: '20px', color: '#262626' }}>
+                {allConflicts.map((conflict, idx) => (
+                  <li key={idx} style={{ marginBottom: '8px' }}>
+                    <span style={{ 
+                      color: conflict.severity === 'critical' ? '#ff4d4f' : '#faad14',
+                      fontWeight: '600'
+                    }}>
+                      {conflict.severity === 'critical' ? '🔴' : '🟠'} {conflict.message}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+              
+              {suggestions.length > 0 && (
+                <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {suggestions.map((suggestion, idx) => (
+                    <div 
+                      key={idx}
+                      style={{ 
+                        padding: '12px', 
+                        backgroundColor: '#f0f5ff', 
+                        borderLeft: '4px solid #1890ff',
+                        borderRadius: '4px'
+                      }}
+                    >
+                      <p style={{ margin: '0 0 8px 0', fontWeight: '600', color: '#1890ff' }}>
+                        {suggestion.label}
+                      </p>
+                      <ul style={{ margin: 0, paddingLeft: '20px', color: '#262626' }}>
+                        {suggestion.items.map((item, i) => (
+                          <li key={i}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ),
+          okText: 'Comprendre',
+          onOk() {
+            // User acknowledges the conflict
+          },
+        });
+        return;
+      }
+
       const url = modalMode === 'create' 
         ? `${API_BASE}/calendar/schedules`
         : `${API_BASE}/calendar/schedules/${selectedSchedule.id}`;
@@ -413,6 +1084,168 @@ const WeeklyTimetableViewContent = () => {
     }
 
     try {
+      // Check for conflicts before allowing drag and drop
+      const conflictCheckData = {
+        ...draggedSchedule,
+        day_of_week: day,
+        start_time: timeSlot.start + ':00',
+        end_time: timeSlot.end + ':00',
+        date_debut: draggedSchedule.date_debut
+      };
+
+      const conflicts = detectConflicts(
+        conflictCheckData,
+        schedules,
+        draggedSchedule.id
+      );
+
+      // Check for teacher-specific conflicts during drag-drop
+      const teacherConflict = detectTeacherConflict(
+        draggedSchedule.enseignant_id,
+        conflictCheckData,
+        schedules,
+        draggedSchedule.id
+      );
+
+      // Check for student group conflicts during drag-drop
+      const groupConflict = detectStudentGroupConflict(
+        draggedSchedule.classe_id,
+        conflictCheckData,
+        schedules,
+        draggedSchedule.id
+      );
+
+      // Check for room conflicts during drag-drop
+      const roomConflict = detectRoomConflict(
+        draggedSchedule.salle_id,
+        conflictCheckData,
+        schedules,
+        draggedSchedule.id
+      );
+
+      if (conflicts.length > 0 || teacherConflict || groupConflict || roomConflict) {
+        setDraggedSchedule(null);
+        
+        // Prepare all conflict messages
+        const allConflicts = [
+          ...conflicts,
+          ...(groupConflict ? [{
+            type: 'GROUP_CONFLICT',
+            message: groupConflict.message,
+            severity: 'critical'
+          }] : []),
+          ...(teacherConflict ? [{
+            type: 'TEACHER_CONFLICT',
+            message: teacherConflict.message,
+            severity: 'critical'
+          }] : []),
+          ...(roomConflict ? [{
+            type: 'ROOM_CONFLICT',
+            message: roomConflict.message,
+            severity: 'critical'
+          }] : [])
+        ];
+
+        // Find suggestions based on conflicts
+        let suggestions = [];
+        
+        if (groupConflict && draggedSchedule.classe_id) {
+          const availableSlots = getGroupAvailableSlots(
+            draggedSchedule.classe_id,
+            day,
+            schedules
+          );
+          const freeSlots = availableSlots.filter(s => !s.isBusy).slice(0, 2);
+          if (freeSlots.length > 0) {
+            suggestions.push({
+              type: 'group',
+              label: '💡 Créneaux disponibles pour ce groupe:',
+              items: freeSlots.map(s => s.label)
+            });
+          }
+        }
+
+        if (roomConflict && draggedSchedule.salle_id) {
+          const alternativeRooms = findNearestFreeRoom(conflictCheckData, schedules, draggedSchedule.id);
+          const availableRooms = alternativeRooms.filter(r => r.isAvailable).slice(0, 3);
+          if (availableRooms.length > 0) {
+            suggestions.push({
+              type: 'room',
+              label: '🏛️ Salles disponibles (même créneau):',
+              items: availableRooms.map(r => `${r.nom} (capacité: ${r.capacite})`)
+            });
+          }
+        }
+
+        if (teacherConflict && draggedSchedule.enseignant_id) {
+          const nearestSlot = findNearestFreeSlot(
+            draggedSchedule.enseignant_id,
+            day,
+            conflictCheckData,
+            schedules
+          );
+          if (nearestSlot) {
+            suggestions.push({
+              type: 'teacher',
+              label: '💡 Créneau disponible pour ce professeur:',
+              items: [nearestSlot.suggestedDay ? `${nearestSlot.suggestedDay} ${nearestSlot.label}` : nearestSlot.label]
+            });
+          }
+        }
+
+        // Show conflict warning with suggestions
+        Modal.warning({
+          title: '❌ Impossible de déplacer la séance',
+          icon: <ExclamationCircleOutlined />,
+          content: (
+            <div className="conflict-modal-content">
+              <p style={{ marginBottom: '16px', color: '#ff4d4f', fontWeight: '600' }}>
+                Ce créneau présente des conflits:
+              </p>
+              <ul style={{ marginLeft: '20px', color: '#262626' }}>
+                {allConflicts.map((conflict, idx) => (
+                  <li key={idx} style={{ marginBottom: '8px' }}>
+                    <span style={{ 
+                      color: conflict.severity === 'critical' ? '#ff4d4f' : '#faad14',
+                      fontWeight: '600'
+                    }}>
+                      {conflict.severity === 'critical' ? '🔴' : '🟠'} {conflict.message}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+
+              {suggestions.length > 0 && (
+                <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  {suggestions.map((suggestion, idx) => (
+                    <div 
+                      key={idx}
+                      style={{ 
+                        padding: '12px', 
+                        backgroundColor: '#f0f5ff', 
+                        borderLeft: '4px solid #1890ff',
+                        borderRadius: '4px'
+                      }}
+                    >
+                      <p style={{ margin: '0 0 8px 0', fontWeight: '600', color: '#1890ff' }}>
+                        {suggestion.label}
+                      </p>
+                      <ul style={{ margin: 0, paddingLeft: '20px', color: '#262626' }}>
+                        {suggestion.items.map((item, i) => (
+                          <li key={i}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ),
+          okText: 'OK',
+        });
+        return;
+      }
+
       setLoading(true);
       
       const updateData = {
@@ -533,6 +1366,53 @@ const WeeklyTimetableViewContent = () => {
 
           <Card className="timetable-card">
             <div className="weekly-grid-container">
+              {/* Teacher Schedule Sidebar */}
+              {form.getFieldValue('enseignant_id') && (
+                <div className="teacher-schedule-sidebar" style={{
+                  position: 'absolute',
+                  right: '20px',
+                  top: '100px',
+                  width: '300px',
+                  backgroundColor: '#fafafa',
+                  border: '1px solid #d9d9d9',
+                  borderRadius: '8px',
+                  padding: '16px',
+                  maxHeight: '500px',
+                  overflowY: 'auto',
+                  zIndex: 100
+                }}>
+                  <h4 style={{ marginTop: 0, marginBottom: '12px', color: '#1890ff' }}>
+                    📅 Horaire du professeur
+                  </h4>
+                  {getTeacherWeekSchedule(form.getFieldValue('enseignant_id')).length > 0 ? (
+                    <div>
+                      {getTeacherWeekSchedule(form.getFieldValue('enseignant_id')).map((sch, idx) => (
+                        <div 
+                          key={idx}
+                          style={{
+                            padding: '8px',
+                            marginBottom: '8px',
+                            backgroundColor: '#fff',
+                            border: '1px solid #f0f0f0',
+                            borderRadius: '4px',
+                            fontSize: '12px'
+                          }}
+                        >
+                          <div style={{ fontWeight: '600', color: '#262626' }}>
+                            {sch.day_of_week} {sch.start_time} - {sch.end_time}
+                          </div>
+                          <div style={{ color: '#8c8c8c', fontSize: '11px' }}>
+                            {sch.matiere?.nom || 'N/A'}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p style={{ color: '#8c8c8c', fontSize: '12px' }}>Aucun cours programmé</p>
+                  )}
+                </div>
+              )}
+
               <div className="weekly-grid">
                 <div className="grid-header">
                   <div className="time-header">Horaires</div>
@@ -553,20 +1433,27 @@ const WeeklyTimetableViewContent = () => {
                     
                     {weekDays.map((day) => {
                       const schedule = getScheduleForSlot(day, timeSlot);
+                      const slotConflicts = getSlotConflicts(day, timeSlot);
+                      const hasConflicts = slotConflicts.length > 0 && !schedule;
+
+                      const conflictTooltip = hasConflicts 
+                        ? `Créneau en conflit: ${slotConflicts.map(s => s.matiere?.nom || 'Unknown').join(', ')}`
+                        : '';
                       
                       return (
-                        <div
-                          key={`${day}-${timeSlot.id}`}
-                          className={`schedule-cell ${schedule ? 'has-schedule' : 'empty-cell'} ${draggedSchedule?.id === schedule?.id ? 'dragging' : ''}`}
-                          onClick={() => !schedule && handleCreateSchedule(day, timeSlot)}
-                          onDragOver={handleDragOver}
-                          onDrop={(e) => handleDropOnCell(e, day, timeSlot)}
-                        >
+                        <Tooltip key={`${day}-${timeSlot.id}`} title={conflictTooltip} color={hasConflicts ? '#ff4d4f' : 'default'}>
+                          <div
+                            className={`schedule-cell ${schedule ? 'has-schedule' : 'empty-cell'} ${draggedSchedule?.id === schedule?.id ? 'dragging' : ''} ${hasConflicts ? 'conflict-zone' : ''}`}
+                            onClick={() => !schedule && handleCreateSchedule(day, timeSlot)}
+                            onDragOver={handleDragOver}
+                            onDrop={(e) => handleDropOnCell(e, day, timeSlot)}
+                          >
                           {schedule ? (
                             <div
                               className="schedule-card"
                               style={{
-                                borderLeft: `4px solid ${getCourseTypeColor(schedule.type_cours)}`
+                                borderLeft: `4px solid ${getCourseTypeColor(schedule.type_cours, schedule.classe_id)}`,
+                                background: `linear-gradient(135deg, ${getCourseTypeColor(schedule.type_cours, schedule.classe_id)}15 0%, ${getCourseTypeColor(schedule.type_cours, schedule.classe_id)}05 100%)`
                               }}
                               draggable
                               onDragStart={(e) => handleDragStart(e, schedule)}
@@ -575,7 +1462,7 @@ const WeeklyTimetableViewContent = () => {
                               <div className="schedule-header">
                                 <div 
                                   className="schedule-type" 
-                                  style={{ background: getCourseTypeColor(schedule.type_cours) }}
+                                  style={{ background: getCourseTypeColor(schedule.type_cours, schedule.classe_id) }}
                                 >
                                   {schedule.type_cours}
                                 </div>
@@ -638,7 +1525,8 @@ const WeeklyTimetableViewContent = () => {
                               <span>Ajouter</span>
                             </div>
                           )}
-                        </div>
+                          </div>
+                        </Tooltip>
                       );
                     })}
                   </div>

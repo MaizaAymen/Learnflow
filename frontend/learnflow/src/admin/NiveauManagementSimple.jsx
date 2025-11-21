@@ -16,7 +16,11 @@ import {
   Card,
   Row,
   Col,
-  theme
+  theme,
+  Empty,
+  Drawer,
+  Descriptions,
+  Spin
 } from "antd";
 import {
   PlusOutlined,
@@ -25,6 +29,8 @@ import {
   ArrowLeftOutlined,
   UserOutlined,
   LaptopOutlined,
+  EyeOutlined,
+  UndoOutlined,
 } from "@ant-design/icons";
 
 const { Content, Sider } = Layout;
@@ -39,6 +45,12 @@ const NiveauManagement = () => {
   const [editingNiveau, setEditingNiveau] = useState(null);
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  const [searchText, setSearchText] = useState("");
+  const [filteredNiveaux, setFilteredNiveaux] = useState([]);
+  const [viewingNiveau, setViewingNiveau] = useState(null);
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [lastDeletedNiveau, setLastDeletedNiveau] = useState(null);
+  const [specialitesDropdownLoading, setSpecialitesDropdownLoading] = useState(false);
   
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -86,14 +98,37 @@ const NiveauManagement = () => {
     fetchSpecialites();
   }, []);
 
+  // Filter niveaux based on search text
+  useEffect(() => {
+    if (!searchText.trim()) {
+      setFilteredNiveaux(niveaux);
+    } else {
+      const searchLower = searchText.toLowerCase();
+      const filtered = niveaux.filter(niveau =>
+        niveau.name?.toLowerCase().includes(searchLower) ||
+        niveau.specialite_nom?.toLowerCase().includes(searchLower) ||
+        niveau.departement_nom?.toLowerCase().includes(searchLower) ||
+        niveau.description?.toLowerCase().includes(searchLower)
+      );
+      setFilteredNiveaux(filtered);
+    }
+  }, [searchText, niveaux]);
+
   // Handle create/update
   const handleSubmit = async (values) => {
+    // Validate duplicate niveau names within the same specialite
+    if (checkDuplicateNiveau(values.name, values.specialiteId, editingNiveau?.id)) {
+      message.error("A niveau with this name already exists in this specialite!");
+      return;
+    }
+
     try {
       const url = editingNiveau
         ? `http://localhost:3000/api/reference/niveaux/${editingNiveau.id}`
         : "http://localhost:3000/api/reference/niveaux";
 
       const method = editingNiveau ? "PUT" : "POST";
+      const previousNiveaux = niveaux;
       
       const response = await fetch(url, {
         method,
@@ -110,11 +145,28 @@ const NiveauManagement = () => {
       const data = await response.json();
       
       if (response.ok) {
-        message.success(
-          editingNiveau 
-            ? "Niveau updated successfully!"
-            : "Niveau created successfully!"
-        );
+        const successMsg = editingNiveau 
+          ? "Niveau updated successfully!"
+          : "Niveau created successfully!";
+        
+        message.success({
+          content: (
+            <div>
+              <span>{successMsg}</span>
+              <Button 
+                type="link" 
+                size="small"
+                icon={<UndoOutlined />}
+                onClick={() => handleUndoLastAction(previousNiveaux)}
+                style={{ marginLeft: 8 }}
+              >
+                Undo
+              </Button>
+            </div>
+          ),
+          duration: 5,
+        });
+
         setModalVisible(false);
         setEditingNiveau(null);
         form.resetFields();
@@ -128,9 +180,18 @@ const NiveauManagement = () => {
     }
   };
 
+  // Handle undo action
+  const handleUndoLastAction = (previousNiveaux) => {
+    setNiveaux(previousNiveaux);
+    message.info("Action undone!");
+  };
+
   // Handle delete
   const handleDelete = async (id) => {
     try {
+      const deletedNiveau = niveaux.find(n => n.id === id);
+      const previousNiveaux = niveaux;
+
       const response = await fetch(
         `http://localhost:3000/api/reference/niveaux/${id}`,
         {
@@ -139,7 +200,24 @@ const NiveauManagement = () => {
       );
 
       if (response.ok) {
-        message.success("Niveau deleted successfully!");
+        setLastDeletedNiveau(deletedNiveau);
+        message.success({
+          content: (
+            <div>
+              <span>Niveau deleted successfully!</span>
+              <Button 
+                type="link" 
+                size="small"
+                icon={<UndoOutlined />}
+                onClick={() => handleUndoDelete(previousNiveaux)}
+                style={{ marginLeft: 8 }}
+              >
+                Undo
+              </Button>
+            </div>
+          ),
+          duration: 5,
+        });
         fetchNiveaux();
       } else {
         const data = await response.json();
@@ -151,6 +229,12 @@ const NiveauManagement = () => {
     }
   };
 
+  // Handle undo delete
+  const handleUndoDelete = (previousNiveaux) => {
+    setNiveaux(previousNiveaux);
+    message.info("Deletion undone!");
+  };
+
   // Handle edit
   const handleEdit = (niveau) => {
     setEditingNiveau(niveau);
@@ -160,6 +244,12 @@ const NiveauManagement = () => {
       specialiteId: niveau.specialiteId,
     });
     setModalVisible(true);
+  };
+
+  // Handle quick view
+  const handleQuickView = (niveau) => {
+    setViewingNiveau(niveau);
+    setDrawerVisible(true);
   };
 
   // Handle add new
@@ -203,15 +293,24 @@ const NiveauManagement = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 150,
+      width: 200,
       fixed: 'right',
       render: (_, record) => (
         <Space size="small">
           <Button
             type="primary"
+            ghost
+            icon={<EyeOutlined />}
+            size="small"
+            onClick={() => handleQuickView(record)}
+            title="Quick View"
+          />
+          <Button
+            type="primary"
             icon={<EditOutlined />}
             size="small"
             onClick={() => handleEdit(record)}
+            title="Edit"
           />
           <Popconfirm
             title="Are you sure to delete this niveau?"
@@ -224,6 +323,7 @@ const NiveauManagement = () => {
               danger
               icon={<DeleteOutlined />}
               size="small"
+              title="Delete"
             />
           </Popconfirm>
         </Space>
@@ -318,6 +418,26 @@ const items1 = [
                 </span>
               )
             },
+            { 
+              title: (
+                <span 
+                  onClick={() => navigate("/reference/departements")} 
+                  style={{ cursor: 'pointer' }}
+                >
+                  Départements
+                </span>
+              )
+            },
+            { 
+              title: (
+                <span 
+                  onClick={() => navigate("/reference/specialites")} 
+                  style={{ cursor: 'pointer' }}
+                >
+                  Spécialités
+                </span>
+              )
+            },
             { title: "Niveaux" },
           ]}
         />
@@ -345,20 +465,47 @@ const items1 = [
                   </Button>
                 }
               >
-                <Table
-                  dataSource={niveaux}
-                  columns={columns}
-                  rowKey="id"
-                  loading={loading}
-                  scroll={{ x: 600 }}
-                  pagination={{
-                    pageSize: 10,
-                    showSizeChanger: true,
-                    showQuickJumper: true,
-                    showTotal: (total, range) =>
-                      `${range[0]}-${range[1]} de ${total} éléments`,
-                  }}
-                />
+                {/* Search and Filter */}
+                <Row gutter={[16, 16]} style={{ marginBottom: 20 }}>
+                  <Col span={24}>
+                    <Input
+                      placeholder="Rechercher par nom, spécialité, département ou description..."
+                      value={searchText}
+                      onChange={(e) => setSearchText(e.target.value)}
+                      allowClear
+                      style={{ height: 40 }}
+                    />
+                  </Col>
+                </Row>
+
+                {/* Display results count */}
+                {searchText && (
+                  <div style={{ marginBottom: 12, color: '#666' }}>
+                    {filteredNiveaux.length} résultat(s) trouvé(s)
+                  </div>
+                )}
+
+                {filteredNiveaux.length === 0 && niveaux.length > 0 ? (
+                  <Empty
+                    description="Aucun résultat"
+                    style={{ marginTop: 24 }}
+                  />
+                ) : (
+                  <Table
+                    dataSource={filteredNiveaux}
+                    columns={columns}
+                    rowKey="id"
+                    loading={loading}
+                    scroll={{ x: 600 }}
+                    pagination={{
+                      pageSize: 10,
+                      showSizeChanger: true,
+                      showQuickJumper: true,
+                      showTotal: (total, range) =>
+                        `${range[0]}-${range[1]} de ${total} éléments`,
+                    }}
+                  />
+                )}
               </Card>
             </Col>
           </Row>
@@ -451,6 +598,33 @@ const items1 = [
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Quick View Drawer */}
+      <Drawer
+        title={viewingNiveau ? `${viewingNiveau.name}` : "Détails du Niveau"}
+        placement="right"
+        onClose={() => setDrawerVisible(false)}
+        open={drawerVisible}
+        width={400}
+      >
+        {viewingNiveau ? (
+          <Descriptions column={1} bordered>
+            <Descriptions.Item label="ID">{viewingNiveau.id}</Descriptions.Item>
+            <Descriptions.Item label="Nom">{viewingNiveau.name}</Descriptions.Item>
+            <Descriptions.Item label="Spécialité">
+              {viewingNiveau.specialite_nom}
+            </Descriptions.Item>
+            <Descriptions.Item label="Département">
+              {viewingNiveau.departement_nom}
+            </Descriptions.Item>
+            <Descriptions.Item label="Description">
+              {viewingNiveau.description || "N/A"}
+            </Descriptions.Item>
+          </Descriptions>
+        ) : (
+          <Spin />
+        )}
+      </Drawer>
     </Layout>
   );
 };

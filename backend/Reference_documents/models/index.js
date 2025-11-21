@@ -1,6 +1,9 @@
 // Model initialization file to avoid circular dependencies
 // All models should be required first, then relationships are defined here
 
+// Import sequelize instance for factory function models
+const sequelize = require('../../auth-service/config');
+
 const Niveau = require('./Niveau');
 const Classe = require('./Classe');
 const Specialite = require('./Specialite');
@@ -448,6 +451,18 @@ Student.belongsTo(Niveau, {
 // EXPORTS
 // ============================================================================
 
+// Import new professional feature models (factory functions)
+const Grade = require('./Grade')(sequelize);
+const Exam = require('./Exam')(sequelize);
+const GradeHistory = require('./GradeHistory')(sequelize);
+const Document = require('./Document')(sequelize);
+const StudentRequest = require('./StudentRequest')(sequelize);
+const Internship = require('./Internship')(sequelize);
+const Project = require('./Project')(sequelize);
+const AuditLog = require('./AuditLog')(sequelize);
+const Announcement = require('./Announcement')(sequelize);
+const Comment = require('./Comment')(sequelize);
+
 module.exports = {
   Niveau,
   Classe,
@@ -465,5 +480,16 @@ module.exports = {
   Rattrapage,
   Student,
   StudentAbsence,
-  User // Students are Users with role='etudiant'
+  User, // Students are Users with role='etudiant'
+  // New professional feature models
+  Grade,
+  Exam,
+  GradeHistory,
+  Document,
+  StudentRequest,
+  Internship,
+  Project,
+  AuditLog,
+  Announcement,
+  Comment
 };

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Badge, Calendar, Spin, message, Button, Card, Tag, App, Modal, Form, Select, Input, ConfigProvider } from 'antd';
+import { Badge, Calendar, Spin, message, Button, Card, Tag, App, Modal, Select, Input, ConfigProvider } from 'antd';
 import { ArrowLeftOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import './ClassCalendar.css';
 
@@ -20,7 +20,6 @@ const ClassCalendarContent = () => {
   const { classeId } = useParams();
   const navigate = useNavigate();
   const { message: messageApi } = App.useApp();
-  const [form] = Form.useForm();
   const [schedules, setSchedules] = useState([]);
   const [classe, setClasse] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -263,7 +262,6 @@ const ClassCalendarContent = () => {
   const handleCloseModal = () => {
     setModalVisible(false);
     setSelectedSchedule(null);
-    form.resetFields();
   };
 
   const handleDragStart = (e, schedule) => {
@@ -482,50 +480,48 @@ const ClassCalendarContent = () => {
             </Button>
           ]}
         >
-          <Form form={form}>
-            {selectedSchedule && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              <div>
-                <strong>Matière:</strong> {selectedSchedule.matiere?.nom || selectedSchedule.matiere?.name || 'Non spécifiée'}
-              </div>
-              <div>
-                <strong>Enseignant:</strong> {selectedSchedule.enseignant ? `${selectedSchedule.enseignant.prenom} ${selectedSchedule.enseignant.nom}` : 'Non assigné'}
-              </div>
-              <div>
-                <strong>Salle:</strong> {selectedSchedule.salle?.nom || 'Non assignée'}
-              </div>
-              <div>
-                <strong>Jour:</strong> {selectedSchedule.day_of_week}
-              </div>
-              <div>
-                <strong>Heure:</strong> {selectedSchedule.start_time?.substring(0, 5) || '--:--'} - {selectedSchedule.end_time?.substring(0, 5) || '--:--'}
-              </div>
-              <div>
-                <strong>Type:</strong> <Tag color={
-                  selectedSchedule.type_cours === 'Cours' ? 'blue' :
-                  selectedSchedule.type_cours === 'TD' ? 'orange' :
-                  selectedSchedule.type_cours === 'TP' ? 'green' :
-                  selectedSchedule.type_cours === 'Examen' ? 'red' : 'default'
-                }>
-                  {selectedSchedule.type_cours}
-                </Tag>
-              </div>
-              <div>
-                <strong>Statut:</strong> <Tag color={
-                  selectedSchedule.statut === 'confirme' ? 'green' :
-                  selectedSchedule.statut === 'planifie' ? 'blue' :
-                  selectedSchedule.statut === 'annule' ? 'red' : 'default'
-                }>
-                  {selectedSchedule.statut}
-                </Tag>
-              </div>
-              <div>
-                <strong>Période:</strong> {selectedSchedule.date_debut} 
-                {selectedSchedule.date_fin ? ` au ${selectedSchedule.date_fin}` : ' (sans fin spécifiée)'}
-              </div>
-              </div>
-            )}
-          </Form>
+          {selectedSchedule && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <div>
+              <strong>Matière:</strong> {selectedSchedule.matiere?.nom || selectedSchedule.matiere?.name || 'Non spécifiée'}
+            </div>
+            <div>
+              <strong>Enseignant:</strong> {selectedSchedule.enseignant ? `${selectedSchedule.enseignant.prenom} ${selectedSchedule.enseignant.nom}` : 'Non assigné'}
+            </div>
+            <div>
+              <strong>Salle:</strong> {selectedSchedule.salle?.nom || 'Non assignée'}
+            </div>
+            <div>
+              <strong>Jour:</strong> {selectedSchedule.day_of_week}
+            </div>
+            <div>
+              <strong>Heure:</strong> {selectedSchedule.start_time?.substring(0, 5) || '--:--'} - {selectedSchedule.end_time?.substring(0, 5) || '--:--'}
+            </div>
+            <div>
+              <strong>Type:</strong> <Tag color={
+                selectedSchedule.type_cours === 'Cours' ? 'blue' :
+                selectedSchedule.type_cours === 'TD' ? 'orange' :
+                selectedSchedule.type_cours === 'TP' ? 'green' :
+                selectedSchedule.type_cours === 'Examen' ? 'red' : 'default'
+              }>
+                {selectedSchedule.type_cours}
+              </Tag>
+            </div>
+            <div>
+              <strong>Statut:</strong> <Tag color={
+                selectedSchedule.statut === 'confirme' ? 'green' :
+                selectedSchedule.statut === 'planifie' ? 'blue' :
+                selectedSchedule.statut === 'annule' ? 'red' : 'default'
+              }>
+                {selectedSchedule.statut}
+              </Tag>
+            </div>
+            <div>
+              <strong>Période:</strong> {selectedSchedule.date_debut} 
+              {selectedSchedule.date_fin ? ` au ${selectedSchedule.date_fin}` : ' (sans fin spécifiée)'}
+            </div>
+            </div>
+          )}
         </Modal>
       </div>
     </ConfigProvider>

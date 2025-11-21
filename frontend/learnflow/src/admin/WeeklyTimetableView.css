@@ -1,3 +1,411 @@
+/* ==================== TEACHER CONFLICT MANAGEMENT STYLES ==================== */
+
+/* Teacher Schedule Sidebar */
+.teacher-schedule-sidebar {
+  background: linear-gradient(135deg, #f0f5ff 0%, #fafbff 100%);
+  border: 2px solid #1890ff;
+  box-shadow: 0 4px 16px rgba(24, 144, 255, 0.15) !important;
+}
+
+.teacher-schedule-sidebar h4 {
+  border-bottom: 2px solid #1890ff;
+  padding-bottom: 8px;
+}
+
+/* Busy Time Slot - Greyed Out */
+.schedule-cell.teacher-busy {
+  background: repeating-linear-gradient(
+    45deg,
+    #f5f5f5,
+    #f5f5f5 10px,
+    #eeeeee 10px,
+    #eeeeee 20px
+  );
+  opacity: 0.6;
+  pointer-events: none;
+  border-color: #bfbfbf;
+}
+
+.schedule-cell.teacher-busy::before {
+  content: '⏳ Professeur occupé';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(0, 0, 0, 0.7);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+.schedule-cell.teacher-busy:hover {
+  border-color: #bfbfbf;
+  background: repeating-linear-gradient(
+    45deg,
+    #f5f5f5,
+    #f5f5f5 10px,
+    #eeeeee 10px,
+    #eeeeee 20px
+  );
+  cursor: not-allowed;
+}
+
+/* Teacher Conflict Highlighting */
+.schedule-cell.teacher-conflict {
+  border: 2px solid #ff4d4f;
+  background: rgba(255, 77, 79, 0.15);
+  position: relative;
+  animation: teacher-conflict-pulse 2s infinite;
+}
+
+@keyframes teacher-conflict-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.4),
+                inset 0 0 0 0 rgba(255, 77, 79, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(255, 77, 79, 0.1),
+                inset 0 0 8px rgba(255, 77, 79, 0.2);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0),
+                inset 0 0 0 0 rgba(255, 77, 79, 0);
+  }
+}
+
+/* Teacher Conflict Red Border on Card */
+.schedule-card.teacher-conflict-card {
+  border: 3px solid #ff4d4f;
+  position: relative;
+  overflow: visible;
+}
+
+.schedule-card.teacher-conflict-card::before {
+  content: '⚠️';
+  position: absolute;
+  top: -12px;
+  right: 12px;
+  font-size: 20px;
+  background: white;
+  padding: 4px 8px;
+  border-radius: 50%;
+  box-shadow: 0 2px 8px rgba(255, 77, 79, 0.3);
+}
+
+/* Suggested Free Slot Highlight */
+.schedule-cell.suggested-free-slot {
+  border: 2px solid #52c41a;
+  background: rgba(82, 196, 26, 0.08);
+  position: relative;
+}
+
+.schedule-cell.suggested-free-slot::before {
+  content: '✓ Slot disponible';
+  position: absolute;
+  bottom: 4px;
+  right: 4px;
+  background: #52c41a;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+/* Teacher Availability Indicator */
+.teacher-availability {
+  margin-top: 12px;
+  padding: 12px;
+  background: #f0f5ff;
+  border-left: 4px solid #1890ff;
+  border-radius: 4px;
+}
+
+.teacher-availability-title {
+  font-weight: 600;
+  color: #1890ff;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.teacher-availability-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.teacher-slot {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 6px;
+  background: white;
+  border-radius: 4px;
+}
+
+.teacher-slot.busy {
+  color: #ff4d4f;
+  opacity: 0.6;
+}
+
+.teacher-slot.free {
+  color: #52c41a;
+}
+
+.teacher-slot-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.teacher-slot-indicator.busy {
+  background: #ff4d4f;
+}
+
+.teacher-slot-indicator.free {
+  background: #52c41a;
+}
+
+/* ==================== GROUP CONFLICT MANAGEMENT STYLES ==================== */
+
+/* Group Schedule Sidebar */
+.group-schedule-sidebar {
+  background: linear-gradient(135deg, #f9f0ff 0%, #faf8ff 100%);
+  border: 2px solid #722ed1;
+  box-shadow: 0 4px 16px rgba(114, 46, 209, 0.15) !important;
+}
+
+.group-schedule-sidebar h4 {
+  border-bottom: 2px solid #722ed1;
+  padding-bottom: 8px;
+  color: #722ed1;
+}
+
+/* Group Busy Slot */
+.schedule-cell.group-busy {
+  background: repeating-linear-gradient(
+    45deg,
+    #f4f0ff,
+    #f4f0ff 10px,
+    #ede6ff 10px,
+    #ede6ff 20px
+  );
+  opacity: 0.6;
+  pointer-events: none;
+  border-color: #b37feb;
+}
+
+.schedule-cell.group-busy::before {
+  content: '📚 Groupe occupé';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(114, 46, 209, 0.85);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+/* Group Conflict Highlighting */
+.schedule-cell.group-conflict {
+  border: 2px solid #722ed1;
+  background: rgba(114, 46, 209, 0.12);
+  position: relative;
+  animation: group-conflict-pulse 2s infinite;
+}
+
+@keyframes group-conflict-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(114, 46, 209, 0.3),
+                inset 0 0 0 0 rgba(114, 46, 209, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(114, 46, 209, 0.1),
+                inset 0 0 8px rgba(114, 46, 209, 0.15);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(114, 46, 209, 0),
+                inset 0 0 0 0 rgba(114, 46, 209, 0);
+  }
+}
+
+/* Group Conflict Card */
+.schedule-card.group-conflict-card {
+  border-left: 4px solid #722ed1;
+  background: linear-gradient(135deg, rgba(114, 46, 209, 0.08) 0%, rgba(114, 46, 209, 0.03) 100%) !important;
+}
+
+/* ==================== ROOM CONFLICT MANAGEMENT STYLES ==================== */
+
+/* Room Schedule Sidebar */
+.room-schedule-sidebar {
+  background: linear-gradient(135deg, #fff7e6 0%, #fffbe6 100%);
+  border: 2px solid #fa8c16;
+  box-shadow: 0 4px 16px rgba(250, 140, 22, 0.15) !important;
+}
+
+.room-schedule-sidebar h4 {
+  border-bottom: 2px solid #fa8c16;
+  padding-bottom: 8px;
+  color: #fa8c16;
+}
+
+/* Room Busy Slot */
+.schedule-cell.room-busy {
+  background: repeating-linear-gradient(
+    45deg,
+    #fffbe6,
+    #fffbe6 10px,
+    #fff7e6 10px,
+    #fff7e6 20px
+  );
+  opacity: 0.6;
+  pointer-events: none;
+  border-color: #ffbb96;
+}
+
+.schedule-cell.room-busy::before {
+  content: '🏛️ Salle occupée';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(250, 140, 22, 0.85);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  white-space: nowrap;
+  z-index: 10;
+}
+
+/* Room Conflict Highlighting */
+.schedule-cell.room-conflict {
+  border: 2px solid #fa8c16;
+  background: rgba(250, 140, 22, 0.12);
+  position: relative;
+  animation: room-conflict-pulse 2s infinite;
+}
+
+@keyframes room-conflict-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(250, 140, 22, 0.3),
+                inset 0 0 0 0 rgba(250, 140, 22, 0.1);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(250, 140, 22, 0.1),
+                inset 0 0 8px rgba(250, 140, 22, 0.15);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(250, 140, 22, 0),
+                inset 0 0 0 0 rgba(250, 140, 22, 0);
+  }
+}
+
+/* Room Conflict Card */
+.schedule-card.room-conflict-card {
+  border-left: 4px solid #fa8c16;
+  background: linear-gradient(135deg, rgba(250, 140, 22, 0.08) 0%, rgba(250, 140, 22, 0.03) 100%) !important;
+}
+
+/* Room Availability Status */
+.room-availability {
+  margin-top: 12px;
+  padding: 12px;
+  background: #fff7e6;
+  border-left: 4px solid #fa8c16;
+  border-radius: 4px;
+}
+
+.room-availability-title {
+  font-weight: 600;
+  color: #fa8c16;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.room-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  padding: 6px;
+  background: white;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.room-status-indicator {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.room-status.free .room-status-indicator {
+  background: #52c41a;
+  box-shadow: 0 0 4px rgba(82, 196, 26, 0.5);
+}
+
+.room-status.busy .room-status-indicator {
+  background: #ff4d4f;
+  box-shadow: 0 0 4px rgba(255, 77, 79, 0.5);
+}
+
+.room-status.almost-busy .room-status-indicator {
+  background: #faad14;
+  box-shadow: 0 0 4px rgba(250, 173, 20, 0.5);
+}
+
+/* Room Suggestion Box */
+.room-suggestion-box {
+  margin-top: 12px;
+  padding: 12px;
+  background: linear-gradient(135deg, #f0f5ff 0%, #f5f0ff 100%);
+  border-left: 4px solid #1890ff;
+  border-radius: 4px;
+}
+
+.room-suggestion-title {
+  font-weight: 600;
+  color: #1890ff;
+  margin-bottom: 8px;
+  font-size: 13px;
+}
+
+.room-suggestion-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.room-suggestion-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  padding: 6px 8px;
+  background: white;
+  border-radius: 4px;
+  border-left: 2px solid #52c41a;
+}
+
+.room-capacity {
+  color: #8c8c8c;
+  font-size: 11px;
+}
+
 /* ==================== WEEKLY TIMETABLE VIEW STYLES ==================== */
 
 .weekly-timetable-view {
@@ -6,9 +414,63 @@
   min-height: 100vh;
 }
 
+/* Conflict Modal Content */
+.conflict-modal-content {
+  padding: 12px 0;
+  line-height: 1.8;
+}
+
+.conflict-modal-content ul {
+  margin-bottom: 0;
+}
+
+.conflict-modal-content li {
+  list-style: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Conflict Highlighting */
+.schedule-cell.conflict-zone {
+  border-color: #ff4d4f !important;
+  border-style: solid !important;
+  border-width: 2px !important;
+  background: rgba(255, 77, 79, 0.08) !important;
+  position: relative;
+}
+
+.schedule-cell.conflict-zone::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 8px;
+  border: 2px solid #ff4d4f;
+  pointer-events: none;
+  animation: conflict-pulse 2s infinite;
+}
+
+@keyframes conflict-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(255, 77, 79, 0.1);
+  }
+}
+
+.schedule-card.conflict-card {
+  border-left-color: #ff4d4f !important;
+  background: linear-gradient(135deg, rgba(255, 77, 79, 0.1) 0%, rgba(255, 77, 79, 0.05) 100%) !important;
+  opacity: 0.8;
+}
+
 /* Header */
 .weekly-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
   padding: 32px;
   border-radius: 12px;
   margin-bottom: 24px;
@@ -16,21 +478,21 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 20px rgba(137, 137, 137, 0.3);
 }
 
 .header-content h1 {
   margin: 0;
   font-size: 32px;
   font-weight: 700;
-  color: white;
+  color: rgb(0, 0, 0);
 }
 
 .header-content p {
   margin: 8px 0 0 0;
   font-size: 16px;
   opacity: 0.9;
-  color: white;
+  color: rgb(0, 0, 0);
 }
 
 .header-controls {
@@ -127,11 +589,585 @@
 }
 
 .day-header {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
   padding: 16px;
   border-radius: 8px;
   text-align: center;
+  color: rgb(0, 0, 0);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+}
+
+.day-name {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.day-date {
+  font-size: 13px;
+  opacity: 0.9;
+}
+
+/* Grid Row */
+.grid-row {
+  display: contents;
+}
+
+.time-cell {
+  background: #fafafa;
+  padding: 16px;
+  border-radius: 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #595959;
+  border: 2px solid #f0f0f0;
+}
+
+.time-cell .anticon {
+  font-size: 16px;
+  color: #667eea;
+}
+
+.time-cell span {
+  font-size: 13px;
+  text-align: center;
+  line-height: 1.4;
+}
+
+/* Schedule Cell */
+.schedule-cell {
+  border: 2px dashed #e8e8e8;
+  border-radius: 8px;
+  padding: 12px;
+  min-height: 140px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+  background: #fafafa;
+  position: relative;
+}
+
+.schedule-cell.empty-cell:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.schedule-cell.has-schedule {
+  padding: 0;
+  border: none;
+  background: transparent;
+  cursor: default;
+}
+
+.empty-slot {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #bfbfbf;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.empty-slot .anticon {
+  font-size: 24px;
+}
+
+.empty-slot span {
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.schedule-cell.empty-cell:hover .empty-slot {
+  color: #667eea;
+  transform: scale(1.1);
+}
+
+/* Schedule Card */
+.schedule-card {
+  height: 100%;
+  min-height: 140px;
+  padding: 12px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  cursor: grab;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  position: relative;
+}
+
+.schedule-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+}
+
+.schedule-card:active {
+  cursor: grabbing;
+}
+
+.schedule-type {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 700;
   color: white;
+  text-transform: uppercase;
+}
+
+.schedule-matiere {
+  font-weight: 700;
+  font-size: 14px;
+  color: #262626;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 24px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-enseignant,
+.schedule-salle {
+  font-size: 12px;
+  color: #595959;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.schedule-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: auto;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.schedule-card:hover .schedule-actions {
+  opacity: 1;
+}
+
+.schedule-actions .ant-btn {
+  flex: 1;
+  height: 28px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+/* Drag and Drop States */
+.schedule-card[draggable="true"] {
+  cursor: grab;
+}
+
+.schedule-card[draggable="true"]:active {
+  cursor: grabbing;
+  opacity: 0.5;
+}
+
+.schedule-cell.drag-over {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.1);
+  border-style: solid;
+}
+
+.schedule-cell.dragging {
+  opacity: 0.6;
+  background: rgba(102, 126, 234, 0.08);
+}
+
+.schedule-cell.empty-cell[ondrop] {
+  transition: all 0.2s ease;
+}
+
+.schedule-cell.empty-cell:hover {
+  border-color: #667eea;
+  background: rgba(102, 126, 234, 0.05);
+}
+
+/* Modal Styling */
+.ant-modal-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 8px 8px 0 0;
+  padding: 20px 24px;
+}
+
+.ant-modal-title {
+  color: white !important;
+  font-size: 20px;
+  font-weight: 600;
+}
+
+.ant-modal-close {
+  color: white;
+}
+
+.ant-modal-body {
+  padding: 24px;
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+/* Form Styling */
+.ant-form-item-label > label {
+  font-weight: 600;
+  color: #262626;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Responsive Design */
+@media (max-width: 1400px) {
+  .weekly-grid {
+    min-width: 1000px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .weekly-grid {
+    grid-template-columns: 100px repeat(6, 1fr);
+    min-width: 900px;
+  }
+  
+  .schedule-card {
+    min-height: 120px;
+  }
+}
+
+@media (max-width: 768px) {
+  .weekly-timetable-view {
+    padding: 16px;
+  }
+
+  .weekly-header {
+    flex-direction: column;
+    gap: 16px;
+    padding: 24px;
+  }
+
+  .header-content h1 {
+    font-size: 24px;
+  }
+
+  .week-navigation {
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  .week-navigation .ant-btn {
+    width: 100%;
+  }
+
+  .week-info h2 {
+    font-size: 20px;
+  }
+
+  .weekly-grid-container {
+    padding: 16px;
+  }
+
+  .weekly-grid {
+    grid-template-columns: 80px repeat(6, 1fr);
+    gap: 8px;
+    min-width: 800px;
+  }
+
+  .day-name {
+    font-size: 14px;
+  }
+
+  .day-date {
+    font-size: 11px;
+  }
+
+  .time-cell span {
+    font-size: 11px;
+  }
+
+  .schedule-card {
+    min-height: 100px;
+    padding: 8px;
+  }
+
+  .schedule-matiere {
+    font-size: 12px;
+  }
+
+  .schedule-enseignant,
+  .schedule-salle {
+    font-size: 11px;
+  }
+}
+
+/* Loading State */
+.ant-spin-nested-loading {
+  min-height: 400px;
+}
+
+/* Tooltips */
+.ant-tooltip-inner {
+  background: rgba(0, 0, 0, 0.85);
+  border-radius: 6px;
+  padding: 8px 12px;
+}
+
+/* Scrollbar */
+.weekly-grid-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.weekly-grid-container::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+.weekly-grid-container::-webkit-scrollbar-thumb {
+  background: #888;
+  border-radius: 4px;
+}
+
+.weekly-grid-container::-webkit-scrollbar-thumb:hover {
+  background: #555;
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.schedule-card {
+  animation: fadeIn 0.3s ease;
+}
+
+/* Print Styles */
+@media print {
+  .weekly-header,
+  .week-navigation,
+  .weekly-legend,
+  .schedule-actions {
+    display: none !important;
+  }
+
+  .weekly-grid-container {
+    box-shadow: none;
+    border: 1px solid #000;
+  }
+
+  .schedule-card {
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+}
+
+/* ==================== WEEKLY TIMETABLE VIEW STYLES ==================== */
+
+.weekly-timetable-view {
+  padding: 24px;
+  background: #f0f2f5;
+  min-height: 100vh;
+}
+
+/* Conflict Modal Content */
+.conflict-modal-content {
+  padding: 12px 0;
+  line-height: 1.8;
+}
+
+.conflict-modal-content ul {
+  margin-bottom: 0;
+}
+
+.conflict-modal-content li {
+  list-style: none;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+/* Conflict Highlighting */
+.schedule-cell.conflict-zone {
+  border-color: #ff4d4f !important;
+  border-style: solid !important;
+  border-width: 2px !important;
+  background: rgba(255, 77, 79, 0.08) !important;
+  position: relative;
+}
+
+.schedule-cell.conflict-zone::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  border-radius: 8px;
+  border: 2px solid #ff4d4f;
+  pointer-events: none;
+  animation: conflict-pulse 2s infinite;
+}
+
+@keyframes conflict-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(255, 77, 79, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(255, 77, 79, 0.1);
+  }
+}
+
+.schedule-card.conflict-card {
+  border-left-color: #ff4d4f !important;
+  background: linear-gradient(135deg, rgba(255, 77, 79, 0.1) 0%, rgba(255, 77, 79, 0.05) 100%) !important;
+  opacity: 0.8;
+}
+
+/* Header */
+.weekly-header {
+  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
+  padding: 32px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  color: white;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 4px 20px rgba(137, 137, 137, 0.3);
+}
+
+.header-content h1 {
+  margin: 0;
+  font-size: 32px;
+  font-weight: 700;
+  color: rgb(0, 0, 0);
+}
+
+.header-content p {
+  margin: 8px 0 0 0;
+  font-size: 16px;
+  opacity: 0.9;
+  color: rgb(0, 0, 0);
+}
+
+.header-controls {
+  display: flex;
+  gap: 16px;
+}
+
+/* Week Navigation */
+.week-navigation {
+  background: white;
+  padding: 20px 32px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.week-info {
+  text-align: center;
+}
+
+.week-info h2 {
+  margin: 0;
+  font-size: 24px;
+  font-weight: 700;
+  color: #262626;
+}
+
+.week-info p {
+  margin: 4px 0 0 0;
+  font-size: 14px;
+  color: #8c8c8c;
+}
+
+.week-navigation .ant-btn {
+  height: 40px;
+  border-radius: 8px;
+  font-weight: 500;
+}
+
+/* Legend */
+.weekly-legend {
+  background: white;
+  padding: 16px 24px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.drag-hint {
+  margin-left: auto;
+  color: #8c8c8c;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Grid Container */
+.weekly-grid-container {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  overflow-x: auto;
+}
+
+.weekly-grid {
+  display: grid;
+  grid-template-columns: 120px repeat(6, 1fr);
+  gap: 12px;
+  min-width: 1200px;
+}
+
+/* Grid Header */
+.grid-header {
+  display: contents;
+}
+
+.time-header {
+  background: #fafafa;
+  padding: 16px;
+  border-radius: 8px;
+  font-weight: 700;
+  color: #262626;
+  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid #f0f0f0;
+}
+
+.day-header {
+  background: linear-gradient(135deg, #ffffff 0%, #ffffff 100%);
+  padding: 16px;
+  border-radius: 8px;
+  text-align: center;
+  color: rgb(0, 0, 0);
   box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
 }
 

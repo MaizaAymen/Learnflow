@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Token Debug</title>
+</head>
+<body>
+    <h1>JWT Token Debug</h1>
+    <div id="output"></div>
+    <script>
+        const token = localStorage.getItem('token');
+        const output = document.getElementById('output');
+        
+        if (!token) {
+            output.innerHTML = '<p style="color: red;">No token found in localStorage</p>';
+        } else {
+            try {
+                // Decode JWT token (just the payload, not verifying signature)
+                const parts = token.split('.');
+                const header = JSON.parse(atob(parts[0]));
+                const payload = JSON.parse(atob(parts[1]));
+                
+                output.innerHTML = `
+                    <h3>Token found!</h3>
+                    <h4>Header:</h4>
+                    <pre>${JSON.stringify(header, null, 2)}</pre>
+                    <h4>Payload:</h4>
+                    <pre>${JSON.stringify(payload, null, 2)}</pre>
+                    <h4>Raw Token (first 50 chars):</h4>
+                    <pre>${token.substring(0, 50)}...</pre>
+                `;
+            } catch (error) {
+                output.innerHTML = `<p style="color: red;">Error parsing token: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

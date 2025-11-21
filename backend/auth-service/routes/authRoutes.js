@@ -21,6 +21,9 @@ const { Specialite, Niveau, Classe, Student } = require("../../Reference_documen
 const crypto = require('crypto');
 const generateUUID = () => crypto.randomUUID();
 
+// OTP Storage (use Redis in production)
+const otpStore = new Map();
+
 const upload = multer({ dest: "uploads/" });
 
 /**
@@ -1008,5 +1011,353 @@ router.post('/teacher/mark-student-absences', async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ============================================
+// FORGOT PASSWORD - OTP FLOW
+// ============================================
+
+/**
+ * POST /api/auth/forgot-password
+ * Request OTP for password reset
+ */
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Check if user exists
+    const user = await utilisateur.findOne({ where: { email } });
+    if (!user) {
+      // For security, don't reveal if email exists
+      return res.status(200).json({
+        message: 'If an account with this email exists, an OTP has been sent',
+      });
+    }
+
+    // Generate 6-digit OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiryTime = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Store OTP
+    otpStore.set(email, {
+      otp,
+      expiryTime,
+      attempts: 0,
+      verified: false,
+    });
+
+    console.log(`🔐 OTP generated for ${email}: ${otp}`);
+
+    // Send OTP via email
+    await sendEmail({
+      to: email,
+      subject: 'Your LearnFlow Password Reset OTP',
+      html: `
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head>
+          <meta charset="UTF-8">
+          <title>OTP - LearnFlow</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6fb; }
+            .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 14px; box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1); overflow: hidden; }
+            .header { background: linear-gradient(135deg, #1e88e5, #42a5f5); text-align: center; padding: 25px; color: white; }
+            .content { padding: 35px 30px; color: #333333; font-size: 16px; line-height: 1.7; }
+            .otp-code { background-color: #f0f2f5; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; }
+            .otp-code p { font-size: 28px; font-weight: bold; color: #1e88e5; letter-spacing: 5px; margin: 0; font-family: 'Courier New', monospace; }
+            .warning { background-color: #fff3cd; padding: 12px; border-left: 4px solid #ffc107; margin: 15px 0; font-size: 14px; }
+            .footer { background-color: #f2f4f7; text-align: center; padding: 18px; font-size: 14px; color: #666666; border-top: 1px solid #e0e0e0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔐 Password Reset</h1>
+            </div>
+            <div class="content">
+              <h2>Bonjour ${user.prenom},</h2>
+              <p>You requested to reset your password. Here is your One-Time Password (OTP):</p>
+              <div class="otp-code">
+                <p>${otp}</p>
+              </div>
+              <p><strong>This OTP will expire in 10 minutes.</strong></p>
+              <div class="warning">
+                <strong>⚠️ Security Notice:</strong> If you did not request this, please ignore this email. Your account security is important to us.
+              </div>
+              <p>Use this OTP to reset your password on LearnFlow.</p>
+            </div>
+            <div class="footer">
+              <p>Cordialement,<br><strong>L'équipe LearnFlow</strong></p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    }).catch(err => console.error('❌ Error sending OTP email:', err));
+
+    res.status(200).json({
+      message: 'OTP sent successfully to your email',
+      email: email.replace(/(.{2})(.*)(.{2})/, '$1***$3'), // Mask email
+    });
+
+  } catch (error) {
+    console.error('❌ Error in forgot-password:', error);
+    res.status(500).json({ message: 'Error sending OTP. Please try again.' });
+  }
+});
+
+/**
+ * POST /api/auth/verify-otp
+ * Verify OTP
+ */
+router.post('/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+
+    if (!email || !otp) {
+      return res.status(400).json({ message: 'Email and OTP are required' });
+    }
+
+    // Check if OTP exists
+    const storedOtpData = otpStore.get(email);
+    if (!storedOtpData) {
+      return res.status(400).json({ message: 'OTP not found or expired' });
+    }
+
+    // Check OTP expiry
+    if (new Date() > storedOtpData.expiryTime) {
+      otpStore.delete(email);
+      return res.status(400).json({ message: 'OTP has expired' });
+    }
+
+    // Increment attempts
+    storedOtpData.attempts += 1;
+    if (storedOtpData.attempts > 5) {
+      otpStore.delete(email);
+      return res.status(400).json({ message: 'Too many attempts. Please request a new OTP' });
+    }
+
+    // Verify OTP
+    if (storedOtpData.otp !== otp) {
+      return res.status(400).json({ message: 'Invalid OTP' });
+    }
+
+    // Mark OTP as verified
+    storedOtpData.verified = true;
+
+    console.log(`✅ OTP verified for ${email}`);
+
+    res.status(200).json({
+      message: 'OTP verified successfully',
+      verified: true,
+    });
+
+  } catch (error) {
+    console.error('❌ Error in verify-otp:', error);
+    res.status(500).json({ message: 'Error verifying OTP' });
+  }
+});
+
+/**
+ * POST /api/auth/reset-password
+ * Reset password with verified OTP
+ */
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { email, otp, newPassword } = req.body;
+
+    if (!email || !otp || !newPassword) {
+      return res.status(400).json({ message: 'Email, OTP, and new password are required' });
+    }
+
+    // Validate password strength
+    if (newPassword.length < 8) {
+      return res.status(400).json({ message: 'Password must be at least 8 characters' });
+    }
+
+    if (!/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(newPassword)) {
+      return res.status(400).json({
+        message: 'Password must contain uppercase, lowercase, and numbers',
+      });
+    }
+
+    // Check if OTP is verified
+    const storedOtpData = otpStore.get(email);
+    if (!storedOtpData || !storedOtpData.verified) {
+      return res.status(400).json({ message: 'OTP not verified. Please verify OTP first.' });
+    }
+
+    // Find user
+    const user = await utilisateur.findOne({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Hash new password
+    const salt = 10;
+    const hashedPassword = await bcrypt.hash(newPassword, salt);
+
+    // Update user password
+    await user.update({ mdp_hash: hashedPassword });
+
+    // Send password changed email
+    await sendEmail({
+      to: email,
+      subject: 'Your LearnFlow Password Has Been Changed',
+      html: `
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head>
+          <meta charset="UTF-8">
+          <title>Password Changed - LearnFlow</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6fb; }
+            .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 14px; box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1); overflow: hidden; }
+            .header { background: linear-gradient(135deg, #28a745, #51cf66); text-align: center; padding: 25px; color: white; }
+            .content { padding: 35px 30px; color: #333333; font-size: 16px; line-height: 1.7; }
+            .warning { background-color: #fff3cd; padding: 12px; border-left: 4px solid #ffc107; margin: 15px 0; font-size: 14px; }
+            .footer { background-color: #f2f4f7; text-align: center; padding: 18px; font-size: 14px; color: #666666; border-top: 1px solid #e0e0e0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>✅ Password Changed</h1>
+            </div>
+            <div class="content">
+              <h2>Bonjour ${user.prenom},</h2>
+              <p>Your password has been successfully changed.</p>
+              <div class="warning">
+                If you did not make this change, please contact support immediately.
+              </div>
+              <p>You can now login with your new password.</p>
+            </div>
+            <div class="footer">
+              <p>Cordialement,<br><strong>L'équipe LearnFlow</strong></p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    }).catch(err => console.error('❌ Error sending password changed email:', err));
+
+    // Clear OTP
+    otpStore.delete(email);
+
+    console.log(`✅ Password reset successfully for ${email}`);
+
+    res.status(200).json({
+      message: 'Password reset successfully. You can now login with your new password.',
+    });
+
+  } catch (error) {
+    console.error('❌ Error in reset-password:', error);
+    res.status(500).json({ message: 'Error resetting password' });
+  }
+});
+
+/**
+ * POST /api/auth/resend-otp
+ * Resend OTP
+ */
+router.post('/resend-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    // Check if user exists
+    const user = await utilisateur.findOne({ where: { email } });
+    if (!user) {
+      return res.status(200).json({
+        message: 'If an account with this email exists, an OTP has been sent',
+      });
+    }
+
+    // Generate new OTP
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+    const expiryTime = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+    // Store OTP
+    otpStore.set(email, {
+      otp,
+      expiryTime,
+      attempts: 0,
+      verified: false,
+    });
+
+    console.log(`🔐 OTP resent for ${email}: ${otp}`);
+
+    // Send OTP via email
+    await sendEmail({
+      to: email,
+      subject: 'Your LearnFlow Password Reset OTP (Resend)',
+      html: `
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head>
+          <meta charset="UTF-8">
+          <title>OTP - LearnFlow</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6fb; }
+            .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 14px; box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1); overflow: hidden; }
+            .header { background: linear-gradient(135deg, #1e88e5, #42a5f5); text-align: center; padding: 25px; color: white; }
+            .content { padding: 35px 30px; color: #333333; font-size: 16px; line-height: 1.7; }
+            .otp-code { background-color: #f0f2f5; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0; }
+            .otp-code p { font-size: 28px; font-weight: bold; color: #1e88e5; letter-spacing: 5px; margin: 0; font-family: 'Courier New', monospace; }
+            .warning { background-color: #fff3cd; padding: 12px; border-left: 4px solid #ffc107; margin: 15px 0; font-size: 14px; }
+            .footer { background-color: #f2f4f7; text-align: center; padding: 18px; font-size: 14px; color: #666666; border-top: 1px solid #e0e0e0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>🔐 Password Reset (Resent)</h1>
+            </div>
+            <div class="content">
+              <h2>Bonjour ${user.prenom},</h2>
+              <p>Here is your new One-Time Password (OTP):</p>
+              <div class="otp-code">
+                <p>${otp}</p>
+              </div>
+              <p><strong>This OTP will expire in 10 minutes.</strong></p>
+              <div class="warning">
+                <strong>⚠️ Security Notice:</strong> If you did not request this, please ignore this email.
+              </div>
+            </div>
+            <div class="footer">
+              <p>Cordialement,<br><strong>L'équipe LearnFlow</strong></p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    }).catch(err => console.error('❌ Error sending resend OTP email:', err));
+
+    res.status(200).json({
+      message: 'OTP resent successfully',
+    });
+
+  } catch (error) {
+    console.error('❌ Error in resend-otp:', error);
+    res.status(500).json({ message: 'Error resending OTP' });
+  }
+});
+
+// Cleanup expired OTPs every minute
+setInterval(() => {
+  const now = new Date();
+  for (const [email, data] of otpStore.entries()) {
+    if (now > data.expiryTime) {
+      otpStore.delete(email);
+      console.log(`🧹 Cleaned up expired OTP for ${email}`);
+    }
+  }
+}, 60000);
 
 module.exports = router;
