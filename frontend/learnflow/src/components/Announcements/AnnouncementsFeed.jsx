@@ -10,6 +10,8 @@ const AnnouncementsFeed = () => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [editingId, setEditingId] = useState(null);
   const [userId, setUserId] = useState(null);
+  const [pdfModalVisible, setPdfModalVisible] = useState(false);
+  const [selectedPdfUrl, setSelectedPdfUrl] = useState(null);
 
   const [formData, setFormData] = useState({
     title: '',
@@ -220,6 +222,11 @@ const AnnouncementsFeed = () => {
     }
   };
 
+  const handleViewPdf = (filePath) => {
+    setSelectedPdfUrl(`http://localhost:3000${filePath}`);
+    setPdfModalVisible(true);
+  };
+
   const getTypeIcon = (type) => {
     const icons = {
       announcement: '📢',
@@ -360,37 +367,74 @@ const AnnouncementsFeed = () => {
                 </div>
                 <p className="ann-text">{ann.content}</p>
                 {ann.attachments && ann.attachments.length > 0 && (
-                  <div style={{ marginTop: '10px', padding: '8px', backgroundColor: '#f5f5f5', borderRadius: '4px' }}>
-                    <p style={{ margin: '0 0 5px 0', fontSize: '12px', fontWeight: 'bold', color: '#666' }}>📎 Attachments:</p>
-                    {ann.attachments.map((file, idx) => (
-                      <a
-                        key={idx}
-                        href={`http://localhost:3000${file.path}`}
-                        download={file.filename}
-                        style={{
-                          display: 'inline-block',
-                          marginRight: '10px',
-                          padding: '5px 10px',
-                          backgroundColor: '#e7f3ff',
-                          border: '1px solid #b3d9ff',
-                          borderRadius: '3px',
-                          color: '#0066cc',
-                          textDecoration: 'none',
-                          fontSize: '12px',
-                          transition: 'all 0.2s'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.target.style.backgroundColor = '#cce5ff';
-                          e.target.style.textDecoration = 'underline';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.target.style.backgroundColor = '#e7f3ff';
-                          e.target.style.textDecoration = 'none';
-                        }}
-                      >
-                        📥 {file.filename}
-                      </a>
-                    ))}
+                  <div style={{ marginTop: '10px', padding: '12px', backgroundColor: '#f0f5ff', borderRadius: '4px', border: '1px solid #91d5ff' }}>
+                    <p style={{ margin: '0 0 10px 0', fontSize: '13px', fontWeight: 'bold', color: '#0050b3', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                      📄 Pièces jointes:
+                    </p>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      {ann.attachments.map((file, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '10px',
+                            padding: '8px',
+                            backgroundColor: '#ffffff',
+                            border: '1px solid #b3d9ff',
+                            borderRadius: '4px'
+                          }}
+                        >
+                          <span style={{ fontSize: '16px', color: '#ff4d4f' }}>📑</span>
+                          <span style={{ fontSize: '13px', color: '#333', flex: 1, wordBreak: 'break-word' }}>
+                            {file.filename}
+                          </span>
+                          <div style={{ display: 'flex', gap: '6px' }}>
+                            <button
+                              onClick={() => handleViewPdf(file.path)}
+                              style={{
+                                padding: '5px 10px',
+                                backgroundColor: '#1890ff',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '3px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                fontWeight: '500',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.target.style.backgroundColor = '#0050b3'}
+                              onMouseLeave={(e) => e.target.style.backgroundColor = '#1890ff'}
+                              title="Preview PDF"
+                            >
+                              👁️ Aperçu
+                            </button>
+                            <a
+                              href={`http://localhost:3000${file.path}`}
+                              download={file.filename}
+                              style={{
+                                padding: '5px 10px',
+                                backgroundColor: '#52c41a',
+                                color: '#fff',
+                                border: 'none',
+                                borderRadius: '3px',
+                                cursor: 'pointer',
+                                fontSize: '12px',
+                                fontWeight: '500',
+                                textDecoration: 'none',
+                                display: 'inline-block',
+                                transition: 'all 0.2s'
+                              }}
+                              onMouseEnter={(e) => e.target.style.backgroundColor = '#525252ff'}
+                              onMouseLeave={(e) => e.target.style.backgroundColor = '#6a6a6aff'}
+                              title="Download PDF"
+                            >
+                              ⬇️ Télécharger
+                            </a>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
                 <div className="ann-footer">
@@ -418,6 +462,97 @@ const AnnouncementsFeed = () => {
           ))
         )}
       </div>
+
+      {/* PDF Modal */}
+      {pdfModalVisible && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: 'rgba(0, 0, 0, 0.5)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 1000
+        }}>
+          <div style={{
+            backgroundColor: '#fff',
+            borderRadius: '8px',
+            padding: '0',
+            width: '90%',
+            height: '90%',
+            maxWidth: '900px',
+            display: 'flex',
+            flexDirection: 'column',
+            boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)'
+          }}>
+            {/* Modal Header */}
+            <div style={{
+              padding: '16px',
+              borderBottom: '1px solid #f0f0f0',
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center'
+            }}>
+              <h3 style={{ margin: 0, fontSize: '16px', fontWeight: '600' }}>Aperçu du PDF</h3>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <a
+                  href={selectedPdfUrl}
+                  download="document.pdf"
+                  style={{
+                    padding: '8px 12px',
+                    backgroundColor: '#414141ff',
+                    color: '#fff',
+                    border: 'none',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    textDecoration: 'none',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  ⬇️ Télécharger
+                </a>
+                <button
+                  onClick={() => setPdfModalVisible(false)}
+                  style={{
+                    padding: '8px 12px',
+                    backgroundColor: '#f5f5f5',
+                    color: '#333',
+                    border: '1px solid #d9d9d9',
+                    borderRadius: '4px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: '500'
+                  }}
+                >
+                  Fermer
+                </button>
+              </div>
+            </div>
+            
+            {/* PDF Viewer */}
+            <div style={{ flex: 1, overflow: 'auto' }}>
+              {selectedPdfUrl && (
+                <iframe
+                  src={`${selectedPdfUrl}#toolbar=0`}
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    border: 'none'
+                  }}
+                  title="PDF Viewer"
+                />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

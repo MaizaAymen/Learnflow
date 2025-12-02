@@ -1,5 +1,6 @@
 const express = require('express');
 const { uuidv4 } = require('../utils/uuidGenerator');
+const NotificationClient = require('../../Service de Notifications/services/NotificationClient');
 
 module.exports = (db, authenticate, logAudit) => {
   const router = express.Router();
@@ -136,6 +137,39 @@ module.exports = (db, authenticate, logAudit) => {
       }
 
       await request.save();
+
+      // 🔔 Send notification to student about request status change
+      try {
+        const statusMessages = {
+          'approved': '✅ Your request has been approved',
+          'rejected': '❌ Your request has been rejected',
+          'completed': '✅ Your request has been completed',
+          'in_review': '👀 Your request is under review',
+          'pending': '⏳ Your request is pending'
+        };
+
+        const notificationTitle = statusMessages[status] || `Request Status: ${status}`;
+        const priority = ['approved', 'rejected', 'completed'].includes(status) ? 'high' : 'medium';
+
+        await NotificationClient.send({
+          recipient_id: request.studentId,
+          type: `request_${status}`,
+          title: notificationTitle,
+          content: response || `Your ${request.type} request has been ${status}`,
+          metadata: {
+            request_id: request.id,
+            request_type: request.type,
+            old_status: request.status,
+            new_status: status,
+            response: response || '',
+            timestamp: new Date().toISOString()
+          },
+          priority: priority,
+          action_url: `/requests/${request.id}`
+        });
+      } catch (notifError) {
+        console.warn('⚠️ Failed to send request status notification:', notifError.message);
+      }
 
       await logAudit({
         userId: req.user.id,

@@ -4,7 +4,7 @@ module.exports = (sequelize) => {
   const Comment = sequelize.define('Comment', {
     id: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
+      defaultValue: sequelize.literal('gen_random_uuid()'),
       primaryKey: true,
     },
     content: {

@@ -96,12 +96,12 @@ router.get('/specialites/:id', async (req, res) => {
 //kan y7ib ybadel esm w description
 router.put('/specialites/:id', async (req, res) => {
   try{
-      const {nom,description}=req.body;
+      const {name, description, departementId}=req.body;
       const spes = await specialite.findByPk(req.params.id);
       if(!spes){
         return res.status(404).json({message:"Spécialité introuvable"})
       }
-      await spes.update({nom,description})
+      await spes.update({name, description, departementId})
       return res.status(200).json({message:"Spécialité mise à jour avec succès", data: spes})
   }catch(error){
     return res.status(500).json({ error: 'Internal server error' });
@@ -874,7 +874,7 @@ router.post('/matieres', async (req, res) => {
     const newMatiere = await matiere.create({ 
       name, 
       description, 
-      code: code.toUpperCase(), 
+      code, 
       credits: credits || 3, 
       niveauId 
     });
@@ -914,7 +914,12 @@ router.get('/matieres', async (req, res) => {
         include: [{
           model: specialite,
           as: 'specialite',
-          attributes: ['id', 'name']
+          attributes: ['id', 'name', 'departementId'],
+          include: [{
+            model: departement,
+            as: 'departement',
+            attributes: ['id', 'name']
+          }]
         }]
       }]
     });
@@ -939,6 +944,39 @@ router.get('/matieres/:id', async (req, res) => {
     }
     return res.status(200).json(matiereFound);
   } catch (error) {
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get teachers (enseignants) for a specific matière
+router.get('/matieres/:id/enseignants', async (req, res) => {
+  try {
+    const matiereId = req.params.id;
+    
+    if (!matiereId) {
+      return res.status(400).json({ error: "ID matière manquant" });
+    }
+
+    // Find the matière and include its teachers via MatiereEnseignant junction table
+    const User = require('../../auth-service/models/userModel');
+    const MatiereEnseignant = require('../models/MatiereEnseignant');
+
+    const teachers = await User.findAll({
+      attributes: ['id', 'nom', 'prenom', 'email', 'departement'],
+      where: { role: 'enseignant' },
+      include: [{
+        model: matiere,
+        as: 'matieres',
+        where: { id: matiereId },
+        attributes: [],
+        through: { attributes: [] },
+        required: true
+      }]
+    });
+
+    return res.status(200).json(teachers);
+  } catch (error) {
+    console.error('Error fetching teachers for matière:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1035,6 +1073,196 @@ router.post('/matieres/bulk', async (req, res) => {
     res.status(201).json(createdMatieres);
   } catch (error) {
     console.error('Error bulk creating matieres:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// ============================================================================
+// TEACHERS ENDPOINTS
+// ============================================================================
+
+// Get all teachers (enseignants)
+router.get('/teachers', async (req, res) => {
+  try {
+    const User = require('../../auth-service/models/userModel');
+    const teachers = await User.findAll({
+      where: {
+        role: 'enseignant'
+      },
+      attributes: ['id', 'nom', 'prenom', 'email', 'cin', 'specialite', 'departement'],
+      order: [['nom', 'ASC'], ['prenom', 'ASC']]
+    });
+    
+    if (!teachers || teachers.length === 0) {
+      return res.json({
+        message: "Aucun enseignant disponible pour le moment",
+        data: []
+      });
+    }
+    
+    return res.status(200).json(teachers);
+  } catch (error) {
+    console.error('Error fetching teachers:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Get teacher by ID
+router.get('/teachers/:id', async (req, res) => {
+  try {
+    const User = require('../../auth-service/models/userModel');
+    const teacher = await User.findByPk(req.params.id, {
+      where: {
+        role: 'enseignant'
+      },
+      attributes: ['id', 'nom', 'prenom', 'email', 'cin', 'specialite', 'departement']
+    });
+    
+    if (!teacher) {
+      return res.status(404).json({ message: "Enseignant introuvable" });
+    }
+    
+    return res.status(200).json(teacher);
+  } catch (error) {
+    console.error('Error fetching teacher:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Update user role (used to set teacher as chef de department)
+router.put('/users/:id/role', async (req, res) => {
+  try {
+    const User = require('../../auth-service/models/userModel');
+    const { role } = req.body;
+    
+    console.log(`[PUT /users/:id/role] Attempting to update user ${req.params.id} to role: ${role}`);
+    
+    const user = await User.findByPk(req.params.id);
+    if (!user) {
+      console.log(`[PUT /users/:id/role] User not found: ${req.params.id}`);
+      return res.status(404).json({ message: "Utilisateur introuvable" });
+    }
+    
+    console.log(`[PUT /users/:id/role] Found user: ${user.nom} ${user.prenom}, current role: ${user.role}`);
+    
+    // If setting chef_de_department, set the flag
+    if (role === 'chef_de_department') {
+      console.log(`[PUT /users/:id/role] Setting user as department head (is_department_head = true)`);
+      user.is_department_head = true;
+      
+      // Try to set the actual role if ENUM supports it, otherwise keep as enseignant
+      try {
+        user.role = role;
+        await user.save();
+        console.log(`[PUT /users/:id/role] Successfully updated role to: ${user.role}`);
+      } catch (enumError) {
+        console.log(`[PUT /users/:id/role] Cannot set role enum to chef_de_department, keeping as enseignant but marking as department head`);
+        user.role = 'enseignant'; // Keep as enseignant if ENUM doesn't support it yet
+        await user.save();
+        console.log(`[PUT /users/:id/role] User marked as department head with is_department_head flag`);
+      }
+    } else if (['etudiant','enseignant','directeur','admin'].includes(role)) {
+      // For standard roles, just update normally
+      user.role = role;
+      user.is_department_head = false;
+      await user.save();
+      console.log(`[PUT /users/:id/role] Successfully updated role to: ${user.role}`);
+    } else {
+      console.log(`[PUT /users/:id/role] Invalid role: ${role}`);
+      return res.status(400).json({ message: "Rôle invalide" });
+    }
+    
+    return res.status(200).json({
+      message: "Rôle utilisateur mis à jour avec succès",
+      data: user
+    });
+  } catch (error) {
+    console.error('[PUT /users/:id/role] Error updating user role:', error);
+    res.status(500).json({ error: 'Internal server error', details: error.message });
+  }
+});
+
+// Get teacher's assigned matières (supports both 'enseignant' and 'chef_de_department' roles)
+router.get('/teachers/:id/matieres', async (req, res) => {
+  try {
+    const User = require('../../auth-service/models/userModel');
+    const teacher = await User.findByPk(req.params.id, {
+      where: { 
+        role: ['enseignant', 'chef_de_department'] 
+      },
+      include: [{
+        model: matiere,
+        as: 'matieres',
+        attributes: ['id', 'name', 'code'],
+        through: { attributes: [] }
+      }]
+    });
+    
+    if (!teacher) {
+      return res.status(404).json({ error: "Enseignant ou Chef de département introuvable" });
+    }
+    
+    return res.status(200).json(teacher.matieres || []);
+  } catch (error) {
+    console.error('Error fetching teacher matieres:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+// Assign matières to a teacher or chef de département
+router.post('/teachers/:id/assign-matieres', async (req, res) => {
+  try {
+    const { matieresIds } = req.body;
+    const teacherId = req.params.id;
+    
+    if (!Array.isArray(matieresIds)) {
+      return res.status(400).json({ error: 'matieresIds must be an array' });
+    }
+    
+    const User = require('../../auth-service/models/userModel');
+    const teacher = await User.findByPk(teacherId, {
+      where: { 
+        role: ['enseignant', 'chef_de_department'] 
+      }
+    });
+    
+    if (!teacher) {
+      return res.status(404).json({ error: "Enseignant ou Chef de département introuvable" });
+    }
+    
+    // Verify all matières exist
+    const matieres = await matiere.findAll({
+      where: { id: matieresIds }
+    });
+    
+    if (matieres.length !== matieresIds.length) {
+      return res.status(400).json({ error: "Une ou plusieurs matières n'existent pas" });
+    }
+    
+    // Remove all existing assignments for this teacher/chef
+    await teacher.removeMatieres();
+    
+    // Assign selected matières
+    if (matieresIds.length > 0) {
+      await teacher.addMatieres(matieresIds);
+    }
+    
+    // Return updated assignments
+    const updatedTeacher = await User.findByPk(teacherId, {
+      include: [{
+        model: matiere,
+        as: 'matieres',
+        attributes: ['id', 'name', 'code'],
+        through: { attributes: [] }
+      }]
+    });
+    
+    res.status(200).json({
+      message: 'Matières assignées avec succès',
+      matieres: updatedTeacher.matieres || []
+    });
+  } catch (error) {
+    console.error('Error assigning matieres to teacher:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });

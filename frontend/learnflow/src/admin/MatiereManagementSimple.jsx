@@ -37,6 +37,8 @@ const MatiereManagementSimple = () => {
   const [loading, setLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingMatiere, setEditingMatiere] = useState(null);
+  const [userRole, setUserRole] = useState(null);
+  const [userDepartement, setUserDepartement] = useState(null);
   const [form] = Form.useForm();
   const navigate = useNavigate();
   
@@ -52,6 +54,13 @@ const MatiereManagementSimple = () => {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
 
+  // Get user role and department from localStorage
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setUserRole(user.role);
+    setUserDepartement(user.departement);
+  }, []);
+
   // Fetch all matieres
   const fetchMatieres = async () => {
     setLoading(true);
@@ -59,7 +68,14 @@ const MatiereManagementSimple = () => {
       const response = await fetch("http://localhost:3000/api/reference/matieres");
       const data = await response.json();
       if (response.ok) {
-        const formatted = data.map(m => ({
+        let filteredData = data;
+        
+        // Filter by department if user is chef_de_department
+        if (userRole === 'chef_de_department' && userDepartement) {
+          filteredData = data.filter(m => m.niveau && m.niveau.specialite && m.niveau.specialite.departementId === userDepartement);
+        }
+        
+        const formatted = filteredData.map(m => ({
           ...m,
           niveau_nom: m.niveau?.name || "—",
           specialite_nom: m.niveau?.specialite?.name || "—",
@@ -83,7 +99,13 @@ const MatiereManagementSimple = () => {
       const response = await fetch("http://localhost:3000/api/reference/niveaux");
       const data = await response.json();
       if (response.ok) {
-        setNiveaux(data);
+        let filteredData = data;
+        
+        // Filter by department if user is chef_de_department
+        if (userRole === 'chef_de_department' && userDepartement) {
+          filteredData = data.filter(n => n.specialite && n.specialite.departementId === userDepartement);
+        }
+        setNiveaux(filteredData);
       }
     } catch (error) {
       console.error("Error fetching niveaux:", error);
@@ -91,10 +113,12 @@ const MatiereManagementSimple = () => {
   };
 
   useEffect(() => {
-    fetchMatieres();
-    fetchUsers();
-    fetchNiveaux();
-  }, []);
+    if (userRole) {
+      fetchMatieres();
+      fetchUsers();
+      fetchNiveaux();
+    }
+  }, [userRole, userDepartement]);
 
   // Fetch users (teachers)
   const fetchUsers = async () => {
@@ -199,7 +223,13 @@ const MatiereManagementSimple = () => {
         : "http://localhost:3000/api/reference/matieres";
       
       const method = editingMatiere ? "PUT" : "POST";
-      console.log("Values sent to backend:", values);
+      
+      // Filter out undefined values
+      const filteredValues = Object.fromEntries(
+        Object.entries(values).filter(([_, value]) => value !== undefined)
+      );
+      
+      console.log("Values sent to backend:", filteredValues);
 
       const response = await fetch(url, {
         method,
@@ -207,7 +237,7 @@ const MatiereManagementSimple = () => {
           
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(values),
+        body: JSON.stringify(filteredValues),
       });
 
       const data = await response.json();
@@ -234,6 +264,18 @@ const MatiereManagementSimple = () => {
   // Handle delete
   const handleDelete = async (id) => {
     try {
+      // Chef de département can only delete matieres from their department
+      if (userRole === 'chef_de_department' && userDepartement) {
+        const matiere = matieres.find(m => m.id === id);
+        if (matiere) {
+          const matiereDepId = matiere.niveau?.specialite?.departementId;
+          if (matiereDepId !== userDepartement) {
+            message.error("Vous ne pouvez supprimer que les matières de votre département");
+            return;
+          }
+        }
+      }
+
       const response = await fetch(
         `http://localhost:3000/api/reference/matieres/${id}`,
         {
@@ -256,6 +298,14 @@ const MatiereManagementSimple = () => {
 
   // Handle edit
   const handleEdit = (matiere) => {
+    // Chef de département can only edit matieres from their department
+    if (userRole === 'chef_de_department' && userDepartement) {
+      const matiereDepId = matiere.niveau?.specialite?.departementId;
+      if (matiereDepId !== userDepartement) {
+        message.error("Vous ne pouvez éditer que les matières de votre département");
+        return;
+      }
+    }
     setEditingMatiere(matiere);
     form.setFieldsValue(matiere);
     setModalVisible(true);
@@ -540,6 +590,7 @@ const items1 = [
               >
                 <InputNumber
                   min={1}
+                  max={60}
                   placeholder="Entrez le nombre de crédits"
                   style={{ width: '100%' }}
                 />

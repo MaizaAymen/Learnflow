@@ -4,6 +4,7 @@ const path = require('path');
 const { uuidv4 } = require('../utils/uuidGenerator');
 const fs = require('fs');
 const sequelize = require('../../auth-service/config');
+const NotificationClient = require('../../Service de Notifications/services/NotificationClient');
 
 module.exports = (db, authenticate, logAudit) => {
   const router = express.Router();
@@ -114,6 +115,52 @@ module.exports = (db, authenticate, logAudit) => {
       });
 
       console.log('✅ Document uploaded:', docId);
+
+      // 🔔 Send notifications about new document
+      try {
+        let recipientIds = [];
+        
+        if (visibleTo === 'public' || !visibleTo) {
+          // Notify all users
+          const allUsers = await sequelize.query(
+            `SELECT id FROM auth.utilisateur WHERE role IN ('etudiant', 'enseignant')`,
+            { type: sequelize.QueryTypes.SELECT }
+          );
+          recipientIds = allUsers.map(u => u.id);
+        } else if (visibleTo === 'class_only' && courseId) {
+          // Notify students in the course
+          const courseStudents = await sequelize.query(
+            `SELECT DISTINCT student_id as id FROM referentiels.enrollments WHERE course_id = ?`,
+            {
+              replacements: [parseInt(courseId)],
+              type: sequelize.QueryTypes.SELECT
+            }
+          );
+          recipientIds = courseStudents.map(s => s.id);
+        }
+
+        if (recipientIds.length > 0) {
+          console.log(`📧 Notifying ${recipientIds.length} users about new document`);
+          await NotificationClient.send({
+            recipient_ids: recipientIds.slice(0, 100), // Limit to prevent overload
+            type: 'document_published',
+            title: '📄 New Document Published',
+            content: `A new document "${title}" has been shared with you`,
+            metadata: {
+              document_id: docId,
+              title,
+              type,
+              course_id: courseId || null,
+              uploaded_by: req.user.id,
+              timestamp: new Date().toISOString()
+            },
+            priority: 'medium',
+            action_url: `/documents/${docId}`
+          });
+        }
+      } catch (notifError) {
+        console.warn('⚠️ Failed to send document notification:', notifError.message);
+      }
 
       await logAudit({
         userId: req.user.id,

@@ -45,8 +45,18 @@ const ClasseManagementSimple = () => {
   const [selectedClassStudents, setSelectedClassStudents] = useState([]);
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [selectedClassName, setSelectedClassName] = useState("");
+  const [userRole, setUserRole] = useState(null);
+  const [userDepartement, setUserDepartement] = useState(null);
   const [form] = Form.useForm();
   const navigate = useNavigate();
+  
+  // Get user role and department from localStorage
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setUserRole(user.role);
+    setUserDepartement(user.departement);
+  }, []);
+  
   const onClickMenu = (e) => {
     if (e.key === 'specialites') {
       navigate('/reference/specialites');
@@ -72,9 +82,25 @@ const fetchClasses = async () => {
   try {
     const response = await fetch("http://localhost:3000/api/reference/classes");
     const data = await response.json();
-    console.log("Fetched classes:", data);  
+    console.log("Fetched all classes:", data);
+    console.log("User Role:", userRole);
+    console.log("User Department:", userDepartement);
+    
     if (response.ok) {
-      const formatted = data.map(c => ({
+      let filteredData = data;
+      
+      // Filter by department if user is chef_de_department
+      if (userRole === 'chef_de_department' && userDepartement) {
+        console.log("Filtering classes for department:", userDepartement);
+        filteredData = data.filter(c => {
+          const classDepId = c.niveau?.specialite?.departementId;
+          console.log(`Class ${c.id} (${c.name}) - departmentId: ${classDepId}, matches: ${classDepId === userDepartement}`);
+          return c.niveau && c.niveau.specialite && classDepId === userDepartement;
+        });
+        console.log("Filtered classes:", filteredData);
+      }
+      
+      const formatted = filteredData.map(c => ({
         ...c,
         niveau_nom: c.niveau?.name || "—",
         specialite_nom: c.niveau?.specialite?.name || "—",
@@ -99,7 +125,13 @@ const fetchClasses = async () => {
       const response = await fetch("http://localhost:3000/api/reference/niveaux");
       const data = await response.json();
       if (response.ok) {
-        setNiveaux(data);
+        let filteredData = data;
+        
+        // Filter by department if user is chef_de_department
+        if (userRole === 'chef_de_department' && userDepartement) {
+          filteredData = data.filter(n => n.specialite && n.specialite.departementId === userDepartement);
+        }
+        setNiveaux(filteredData);
       }
     } catch (error) {
       console.error("Error fetching niveaux:", error);
@@ -107,9 +139,11 @@ const fetchClasses = async () => {
   };
 
   useEffect(() => {
-    fetchClasses();
-    fetchNiveaux();
-  }, []);
+    if (userRole) {
+      fetchClasses();
+      fetchNiveaux();
+    }
+  }, [userRole, userDepartement]);
 
   // Handle create/update
   const handleSubmit = async (values) => {
@@ -153,6 +187,18 @@ const fetchClasses = async () => {
   // Handle delete
   const handleDelete = async (id) => {
     try {
+      // Chef de département can only delete classes from their department
+      if (userRole === 'chef_de_department' && userDepartement) {
+        const classe = classes.find(c => c.id === id);
+        if (classe) {
+          const classDepId = classe.niveau?.specialite?.departementId;
+          if (classDepId !== userDepartement) {
+            message.error("Vous ne pouvez supprimer que les classes de votre département");
+            return;
+          }
+        }
+      }
+
       const response = await fetch(
         `http://localhost:3000/api/reference/classes/${id}`,
         {
@@ -175,6 +221,14 @@ const fetchClasses = async () => {
 
   // Handle edit
   const handleEdit = (classe) => {
+    // Chef de département can only edit classes from their department
+    if (userRole === 'chef_de_department' && userDepartement) {
+      const classDepId = classe.niveau?.specialite?.departementId;
+      if (classDepId !== userDepartement) {
+        message.error("Vous ne pouvez éditer que les classes de votre département");
+        return;
+      }
+    }
     setEditingClasse(classe);
     form.setFieldsValue(classe);
     setModalVisible(true);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card, List, Tag, Empty, Spin, Button, Space, Modal, Drawer, Descriptions, Badge, message } from 'antd';
-import { EyeOutlined, CheckCircleOutlined, LoginOutlined, LogoutOutlined } from '@ant-design/icons';
+import { EyeOutlined, CheckCircleOutlined, LoginOutlined, LogoutOutlined, FilePdfOutlined, DownloadOutlined } from '@ant-design/icons';
 import EventsAPI from '../services/EventsAPI';
 import dayjs from 'dayjs';
 import 'dayjs/locale/fr';
@@ -57,6 +57,8 @@ function EventsViewer() {
   const [currentUser, setCurrentUser] = useState(null);
   const [registrationStatus, setRegistrationStatus] = useState({});
   const [registering, setRegistering] = useState({});
+  const [pdfModalVisible, setPdfModalVisible] = useState(false);
+  const [selectedPdfUrl, setSelectedPdfUrl] = useState(null);
   const eventsAPI = new EventsAPI();
 
   // Fetch current user
@@ -169,6 +171,11 @@ function EventsViewer() {
   };
 
   const isUpcoming = (startDate) => dayjs(startDate).isAfter(dayjs());
+
+  const handleViewPdf = (pdfPath) => {
+    setSelectedPdfUrl(`http://localhost:3004${pdfPath}`);
+    setPdfModalVisible(true);
+  };
 
   return (
     <div className="events-viewer">
@@ -294,12 +301,79 @@ function EventsViewer() {
                 ID: {selectedEvent.departement_id}
               </Descriptions.Item>
             )}
+            {selectedEvent.pdf_path && (
+              <Descriptions.Item label="Fichier PDF">
+                <Space>
+                  <Button 
+                    type="primary" 
+                    size="small" 
+                    icon={<EyeOutlined />}
+                    onClick={() => handleViewPdf(selectedEvent.pdf_path)}
+                  >
+                    Aperçu
+                  </Button>
+                  <Button 
+                    size="small" 
+                    icon={<DownloadOutlined />}
+                    onClick={() => {
+                      const link = document.createElement('a');
+                      link.href = `http://localhost:3004${selectedEvent.pdf_path}`;
+                      link.download = selectedEvent.pdf_filename || 'document.pdf';
+                      document.body.appendChild(link);
+                      link.click();
+                      document.body.removeChild(link);
+                    }}
+                  >
+                    Télécharger
+                  </Button>
+                  <span style={{ fontSize: '12px', color: '#666' }}>
+                    {selectedEvent.pdf_filename}
+                  </span>
+                </Space>
+              </Descriptions.Item>
+            )}
             <Descriptions.Item label="Créé le">
               {dayjs(selectedEvent.createdAt).format('DD/MM/YYYY HH:mm')}
             </Descriptions.Item>
           </Descriptions>
         )}
       </Drawer>
+
+      <Modal
+        title="Aperçu du PDF"
+        open={pdfModalVisible}
+        onCancel={() => setPdfModalVisible(false)}
+        footer={[
+          <Button key="download" icon={<DownloadOutlined />} onClick={() => {
+            const link = document.createElement('a');
+            link.href = selectedPdfUrl;
+            link.download = 'document.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }}>
+            Télécharger
+          </Button>,
+          <Button key="close" onClick={() => setPdfModalVisible(false)}>
+            Fermer
+          </Button>
+        ]}
+        width={900}
+        style={{ top: 20 }}
+      >
+        {selectedPdfUrl && (
+          <iframe
+            src={`${selectedPdfUrl}#toolbar=0`}
+            style={{
+              width: '100%',
+              height: '600px',
+              border: 'none',
+              borderRadius: '4px'
+            }}
+            title="PDF Viewer"
+          />
+        )}
+      </Modal>
     </div>
   );
 }

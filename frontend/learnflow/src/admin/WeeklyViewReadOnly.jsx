@@ -37,6 +37,8 @@ const WeeklyViewReadOnly = () => {
   const [classes, setClasses] = useState([]);
   const [selectedClass, setSelectedClass] = useState(classeId ? parseInt(classeId) : null);
   const [className, setClassName] = useState('');
+  const [teachers, setTeachers] = useState([]);
+  const [selectedTeacher, setSelectedTeacher] = useState(null);
 
   const API_BASE = 'http://localhost:3000/api';
 
@@ -75,8 +77,21 @@ const WeeklyViewReadOnly = () => {
   useEffect(() => {
     if (selectedClass) {
       fetchSchedules();
+      fetchTeachers();
     }
   }, [selectedClass]);
+
+  const fetchTeachers = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/reference/teachers`);
+      if (response.ok) {
+        const data = await response.json();
+        setTeachers(Array.isArray(data) ? data : []);
+      }
+    } catch (error) {
+      console.error('Error fetching teachers:', error);
+    }
+  };
 
   const fetchSchedules = async () => {
     try {
@@ -131,7 +146,10 @@ const WeeklyViewReadOnly = () => {
         // Check day of week
         const dayMatches = schedule.day_of_week === day;
         
-        if (!isInRange || !dayMatches || schedule.statut === 'annule') {
+        // Check if teacher filter is applied
+        const teacherMatches = !selectedTeacher || schedule.enseignant?.id === selectedTeacher;
+        
+        if (!isInRange || !dayMatches || schedule.statut === 'annule' || !teacherMatches) {
           return false;
         }
         
@@ -156,7 +174,7 @@ const WeeklyViewReadOnly = () => {
         return false;
       }
     });
-  }, [schedules]);
+  }, [schedules, selectedTeacher]);
 
   const buildTableData = useCallback(() => {
     const weekDates = getWeekDates();
@@ -262,7 +280,7 @@ const WeeklyViewReadOnly = () => {
               </Tag>
             </div>
             <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '4px', color: '#1f1f1f' }}>
-              {schedule.matiere?.nom || 'N/A'}
+              {schedule.matiere?.name || 'N/A'}
             </div>
             <div style={{ fontSize: '11px', marginBottom: '4px', color: '#595959' }}>
               {formatTime(schedule.start_time)} - {formatTime(schedule.end_time)}
@@ -333,6 +351,24 @@ const WeeklyViewReadOnly = () => {
               </Select>
             </div>
           )}
+
+          {/* Teacher Selection Filter */}
+          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <span>Filter by Teacher:</span>
+            <Select 
+              style={{ width: 250 }}
+              placeholder="All Teachers"
+              value={selectedTeacher}
+              onChange={(value) => setSelectedTeacher(value)}
+              allowClear
+            >
+              {teachers.map(teacher => (
+                <Option key={teacher.id} value={teacher.id}>
+                  {teacher.nom} {teacher.prenom}
+                </Option>
+              ))}
+            </Select>
+          </div>
 
           {/* Week Navigation */}
           <div style={{ display: 'flex', gap: '10px', alignItems: 'center', justifyContent: 'space-between' }}>

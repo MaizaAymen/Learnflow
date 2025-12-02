@@ -7,6 +7,7 @@ const Booking = require('../models/Booking');
 const Classe = require('../models/Classe');
 const Matiere = require('../models/Matiére');
 const Salle = require('../models/Salle');
+const NotificationClient = require('../../Service de Notifications/services/NotificationClient');
 const { 
   detectScheduleConflicts, 
   detectDragDropConflicts, 
@@ -453,6 +454,61 @@ router.put('/schedules/:id', async (req, res) => {
         { association: 'enseignant', attributes: ['id', 'nom', 'prenom', 'email'] }
       ]
     });
+
+    // 🔔 Send notifications to students and teacher about schedule update
+    try {
+      // Notify students in the class
+      if (updatedSchedule.classe && updatedSchedule.classe.id) {
+        const studentIds = await Schedule.findAll({
+          where: { classe_id: updatedSchedule.classe.id },
+          attributes: ['classe_id'],
+          raw: true
+        });
+
+        if (studentIds.length > 0) {
+          const notificationText = updateData.time_slot_id || updateData.date_debut 
+            ? `Schedule updated for ${updatedSchedule.matiere?.nom || 'course'}`
+            : 'Your class schedule has been modified';
+
+          await NotificationClient.send({
+            recipient_ids: studentIds.map(s => s.classe_id),
+            type: 'schedule_updated',
+            title: '📅 Schedule Updated',
+            content: notificationText,
+            metadata: {
+              schedule_id: updatedSchedule.id,
+              classe_id: updatedSchedule.classe.id,
+              matiere_id: updatedSchedule.matiere_id,
+              old_time_slot: schedule.time_slot_id,
+              new_time_slot: updateData.time_slot_id,
+              timestamp: new Date().toISOString()
+            },
+            priority: 'high',
+            action_url: `/schedule/${updatedSchedule.id}`
+          });
+        }
+      }
+
+      // Notify teacher about schedule update
+      if (updatedSchedule.enseignant_id) {
+        await NotificationClient.send({
+          recipient_id: updatedSchedule.enseignant_id,
+          type: 'schedule_updated',
+          title: '📅 Your Schedule Updated',
+          content: `Schedule for ${updatedSchedule.matiere?.nom || 'your course'} has been updated`,
+          metadata: {
+            schedule_id: updatedSchedule.id,
+            classe_id: updatedSchedule.classe_id,
+            matiere_id: updatedSchedule.matiere_id,
+            timestamp: new Date().toISOString()
+          },
+          priority: 'high',
+          action_url: `/schedule/${updatedSchedule.id}`
+        });
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to send schedule update notifications:', error.message);
+    }
 
     res.status(200).json({ 
       success: true,

@@ -4,11 +4,11 @@ module.exports = (sequelize) => {
   const Internship = sequelize.define('Internship', {
     id: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
+      defaultValue: sequelize.literal('gen_random_uuid()'),
       primaryKey: true,
     },
     studentId: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     companyId: {
@@ -72,7 +72,7 @@ module.exports = (sequelize) => {
       allowNull: true,
     },
     assignedTeacher: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: true,
     },
     evaluationScore: {
@@ -85,7 +85,7 @@ module.exports = (sequelize) => {
       allowNull: true,
     },
     evaluatedBy: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: true,
     },
     evaluatedAt: {
@@ -97,7 +97,7 @@ module.exports = (sequelize) => {
       allowNull: true,
     },
     approvedBy: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: true,
     },
     approvedAt: {

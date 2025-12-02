@@ -3,6 +3,7 @@ const router = express.Router();
 const { Op } = require('sequelize');
 const sequelize = require('../models').sequelize;
 const { authenticateToken } = require('../middleware/auth');
+const NotificationClient = require('../../Service de Notifications/services/NotificationClient');
 const {
   Message,
   Conversation,
@@ -237,6 +238,49 @@ router.post('/messages', authenticateToken, async (req, res) => {
       { last_message_at: new Date() },
       { where: { id: conversation_id } }
     );
+
+    // 🔔 Send notifications to other participants
+    try {
+      const otherParticipants = await ConversationParticipant.findAll({
+        where: {
+          conversation_id,
+          user_id: { [Op.ne]: userId },
+          left_at: null
+        },
+        attributes: ['user_id'],
+        raw: true
+      });
+
+      if (otherParticipants.length > 0) {
+        console.log(`📧 Notifying ${otherParticipants.length} participants about new message`);
+
+        // Send individual notifications to each participant
+        const messagePreview = content.substring(0, 100) + (content.length > 100 ? '...' : '');
+        
+        for (const participant of otherParticipants) {
+          try {
+            await NotificationClient.send({
+              recipient_id: participant.user_id,
+              type: 'message_received',
+              title: '💬 New Message',
+              content: messagePreview,
+              metadata: {
+                conversation_id,
+                message_id: message.id,
+                sender_id: userId,
+                timestamp: new Date().toISOString()
+              },
+              priority: 'medium',
+              action_url: `/messages/${conversation_id}`
+            });
+          } catch (participantError) {
+            console.warn(`⚠️ Failed to notify participant ${participant.user_id}:`, participantError.message);
+          }
+        }
+      }
+    } catch (notifError) {
+      console.warn('⚠️ Could not send message notifications:', notifError.message);
+    }
 
     res.status(201).json({
       id: message.id,

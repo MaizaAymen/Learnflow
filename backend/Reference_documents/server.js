@@ -53,18 +53,28 @@ const {
 
 // ✅ Authentication middleware
 const authenticate = (req, res, next) => {
-  const token = req.headers.authorization?.split(" ")[1] || req.cookies?.token;
+  const authHeader = req.headers.authorization;
+  const cookieToken = req.cookies?.token;
+  const token = authHeader?.split(" ")[1] || cookieToken;
+  
+  console.log('🔍 AUTHENTICATE MIDDLEWARE');
+  console.log('   Headers Authorization:', authHeader ? authHeader.substring(0, 20) + '...' : 'None');
+  console.log('   Cookie Token:', cookieToken ? 'Present' : 'None');
+  console.log('   Extracted Token:', token ? 'Present' : 'None');
   
   if (!token) {
+    console.error('❌ No token provided');
     return res.status(401).json({ error: "Unauthorized - no token" });
   }
 
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
     req.user = decoded;
+    console.log('✅ Token verified - User ID:', decoded.id);
     next();
   } catch (error) {
-    return res.status(401).json({ error: "Invalid token" });
+    console.error('❌ Token verification failed:', error.message);
+    return res.status(401).json({ error: "Invalid token", details: error.message });
   }
 };
 
@@ -96,6 +106,7 @@ const ReferenceRoutes = require("./routes/Reference");
 const CalendarRoutes = require("./routes/Calendar");
 const StudentsRoutes = require("./routes/Students");
 const TeacherCalendarRoutes = require("./routes/TeacherCalendar");
+const TeacherDashboardRoutes = require("./routes/TeacherDashboard");
 const DirectorApprovalRoutes = require("./routes/DirectorApproval");
 
 // ✅ Import new professional feature routes
@@ -109,6 +120,12 @@ const AnnouncementsRoutes = require("./routes/Announcements");
 const CommentsRoutes = require("./routes/Comments");
 const AuditRoutes = require("./routes/Audit");
 const DebugRoutes = require("./routes/Debug");
+const AbsenceJustificationsRoutes = require("./routes/AbsenceJustifications");
+
+// ✅ Import service feature routes
+const LibraryRoutes = require("./routes/Library");
+const SupportRoutes = require("./routes/Support");
+const FeedbackRoutes = require("./routes/Feedback");
 
 const app = express();
 app.use(express.json());
@@ -126,6 +143,7 @@ app.use("/api/reference", ReferenceRoutes);
 app.use("/api/calendar", CalendarRoutes);
 app.use("/api/students", StudentsRoutes);
 app.use("/api/student", StudentsRoutes);  // ✅ Alternative path for auth service compatibility
+app.use("/api/teacher", TeacherDashboardRoutes);  // ✅ Teacher Dashboard routes (must come BEFORE TeacherCalendarRoutes)
 app.use("/api/teacher", TeacherCalendarRoutes);
 app.use("/api/classes", TeacherCalendarRoutes);
 app.use("/api/director", DirectorApprovalRoutes);
@@ -143,6 +161,12 @@ app.use("/api/announcements", AnnouncementsRoutes(db, authenticate, logAudit));
 app.use("/api/comments", CommentsRoutes(db, authenticate, logAudit));
 app.use("/api/audit", AuditRoutes(db, authenticate, logAudit));
 app.use("/api/debug", DebugRoutes(db, authenticate, logAudit));
+app.use("/api/absences/justifications", AbsenceJustificationsRoutes(db, authenticate, logAudit));
+
+// ✅ Mount service feature routes
+app.use("/api/library", authenticate, LibraryRoutes);
+app.use("/api/support", authenticate, SupportRoutes);
+app.use("/api/feedback", authenticate, FeedbackRoutes);
 
 // Initialize database with proper sync order
 async function initializeDatabase() {

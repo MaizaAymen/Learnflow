@@ -4,7 +4,7 @@ module.exports = (sequelize) => {
   const Project = sequelize.define('Project', {
     id: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
+      defaultValue: sequelize.literal('gen_random_uuid()'),
       primaryKey: true,
     },
     title: {
@@ -24,7 +24,7 @@ module.exports = (sequelize) => {
       allowNull: false,
     },
     studentId: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: true,
     },
     studentGroup: {
@@ -52,7 +52,7 @@ module.exports = (sequelize) => {
       allowNull: true,
     },
     approvedBy: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: true,
     },
     approvedAt: {
@@ -60,7 +60,7 @@ module.exports = (sequelize) => {
       allowNull: true,
     },
     supervisorId: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: true,
     },
     juries: {

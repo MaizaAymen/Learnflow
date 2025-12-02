@@ -367,7 +367,7 @@ const ClassCalendarContent = () => {
           Retour aux Classes
         </Button>
 
-        <Card style={{ marginBottom: '24px' }}>
+        <Card style={{ marginBottom: '24px' }} styles={{ body: { padding: '24px' } }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>
               <h1 style={{ margin: 0, fontSize: '28px', color: '#1890ff' }}>
@@ -408,7 +408,7 @@ const ClassCalendarContent = () => {
           </div>
         </Card>
 
-        <Card>
+        <Card styles={{ body: { padding: '24px' } }}>
           <Calendar 
             cellRender={cellRender}
             headerRender={({ value, type, onChange, onTypeChange }) => {
@@ -440,7 +440,7 @@ const ClassCalendarContent = () => {
           />
         </Card>
 
-        <Card style={{ marginTop: '24px', background: '#f5f5f5' }}>
+        <Card style={{ marginTop: '24px', background: '#f5f5f5' }} styles={{ body: { padding: '24px' } }}>
           <h3>💡 Légende et Instructions</h3>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', marginBottom: '15px' }}>
             <span><Badge status="processing" /> Cours</span>

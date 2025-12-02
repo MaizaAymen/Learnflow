@@ -151,6 +151,19 @@
   margin-top: 24px;
 }
 
+/* Modal Footer Button Wrapping */
+.ant-modal-footer {
+  display: flex !important;
+  flex-wrap: wrap !important;
+  gap: 8px !important;
+  justify-content: flex-end !important;
+}
+
+.ant-modal-footer button {
+  flex-shrink: 0;
+  min-width: auto;
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .calendar-day {
@@ -160,5 +173,13 @@
 
   .teacher-calendar-container {
     padding: 16px;
+  }
+
+  .ant-modal-footer {
+    flex-direction: column !important;
+  }
+
+  .ant-modal-footer button {
+    width: 100%;
   }
 }

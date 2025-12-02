@@ -17,7 +17,9 @@ const Event = sequelize.define('Event', {
   is_all_day: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false },
   departement_id: { type: DataTypes.INTEGER, allowNull: true },
   created_by: { type: DataTypes.INTEGER, allowNull: true },
-  metadata: { type: DataTypes.JSONB, allowNull: true }
+  metadata: { type: DataTypes.JSONB, allowNull: true },
+  pdf_path: { type: DataTypes.STRING, allowNull: true },
+  pdf_filename: { type: DataTypes.STRING, allowNull: true }
 }, {
   schema: 'referentiels',
   tableName: 'evenement',

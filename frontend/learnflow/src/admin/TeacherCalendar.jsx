@@ -272,6 +272,11 @@ const TeacherCalendar = () => {
                 type={filterSubject === null ? 'primary' : 'default'}
                 onClick={() => setFilterSubject(null)}
                 className="mb-2"
+                style={{ 
+                  backgroundColor: filterSubject === null ? '#000000' : '#ffffff',
+                  borderColor: '#000000',
+                  color: filterSubject === null ? '#ffffff' : '#000000'
+                }}
               >
                 All Subjects
               </Button>

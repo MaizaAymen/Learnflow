@@ -352,8 +352,6 @@ router.post("/upload-students", upload.single("file"), async (req, res) => {
   return router.post("/upload-csv")(req, res);
 });
 
-
-
 router.post("/student-signup", async (req, res) => {
   try {
     const { cin, email } = req.body;
@@ -400,7 +398,6 @@ router.post("/student-signup", async (req, res) => {
     res.status(500).json({ error: "Erreur serveur lors de la création du compte" });
   }
 });
-
 
 router.post("/register", async (req, res) => {
     try
@@ -474,15 +471,40 @@ catch (error) {
 }})
 router.post("/completeprofile", async (req, res) => {
   try { 
-    const { id, cin, certification, date_naissance, classes, specialite, departement, etablissement, adresse, ville, pays, niveau_etude, parcours, interets, competences } = req.body;
+    const { 
+      id, 
+      cin, 
+      certification, 
+      date_naissance, 
+      classes, 
+      specialite, 
+      departement, 
+      etablissement, 
+      adresse, 
+      ville, 
+      pays, 
+      niveau_etude, 
+      parcours, 
+      interets, 
+      competences,
+      phone,
+      bio,
+      image,
+      new_password,
+      confirm_password
+    } = req.body;
+    
     if (!id) {
       return res.status(400).json({ error: "ID utilisateur manquant" });
     }
+    
     const user = await utilisateur.findByPk(id);
     if (!user) {
       return res.status(404).json({ error: "Utilisateur non trouvé" });
     }
-    await user.update({
+    
+    // Prepare update object
+    const updateData = {
       cin,
       certification,
       date_naissance,
@@ -496,11 +518,82 @@ router.post("/completeprofile", async (req, res) => {
       niveau_etude,
       parcours,
       interets,
-      competences
+      competences,
+      phone,
+      bio
+    };
+    
+    // Handle image update
+    if (image) {
+      updateData.image = image;
+    }
+    
+    // Handle password change
+    if (new_password && confirm_password) {
+      if (new_password !== confirm_password) {
+        return res.status(400).json({ error: "Les mots de passe ne correspondent pas" });
+      }
+      
+      // Hash the new password
+      const hashedPassword = await bcrypt.hash(new_password, 10);
+      updateData.mdp_hash = hashedPassword;
+    }
+    
+    await user.update(updateData);
+    
+    // Send notification email if password was changed
+    if (new_password) {
+      await sendEmail({
+        to: user.email,
+        subject: "Votre mot de passe a été modifié 🔐",
+        html: `
+          <!DOCTYPE html>
+          <html lang="fr">
+          <head>
+            <meta charset="UTF-8">
+            <title>Mot de passe modifié - LearnFlow</title>
+            <style>
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6fb; }
+              .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 14px; box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1); overflow: hidden; }
+              .header { background: linear-gradient(135deg, #42a5f5, #1e88e5); text-align: center; padding: 25px; color: white; }
+              .content { padding: 35px 30px; color: #333333; font-size: 16px; line-height: 1.7; }
+              .footer { background-color: #f2f4f7; text-align: center; padding: 18px; font-size: 14px; color: #666666; border-top: 1px solid #e0e0e0; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="header">
+                <h1>🔐 Mot de Passe Modifié</h1>
+              </div>
+              <div class="content">
+                <h2>Bienvenue ${user.prenom},</h2>
+                <p>Votre mot de passe a été modifié avec succès!</p>
+                <p>Si vous n'avez pas effectué cette action, veuillez contacter l'administrateur immédiatement.</p>
+                <p><strong>Date de modification:</strong> ${new Date().toLocaleString('fr-FR')}</p>
+              </div>
+              <div class="footer">
+                <p>Cordialement,<br><strong>L'équipe LearnFlow</strong></p>
+              </div>
+            </div>
+          </body>
+          </html>
+        `
+      }).catch(err => console.error('❌ Error sending password change email:', err));
+    }
+    
+    res.status(200).json({ 
+      message: "Profil mis à jour avec succès",
+      user: {
+        id: user.id,
+        email: user.email,
+        nom: user.nom,
+        prenom: user.prenom,
+        role: user.role
+      }
     });
-    res.status(200).json({ message: "Profil complété avec succès" });
   } catch (error) {
-    res.status(500).json({ error: "Erreur lors de la complétion du profil" });
+    console.error('❌ Error completing profile:', error);
+    res.status(500).json({ error: "Erreur lors de la mise à jour du profil" });
   }
 });
 router.post("/login", async (req, res) => {
@@ -645,6 +738,9 @@ router.post("/login", async (req, res) => {
       });
       
       // Return token and user data in response body for cross-domain requests
+      // Handle profile_completed - it might not exist in DB yet, so default to false
+      const profileCompleted = user.profile_completed !== undefined ? user.profile_completed : false;
+      
       return res.status(200).json({ 
         message: "Connexion réussie",
         token: token,
@@ -653,14 +749,18 @@ router.post("/login", async (req, res) => {
           email: user.email,
           nom: user.nom,
           prenom: user.prenom,
-          role: user.role
-        }
+          role: user.role,
+          profile_completed: profileCompleted
+        },
+        profile_completed: profileCompleted
       });
 
     } catch (error) {
+      console.error("Erreur login:", error);
       res.status(500).json({ error: "Erreur lors de la connexion de l'utilisateur" });
     }
   });
+
 router.get("/profile", async (req, res) => {
     try {
       const authHeader = req.cookies.token;
@@ -687,10 +787,13 @@ router.get("/profile", async (req, res) => {
   });
 router.get("/getAllUsers", async (req, res) => {
     try {
-      const user = await utilisateur.findAll();
+      const user = await utilisateur.findAll({
+        attributes: { exclude: ['mdp_hash'] } // Don't return password hash
+      });
       res.status(200).json(user);
     }catch (error) {
-      res.status(500).json({ error: "Erreur lors de la récupération du profil" });
+      console.error("Error in getAllUsers:", error);
+      res.status(500).json({ error: "Erreur lors de la récupération du profil", details: error.message });
     }});
 router.post("/logout", (req, res) => {
   res.clearCookie("token");
@@ -1359,5 +1462,146 @@ setInterval(() => {
     }
   }
 }, 60000);
+
+/**
+ * POST /api/auth/upload-profile-photo
+ * Upload profile photo and mark profile as complete
+ * Expects: multipart/form-data with file and userId
+ */
+router.post('/upload-profile-photo', upload.single('photo'), async (req, res) => {
+  try {
+    const { userId } = req.body;
+
+    if (!userId) {
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({ error: 'Photo file is required' });
+    }
+
+    // Find user
+    const user = await utilisateur.findByPk(userId);
+    if (!user) {
+      if (req.file && fs.existsSync(req.file.path)) {
+        fs.unlinkSync(req.file.path);
+      }
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Save file path as image URL (adjust path as needed for your file serving)
+    const photoPath = `/uploads/${req.file.filename}`;
+
+    // Update user with photo and mark profile as complete
+    await user.update({
+      image: photoPath,
+      profile_completed: true,
+      profile_completed_at: new Date()
+    });
+
+    console.log(`✅ Profile completed for ${user.prenom} ${user.nom}`);
+
+    // Send completion email
+    await sendEmail({
+      to: user.email,
+      subject: "Profil Complété avec Succès 🎉",
+      html: `
+        <!DOCTYPE html>
+        <html lang="fr">
+        <head>
+          <meta charset="UTF-8">
+          <title>Profil Complété - LearnFlow</title>
+          <style>
+            body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f6fb; }
+            .container { max-width: 600px; margin: 40px auto; background: #ffffff; border-radius: 14px; box-shadow: 0 6px 25px rgba(0, 0, 0, 0.1); overflow: hidden; }
+            .header { background: linear-gradient(135deg, #28a745, #51cf66); text-align: center; padding: 25px; color: white; }
+            .content { padding: 35px 30px; color: #333333; font-size: 16px; line-height: 1.7; }
+            .footer { background-color: #f2f4f7; text-align: center; padding: 18px; font-size: 14px; color: #666666; border-top: 1px solid #e0e0e0; }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <div class="header">
+              <h1>✅ Profil Complété!</h1>
+            </div>
+            <div class="content">
+              <h2>Bienvenue ${user.prenom},</h2>
+              <p>Votre profil a été complété avec succès! Vous pouvez maintenant accéder à toutes les fonctionnalités de Learnflow.</p>
+              <p>Voici les informations de votre profil:</p>
+              <ul>
+                <li><strong>Nom:</strong> ${user.nom}</li>
+                <li><strong>Prénom:</strong> ${user.prenom}</li>
+                <li><strong>Email:</strong> ${user.email}</li>
+                <li><strong>Rôle:</strong> ${user.role}</li>
+              </ul>
+              <p>Bon apprentissage!</p>
+            </div>
+            <div class="footer">
+              <p>Cordialement,<br><strong>L'équipe LearnFlow</strong></p>
+            </div>
+          </div>
+        </body>
+        </html>
+      `
+    }).catch(err => console.error('❌ Error sending completion email:', err));
+
+    res.json({
+      message: 'Profile completed successfully',
+      user: {
+        id: user.id,
+        email: user.email,
+        nom: user.nom,
+        prenom: user.prenom,
+        role: user.role,
+        image: photoPath,
+        profile_completed: true
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error uploading profile photo:', error);
+    if (req.file && fs.existsSync(req.file.path)) {
+      fs.unlinkSync(req.file.path);
+    }
+    res.status(500).json({ error: 'Error uploading profile photo: ' + error.message });
+  }
+});
+
+/**
+ * GET /api/auth/profile-completion-status/:userId
+ * Check if user has completed their profile
+ */
+router.get('/profile-completion-status/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'User ID is required' });
+    }
+
+    const user = await utilisateur.findByPk(userId);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.json({
+      profile_completed: user.profile_completed || false,
+      profile_completed_at: user.profile_completed_at,
+      user: {
+        id: user.id,
+        email: user.email,
+        nom: user.nom,
+        prenom: user.prenom
+      }
+    });
+
+  } catch (error) {
+    console.error('❌ Error checking profile completion status:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
 
 module.exports = router;

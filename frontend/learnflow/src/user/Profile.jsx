@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { useState } from 'react';
+import dayjs from 'dayjs';
 import {
   Avatar,
   Card,
@@ -62,7 +63,6 @@ const Profile = () => {
     .then(data => {
         if (data.user) {
           setProfile(data.user);
-          form.setFieldsValue(data.user);
           message.success('Profil chargé avec succès');
         } else {
           message.warning('Aucune donnée de profil trouvée. Veuillez compléter vos informations.');
@@ -75,48 +75,123 @@ const Profile = () => {
     .finally(() => {
         setProfileLoading(false);
     });
-  }, [])
+  }, []);
+
+  // Populate form when modal opens or profile changes
+  useEffect(() => {
+    if (isEditing && profile && form) {
+      const formData = { ...profile };
+      // Ensure image field is always an array
+      if (!formData.image) {
+        formData.image = [];
+      } else if (!Array.isArray(formData.image)) {
+        formData.image = [];
+      }
+      // Convert date string to dayjs object
+      if (formData.date_naissance) {
+        formData.date_naissance = dayjs(formData.date_naissance);
+      }
+      form.setFieldsValue(formData);
+    }
+  }, [isEditing, profile, form]);
 
 const handleCompleteProfile = (values) => {
   setLoading(true);
   message.loading({ content: 'Mise à jour de votre profil en cours...', key: 'updating' });
   
-  fetch("http://localhost:4000/api/auth/completeprofile", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      credentials: 'include',
-      body: JSON.stringify({ ...values, id: profile.id })
-  })
-  .then(res => {
-      if (!res.ok) {
-        throw new Error('Erreur de connexion au serveur');
-      }
-      return res.json();
-  })
-  .then(data => {
-      if (data.message || data.user) {
-        setProfile({ ...profile, ...values });
-        message.success({ 
-          content: 'Votre profil a été mis à jour avec succès !', 
+  // Prepare request body
+  const requestBody = { ...values, id: profile.id };
+  
+  // Convert dayjs date back to string
+  if (requestBody.date_naissance && requestBody.date_naissance.format) {
+    requestBody.date_naissance = requestBody.date_naissance.format('YYYY-MM-DD');
+  }
+  
+  // Remove empty password fields if user doesn't want to change password
+  if (!values.new_password) {
+    delete requestBody.new_password;
+    delete requestBody.confirm_password;
+  }
+  
+  // Handle image upload separately if new image selected
+  const imageFileList = values.image;
+  const hasNewImage = Array.isArray(imageFileList) && imageFileList.length > 0 && imageFileList[0]?.originFileObj;
+  
+  const uploadPromise = hasNewImage 
+    ? uploadProfileImage(imageFileList[0].originFileObj)
+    : Promise.resolve(null);
+
+  uploadPromise.then(imageUrl => {
+    if (imageUrl) {
+      requestBody.image = imageUrl;
+    }
+    // Remove image field from request body since it's handled separately
+    delete requestBody.image;
+    
+    fetch("http://localhost:4000/api/auth/completeprofile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: 'include',
+        body: JSON.stringify(requestBody)
+    })
+    .then(res => {
+        if (!res.ok) {
+          throw new Error('Erreur de connexion au serveur');
+        }
+        return res.json();
+    })
+    .then(data => {
+        if (data.message || data.user) {
+          setProfile({ ...profile, ...requestBody, image: imageUrl || profile.image });
+          message.success({ 
+            content: 'Votre profil a été mis à jour avec succès !', 
+            key: 'updating',
+            duration: 3 
+          });
+          setIsEditing(false);
+          form.resetFields();
+        } else {
+          throw new Error(data.error || 'Réponse inattendue du serveur');
+        }
+    })
+    .catch(error => {
+        console.error('Erreur lors de la mise à jour du profil:', error);
+        message.error({ 
+          content: `Impossible de mettre à jour votre profil: ${error.message}. Veuillez réessayer.`,
           key: 'updating',
-          duration: 3 
+          duration: 5
         });
-        setIsEditing(false);
-        form.setFieldsValue({ ...profile, ...values });
-      } else {
-        throw new Error(data.error || 'Réponse inattendue du serveur');
-      }
-  })
-  .catch(error => {
-      console.error('Erreur lors de la mise à jour du profil:', error);
-      message.error({ 
-        content: `Impossible de mettre à jour votre profil: ${error.message}. Veuillez réessayer.`,
-        key: 'updating',
-        duration: 5
-      });
-  })
-  .finally(() => {
+    })
+    .finally(() => {
+      setLoading(false);
+    });
+  }).catch(error => {
+    console.error('Erreur lors de l\'upload de l\'image:', error);
+    message.error('Erreur lors de l\'upload de la photo. Veuillez réessayer.');
     setLoading(false);
+  });
+};
+
+const uploadProfileImage = (file) => {
+  return new Promise((resolve, reject) => {
+    const formData = new FormData();
+    formData.append('photo', file);
+    formData.append('userId', profile.id);
+
+    fetch("http://localhost:4000/api/auth/upload-profile-photo", {
+      method: "POST",
+      body: formData,
+      credentials: 'include'
+    })
+    .then(res => res.json())
+    .then(data => {
+      if (data.user && data.user.image) {
+        resolve(data.user.image);
+      } else {
+        reject(new Error('Image upload failed'));
+      }
+    })
+    .catch(reject);
   });
 };
 
@@ -430,6 +505,33 @@ const handleCompleteProfile = (values) => {
       ),
       children: <StudentAbsencesTab studentId={profile.id} />
     });
+
+    tabItems.push({
+      key: '3',
+      label: (
+        <span>
+          <BookOutlined />
+          Mes Justifications
+        </span>
+      ),
+      children: (
+        <div style={{ marginTop: '20px' }}>
+          <Card title="Justifications d'absence" loading={false}>
+            <p style={{ marginBottom: '20px', color: '#666' }}>
+              Gérez vos justifications d'absence en un seul endroit. Consultez l'état de vos justifications et soumettez de nouvelles justifications si nécessaire.
+            </p>
+            <Button 
+              type="primary" 
+              size="large"
+              onClick={() => window.location.href = '/absences/justifications'}
+              style={{ marginTop: '10px' }}
+            >
+              📋 Voir mes justifications
+            </Button>
+          </Card>
+        </div>
+      )
+    });
   }
 
   return (
@@ -438,7 +540,7 @@ const handleCompleteProfile = (values) => {
         <Card 
           className="data-card hover-lift"
           style={{ marginBottom: 'var(--space-6)' }}
-          bodyStyle={{ padding: 'var(--space-8)' }}
+          styles={{ body: { padding: 'var(--space-8)' } }}
         >
           <Row align="middle" justify="space-between" gutter={24}>
             <Col>
@@ -446,7 +548,7 @@ const handleCompleteProfile = (values) => {
                 <Col>
                   <Avatar 
                     size={100} 
-                    src={profile.image} 
+                    src={profile.image ? `http://localhost:4000${profile.image}` : null}
                     icon={<UserOutlined />}
                     className="status-online hover-glow"
                     style={{ 
@@ -518,6 +620,52 @@ const handleCompleteProfile = (values) => {
             onFinish={handleCompleteProfile}
             style={{ marginTop: '20px' }}
           >
+            <Divider orientation="left">📸 Photo de Profil</Divider>
+            <Row gutter={16}>
+              <Col xs={24} md={12}>
+                <div style={{ marginBottom: '16px' }}>
+                  <Text strong>Photo Actuelle:</Text>
+                  <div style={{ marginTop: '8px' }}>
+                    <Avatar 
+                      size={80}
+                      src={profile.image ? `http://localhost:4000${profile.image}` : null}
+                      icon={<UserOutlined />}
+                      style={{ 
+                        backgroundColor: '#1890ff',
+                        border: '2px solid #1890ff'
+                      }}
+                    />
+                  </div>
+                </div>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="Changer la Photo"
+                  name="image"
+                  rules={[]}
+                  valuePropName="fileList"
+                  getValueFromEvent={(e) => {
+                    if (Array.isArray(e)) {
+                      return e;
+                    }
+                    return e?.fileList || [];
+                  }}
+                >
+                  <Upload
+                    listType="picture"
+                    maxCount={1}
+                    accept="image/*"
+                    beforeUpload={() => false}
+                  >
+                    <Button icon={<UploadOutlined />} block>
+                      Cliquez pour changer votre photo
+                    </Button>
+                  </Upload>
+                </Form.Item>
+              </Col>
+            </Row>
+
+            <Divider orientation="left">👤 Informations Personnelles</Divider>
             <Row gutter={16}>
               <Col span={12}>
                 <Form.Item
@@ -700,6 +848,54 @@ const handleCompleteProfile = (values) => {
                 </Form.Item>
               </>
             )}
+            
+            <Divider orientation="left">🔐 Sécurité & Mot de Passe</Divider>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  label="Nouveau Mot de Passe"
+                  name="new_password"
+                  rules={[
+                    {
+                      min: 8,
+                      message: 'Le mot de passe doit contenir au moins 8 caractères'
+                    },
+                    {
+                      pattern: /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+                      message: 'Le mot de passe doit contenir majuscules, minuscules et chiffres'
+                    }
+                  ]}
+                >
+                  <Input.Password 
+                    placeholder="Laissez vide pour ne pas changer"
+                  />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  label="Confirmer le Mot de Passe"
+                  name="confirm_password"
+                  dependencies={['new_password']}
+                  rules={[
+                    ({ getFieldValue }) => ({
+                      validator(_, value) {
+                        if (!value && !getFieldValue('new_password')) {
+                          return Promise.resolve();
+                        }
+                        if (value === getFieldValue('new_password')) {
+                          return Promise.resolve();
+                        }
+                        return Promise.reject(new Error('Les mots de passe ne correspondent pas'));
+                      },
+                    }),
+                  ]}
+                >
+                  <Input.Password 
+                    placeholder="Confirmez votre nouveau mot de passe"
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
             
             <Form.Item style={{ marginBottom: 0, marginTop: '24px' }}>
               <Space>

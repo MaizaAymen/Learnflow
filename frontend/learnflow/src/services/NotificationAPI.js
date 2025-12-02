@@ -19,6 +19,26 @@ function getUserId() {
   return 1; // Default fallback
 }
 
+// Helper to get authentication token from localStorage
+function getAuthToken() {
+  try {
+    return localStorage.getItem('token') || localStorage.getItem('authToken') || null;
+  } catch (e) {
+    console.warn('Could not get auth token from localStorage');
+  }
+  return null;
+}
+
+// Helper to build headers with auth token
+function getHeaders() {
+  const headers = { 'Content-Type': 'application/json' };
+  const token = getAuthToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
 export class NotificationAPI {
   /**
    * Get all notifications for current user
@@ -36,7 +56,7 @@ export class NotificationAPI {
 
       const response = await fetch(`${NOTIFICATIONS_BASE_URL}/notifications?${params}`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         credentials: 'include'
       });
 
@@ -59,7 +79,7 @@ export class NotificationAPI {
 
       const response = await fetch(`${NOTIFICATIONS_BASE_URL}/notifications/unread/count?${params}`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         credentials: 'include'
       });
 
@@ -82,7 +102,7 @@ export class NotificationAPI {
 
       const response = await fetch(`${NOTIFICATIONS_BASE_URL}/notifications/${id}?${params}`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         credentials: 'include'
       });
 
@@ -105,7 +125,7 @@ export class NotificationAPI {
 
       const response = await fetch(`${NOTIFICATIONS_BASE_URL}/notifications/${id}/read?${params}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         credentials: 'include'
       });
 
@@ -128,7 +148,7 @@ export class NotificationAPI {
 
       const response = await fetch(`${NOTIFICATIONS_BASE_URL}/notifications/mark-all-read?${params}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         credentials: 'include'
       });
 
@@ -151,7 +171,7 @@ export class NotificationAPI {
 
       const response = await fetch(`${NOTIFICATIONS_BASE_URL}/notifications/${id}?${params}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         credentials: 'include'
       });
 
@@ -174,7 +194,7 @@ export class NotificationAPI {
 
       const response = await fetch(`${NOTIFICATIONS_BASE_URL}/notifications/batch?${params}`, {
         method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         credentials: 'include',
         body: JSON.stringify({ notificationIds: ids })
       });
@@ -198,7 +218,7 @@ export class NotificationAPI {
 
       const response = await fetch(`${NOTIFICATIONS_BASE_URL}/preferences?${params}`, {
         method: 'GET',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         credentials: 'include'
       });
 
@@ -221,7 +241,7 @@ export class NotificationAPI {
 
       const response = await fetch(`${NOTIFICATIONS_BASE_URL}/preferences?${params}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         credentials: 'include',
         body: JSON.stringify(preferences)
       });
@@ -245,7 +265,7 @@ export class NotificationAPI {
 
       const response = await fetch(`${NOTIFICATIONS_BASE_URL}/preferences/notification-type/${type}?${params}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         credentials: 'include',
         body: JSON.stringify({ enabled })
       });
@@ -269,7 +289,7 @@ export class NotificationAPI {
 
       const response = await fetch(`${NOTIFICATIONS_BASE_URL}/preferences/quiet-hours?${params}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getHeaders(),
         credentials: 'include',
         body: JSON.stringify({
           start_time: startTime,

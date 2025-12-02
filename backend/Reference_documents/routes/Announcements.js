@@ -164,9 +164,10 @@
           return res.status(404).json({ error: 'Announcement not found' });
         }
 
-        // Increment view count
-        announcement.viewCount += 1;
-        await announcement.save();
+        // Increment view count using proper Sequelize method
+        await Announcement.increment('viewCount', {
+          where: { id: req.params.announcementId }
+        });
 
         res.json(announcement);
       } catch (error) {
@@ -321,10 +322,17 @@
 
         doc.end();
 
-        await announcement.increment('viewCount');
+        // Increment view count using proper Sequelize method
+        await Announcement.increment('viewCount', {
+          where: { id: req.params.announcementId }
+        });
       } catch (error) {
         console.error('Error generating PDF:', error);
-        res.status(500).json({ error: 'Failed to generate PDF' });
+        if (!res.headersSent) {
+          res.status(500).json({ error: 'Failed to generate PDF' });
+        } else {
+          res.end();
+        }
       }
     });
 

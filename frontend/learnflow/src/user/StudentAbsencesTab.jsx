@@ -15,7 +15,12 @@ import {
   message,
   Button,
   Modal,
-  Tooltip
+  Tooltip,
+  Form,
+  Input,
+  DatePicker,
+  Upload,
+  Select
 } from 'antd';
 import {
   ClockCircleOutlined,
@@ -23,7 +28,8 @@ import {
   ExclamationCircleOutlined,
   FileTextOutlined,
   DownloadOutlined,
-  ReloadOutlined
+  ReloadOutlined,
+  UploadOutlined
 } from '@ant-design/icons';
 
 const { Title, Text, Paragraph } = Typography;
@@ -32,6 +38,10 @@ const StudentAbsencesTab = ({ studentId }) => {
   const [absences, setAbsences] = useState([]);
   const [loading, setLoading] = useState(false);
   const [eliminations, setEliminations] = useState({});
+  const [justificationModalVisible, setJustificationModalVisible] = useState(false);
+  const [selectedAbsence, setSelectedAbsence] = useState(null);
+  const [justificationLoading, setJustificationLoading] = useState(false);
+  const [justificationForm] = Form.useForm();
   const [statistics, setStatistics] = useState({
     total: 0,
     absent: 0,
@@ -44,7 +54,7 @@ const StudentAbsencesTab = ({ studentId }) => {
   const fetchStudentAbsences = async () => {
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:4000/api/auth/student/absences`, {
+      const response = await fetch(`http://localhost:3000/api/student/absences/${studentId}`, {
         method: 'GET',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
@@ -160,6 +170,89 @@ const StudentAbsencesTab = ({ studentId }) => {
     return <Tag icon={status.icon} color={status.color}>{status.label}</Tag>;
   };
 
+  // Open justification modal for a specific absence
+  const handleOpenJustificationModal = (absence) => {
+    setSelectedAbsence(absence);
+    setJustificationModalVisible(true);
+    justificationForm.resetFields();
+  };
+
+  // Close justification modal
+  const handleCloseJustificationModal = () => {
+    setJustificationModalVisible(false);
+    setSelectedAbsence(null);
+    justificationForm.resetFields();
+  };
+
+  // Submit justification for absence
+  const handleSubmitJustification = async (values) => {
+    if (!selectedAbsence) {
+      message.error('Erreur: Absence non sélectionnée');
+      return;
+    }
+
+    setJustificationLoading(true);
+    try {
+      const formData = new FormData();
+      // Backend expects student_absence_id, not absence_id
+      formData.append('student_absence_id', selectedAbsence.id);
+      // Backend expects title (subject + date) and explanation (description)
+      const subjectName = selectedAbsence.schedule?.matiere?.name || 'Absence';
+      const dateStr = formatDate(selectedAbsence.schedule?.date_debut);
+      formData.append('title', `Justification - ${subjectName} (${dateStr})`);
+      formData.append('explanation', values.description);
+      // Justification type must be one of: medical, family_issue, administrative, personal, other
+      const typeMapping = {
+        medical: 'medical',
+        family: 'family_issue',
+        other: 'other'
+      };
+      formData.append('justification_type', typeMapping[values.justification_type] || 'personal');
+
+      // Add document if provided
+      if (values.documents && values.documents.length > 0) {
+        const file = values.documents[0].originFileObj;
+        if (file) {
+          formData.append('document', file);
+        }
+      }
+
+      const response = await fetch('http://localhost:3000/api/absences/justifications', {
+        method: 'POST',
+        body: formData,
+        credentials: 'include'
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Backend error:', errorData);
+        
+        // Handle specific error cases
+        if (response.status === 400) {
+          if (errorData.currentStatus === 'pending') {
+            throw new Error('⏳ Votre justification précédente est toujours en attente de révision. Veuillez attendre.');
+          } else if (errorData.currentStatus === 'approved') {
+            throw new Error('✅ Cette absence a déjà été justifiée et approuvée. Vous ne pouvez pas soumettre une nouvelle justification.');
+          } else if (errorData.message) {
+            throw new Error(errorData.message);
+          }
+        }
+        
+        throw new Error(errorData.error || `Erreur ${response.status}: Échec de la soumission`);
+      }
+
+      const data = await response.json();
+      message.success('Justification soumise avec succès!');
+      handleCloseJustificationModal();
+      fetchStudentAbsences(); // Refresh data
+    } catch (error) {
+      console.error('Erreur détaillée:', error);
+      message.error(error.message || 'Impossible de soumettre la justification. Veuillez réessayer.');
+    } finally {
+      setJustificationLoading(false);
+    }
+  };
+
   // Format date
   const formatDate = (dateString) => {
     if (!dateString) return '-';
@@ -236,6 +329,36 @@ const StudentAbsencesTab = ({ studentId }) => {
           {text ? text.substring(0, 30) + (text.length > 30 ? '...' : '') : '-'}
         </Tooltip>
       )
+    },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 180,
+      render: (_, record) => {
+        // Determine button state
+        const isPresent = record.absence_type === 'present';
+        const isAlreadyApproved = record.statut === 'approved';
+        const canJustify = !isPresent && !isAlreadyApproved;
+        
+        return (
+          <Space size="small">
+            <Tooltip title={
+              isPresent ? 'Vous êtes présent, pas besoin de justification' :
+              isAlreadyApproved ? 'Cette absence est déjà justifiée et approuvée' :
+              'Soumettre une justification pour cette absence'
+            }>
+              <Button
+                type={canJustify ? "primary" : "default"}
+                size="small"
+                onClick={() => handleOpenJustificationModal(record)}
+                disabled={!canJustify}
+              >
+                {isAlreadyApproved ? '✓ Justifiée' : 'Justifier'}
+              </Button>
+            </Tooltip>
+          </Space>
+        );
+      }
     }
   ];
 
@@ -275,7 +398,7 @@ const StudentAbsencesTab = ({ studentId }) => {
           <Progress 
             type="circle" 
             percent={parseFloat(text)} 
-            width={40}
+            size={40}
             strokeColor={parseFloat(text) >= 25 ? '#ff4d4f' : '#52c41a'}
           />
           <span>{text}%</span>
@@ -465,6 +588,104 @@ const StudentAbsencesTab = ({ studentId }) => {
             </Space>
           </Space>
         </Card>
+
+        {/* Justification Modal */}
+        <Modal
+          title={`Justifier votre absence - ${selectedAbsence?.schedule?.matiere?.name || 'Matière'}`}
+          open={justificationModalVisible}
+          onCancel={handleCloseJustificationModal}
+          footer={null}
+          width={700}
+        >
+          {selectedAbsence && (
+            <div style={{ marginBottom: '20px' }}>
+              <Row gutter={16} style={{ marginBottom: '20px' }}>
+                <Col xs={24} sm={12}>
+                  <div>
+                    <Text strong>Matière:</Text>
+                    <br />
+                    <Text>{selectedAbsence.schedule?.matiere?.name || 'Non spécifiée'}</Text>
+                  </div>
+                </Col>
+                <Col xs={24} sm={12}>
+                  <div>
+                    <Text strong>Date:</Text>
+                    <br />
+                    <Text>{formatDate(selectedAbsence.schedule?.date_debut)}</Text>
+                  </div>
+                </Col>
+              </Row>
+
+              <Form
+                form={justificationForm}
+                layout="vertical"
+                onFinish={handleSubmitJustification}
+              >
+                <Form.Item
+                  label="Type de justification"
+                  name="justification_type"
+                  initialValue="medical"
+                  rules={[{ required: true, message: 'Veuillez sélectionner un type' }]}
+                >
+                  <Select placeholder="Sélectionnez un type">
+                    <Select.Option value="medical">Justification médicale</Select.Option>
+                    <Select.Option value="family">Raison familiale</Select.Option>
+                    <Select.Option value="other">Autre raison</Select.Option>
+                  </Select>
+                </Form.Item>
+
+                <Form.Item
+                  label="Description / Motif"
+                  name="description"
+                  rules={[
+                    { required: true, message: 'Veuillez décrire le motif de votre absence' },
+                    { min: 10, message: 'La description doit contenir au moins 10 caractères' },
+                    { max: 500, message: 'La description ne doit pas dépasser 500 caractères' }
+                  ]}
+                >
+                  <Input.TextArea 
+                    rows={4}
+                    placeholder="Décrivez le motif de votre absence..."
+                    showCount
+                    maxLength={500}
+                  />
+                </Form.Item>
+
+                <Form.Item
+                  label="Document justificatif (optionnel)"
+                  name="documents"
+                  valuePropName="fileList"
+                  getValueFromEvent={(e) => e?.fileList}
+                >
+                  <Upload
+                    maxCount={1}
+                    beforeUpload={() => false}
+                    accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                  >
+                    <Button icon={<UploadOutlined />}>
+                      Télécharger un document
+                    </Button>
+                  </Upload>
+                </Form.Item>
+
+                <Form.Item>
+                  <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+                    <Button onClick={handleCloseJustificationModal}>
+                      Annuler
+                    </Button>
+                    <Button 
+                      type="primary" 
+                      htmlType="submit"
+                      loading={justificationLoading}
+                    >
+                      Soumettre la justification
+                    </Button>
+                  </Space>
+                </Form.Item>
+              </Form>
+            </div>
+          )}
+        </Modal>
       </div>
     </div>
   );

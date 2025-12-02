@@ -25,8 +25,7 @@ const matiere = sequelize.define('matiere', {
         allowNull: false,
         unique: true,
         validate: {
-            notEmpty: true,
-            isUppercase: true
+            notEmpty: true
         }
     },
     credits: {
@@ -35,7 +34,7 @@ const matiere = sequelize.define('matiere', {
         defaultValue: 3,
         validate: {
             min: 1,
-            max: 10
+            max: 60
         }
     },
     niveauId: {

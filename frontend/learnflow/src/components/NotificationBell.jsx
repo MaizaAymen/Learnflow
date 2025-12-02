@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useNotifications } from '../hooks/useNotifications';
 import './NotificationBell.css';
 
@@ -7,6 +8,7 @@ import './NotificationBell.css';
  * Displays unread count and opens notification panel
  */
 export const NotificationBell = () => {
+  const navigate = useNavigate();
   const { unreadCount, notifications, markAsRead, deleteNotification, markAllAsRead } = useNotifications();
   const [isOpen, setIsOpen] = useState(false);
 
@@ -111,9 +113,13 @@ export const NotificationBell = () => {
           {/* Footer */}
           {notifications.length > 0 && (
             <div className="notification-footer">
-              <a href="/notifications" className="view-all-link">
+              <button 
+                className="view-all-link"
+                onClick={() => navigate('/notifications')}
+                style={{ border: 'none', background: 'none', cursor: 'pointer', padding: 0 }}
+              >
                 View all notifications →
-              </a>
+              </button>
             </div>
           )}
         </div>

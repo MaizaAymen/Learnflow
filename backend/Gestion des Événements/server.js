@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const http = require('http');
+const path = require('path');
 require('dotenv').config();
 
 const app = express();
@@ -12,6 +13,9 @@ app.use(cors({
   methods: ['GET','POST','PUT','DELETE','PATCH'],
   credentials: true
 }));
+
+// Serve static files for uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // DB
 const sequelize = require('../auth-service/config');
@@ -32,7 +36,7 @@ async function initializeServer(){
     // Temporarily disable FK checks while syncing
     await sequelize.query('SET session_replication_role = replica;');
 
-    await sequelize.sync({ alter: false, force: false });
+    await sequelize.sync({ alter: true, force: false });
     console.log('✅ Events models synced');
 
     await sequelize.query('SET session_replication_role = DEFAULT;');

@@ -40,8 +40,9 @@ class NotificationService extends EventEmitter {
         where: { user_id: notificationData.recipient_id }
       });
 
-      // If preferences disabled, skip
-      if (preferences && !preferences[notificationData.type]) {
+      // If preferences exist AND notification type is disabled (false), skip
+      // Otherwise, allow notification (either no preferences exist, or type is enabled)
+      if (preferences && preferences[notificationData.type] === false) {
         console.log(`⏭️  Notification skipped: User has disabled ${notificationData.type}`);
         return null;
       }

@@ -11,7 +11,8 @@ const User =sequelize.define('User',{
   email: { type: DataTypes.STRING, allowNull: false, unique: true },
   login: { type: DataTypes.STRING, allowNull: true, unique: true },
   mdp_hash: { type: DataTypes.TEXT, allowNull: false },
-  role: { type: DataTypes.ENUM('etudiant','enseignant','directeur','admin'), allowNull: false },
+  role: { type: DataTypes.ENUM('etudiant','enseignant','directeur','admin','chef_de_department'), allowNull: false },
+  is_department_head: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }, // Flag to mark department heads
   image: { type: DataTypes.STRING, allowNull: true }, // url ou chemin
   phone: { type: DataTypes.STRING, allowNull: true },
   bio: { type: DataTypes.TEXT, allowNull: true },
@@ -44,6 +45,10 @@ const User =sequelize.define('User',{
   interets: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true }, // pour les étudiants // hedi zidtha fi 7alit inha letudiant kan 3indah interets mo3ayana jima club 
   competences: { type: DataTypes.ARRAY(DataTypes.STRING), allowNull: true }, // pour les étudiants // hedi zidtha fi 7alit inha letudiant kan 3indah competences mo3ayana kima programmation wou 3indha relation m3a champ interets
   //
+  
+  // Profile completion tracking
+  profile_completed: { type: DataTypes.BOOLEAN, allowNull: false, defaultValue: false }, // Whether user has completed their profile with photo
+  profile_completed_at: { type: DataTypes.DATE, allowNull: true }, // Timestamp when profile was completed
 
 
 }, {

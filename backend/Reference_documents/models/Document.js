@@ -4,7 +4,7 @@ module.exports = (sequelize) => {
   const Document = sequelize.define('Document', {
     id: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
+      defaultValue: sequelize.literal('gen_random_uuid()'),
       primaryKey: true,
     },
     title: {
@@ -36,7 +36,7 @@ module.exports = (sequelize) => {
       allowNull: true,
     },
     uploadedBy: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     uploadedAt: {

@@ -1,0 +1,235 @@
+/* Teacher Dashboard Styles */
+
+.teacher-dashboard {
+  background: #f5f5f5;
+  min-height: 100vh;
+  padding: 24px;
+}
+
+/* Class Cards */
+.class-card {
+  border: 1px solid #e8e8e8;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.class-card:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border-color: #1890ff;
+}
+
+/* Statistics Cards */
+.stats-card {
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  padding: 24px;
+  text-align: center;
+}
+
+.stats-card h3 {
+  margin: 0 0 16px 0;
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.stats-card .value {
+  font-size: 32px;
+  font-weight: bold;
+  margin: 0;
+}
+
+/* Collapse Styles */
+.students-collapse {
+  border: none;
+}
+
+.students-collapse .ant-collapse-header {
+  padding: 16px !important;
+  background: #fafafa;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+.students-collapse .ant-collapse-content {
+  background: #fff;
+  border-bottom: 1px solid #e8e8e8;
+}
+
+/* Alert Tags */
+.absence-alert-tag {
+  padding: 6px 12px;
+  border-radius: 4px;
+  margin: 4px;
+  font-size: 13px;
+}
+
+.absence-critical {
+  background: #fff2f0;
+  color: #ff4d4f;
+  border: 1px solid #ffccc7;
+}
+
+.absence-warning {
+  background: #fffbe6;
+  color: #faad14;
+  border: 1px solid #ffe58f;
+}
+
+/* Schedule List */
+.schedule-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.schedule-item {
+  padding: 16px;
+  border-bottom: 1px solid #e8e8e8;
+  transition: all 0.3s ease;
+}
+
+.schedule-item:hover {
+  background: #fafafa;
+}
+
+.schedule-item:last-child {
+  border-bottom: none;
+}
+
+/* Quick Actions */
+.quick-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 16px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  border-radius: 8px;
+}
+
+.quick-action-btn {
+  flex: 1;
+  min-width: 120px;
+  height: 48px;
+  border-radius: 4px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.quick-action-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+/* Responsive Grid */
+@media (max-width: 992px) {
+  .teacher-dashboard {
+    padding: 16px;
+  }
+
+  .quick-actions {
+    flex-direction: column;
+  }
+
+  .quick-action-btn {
+    width: 100%;
+  }
+}
+
+/* Empty State */
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #999;
+}
+
+.empty-state-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.3;
+}
+
+/* Table Styles */
+.teacher-dashboard .ant-table {
+  font-size: 13px;
+}
+
+.teacher-dashboard .ant-table-thead > tr > th {
+  background: #fafafa;
+  font-weight: 600;
+}
+
+/* Badge/Tag Styles */
+.attendance-tag {
+  font-weight: 500;
+}
+
+.attendance-tag.high {
+  color: #52c41a;
+}
+
+.attendance-tag.medium {
+  color: #faad14;
+}
+
+.attendance-tag.low {
+  color: #ff4d4f;
+}
+
+/* Card Styles */
+.teacher-dashboard .ant-card {
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  margin-bottom: 24px;
+}
+
+.teacher-dashboard .ant-card-head {
+  border-bottom: 2px solid #f0f0f0;
+  padding: 16px 24px;
+}
+
+.teacher-dashboard .ant-card-body {
+  padding: 24px;
+}
+
+/* Header Section */
+.dashboard-header {
+  margin-bottom: 32px;
+  padding-bottom: 24px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.dashboard-header h1 {
+  font-size: 28px;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: #262626;
+}
+
+.dashboard-header p {
+  font-size: 14px;
+  color: #8c8c8c;
+  margin: 0;
+}
+
+/* Loading State */
+.dashboard-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 400px;
+  background: #fff;
+  border-radius: 8px;
+}
+
+/* Statistic Customization */
+.teacher-dashboard .ant-statistic-title {
+  font-size: 12px;
+  color: #8c8c8c;
+  margin-bottom: 8px;
+}
+
+.teacher-dashboard .ant-statistic-content {
+  font-size: 24px;
+  font-weight: 600;
+}

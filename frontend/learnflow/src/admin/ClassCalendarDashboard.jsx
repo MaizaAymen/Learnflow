@@ -154,12 +154,12 @@ const ClassCalendarDashboard = () => {
             width: '48px',
             height: '48px',
             borderRadius: '50%',
-            background: 'linear-gradient(135deg, #ffffffff 0%, #313131ff 100%)',
+            background: 'linear-gradient(135deg, #ffffffff 0%, #ffffffff 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             fontSize: '20px',
-            color: 'white',
+            color: 'black',
             fontWeight: 'bold',
             boxShadow: '0 2px 8px rgba(102, 126, 234, 0.3)'
           }}>
@@ -295,7 +295,7 @@ const ClassCalendarDashboard = () => {
       <div style={{ marginBottom: '32px' }}>
         <Space direction="vertical" size="small" style={{ width: '100%' }}>
           <Title level={2} style={{ margin: 0, color: '#1f1f1f' }}>
-            📅 Calendriers par Classe
+           Calendriers par Classe
           </Title>
           <Paragraph style={{ color: '#666', fontSize: '16px', margin: 0 }}>
             Gérez et consultez les calendriers de chaque classe. 

@@ -4,11 +4,11 @@ module.exports = (sequelize) => {
   const Grade = sequelize.define('Grade', {
     id: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
+      defaultValue: sequelize.literal('gen_random_uuid()'),
       primaryKey: true,
     },
     studentId: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     subjectId: {
@@ -57,7 +57,7 @@ module.exports = (sequelize) => {
       allowNull: true,
     },
     createdBy: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     createdAt: {

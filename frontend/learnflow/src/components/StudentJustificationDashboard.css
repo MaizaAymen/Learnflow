@@ -1,0 +1,184 @@
+/* Student Justification Dashboard Styles */
+
+.student-justification-dashboard {
+  padding: 20px;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  min-height: 100vh;
+}
+
+.justification-card {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  overflow: hidden;
+}
+
+.dashboard-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.dashboard-header h1 {
+  margin: 0;
+  color: #1f1f1f;
+  font-size: 28px;
+  font-weight: 600;
+}
+
+.filter-section {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+/* Modal Styles */
+.ant-modal-content {
+  border-radius: 8px;
+}
+
+.ant-form-item {
+  margin-bottom: 24px;
+}
+
+.ant-form-item label {
+  font-weight: 500;
+}
+
+/* Table Styles */
+.ant-table-wrapper {
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.ant-table-thead > tr > th {
+  background: #f0f2f5;
+  font-weight: 600;
+  border-bottom: 2px solid #e8e8e8;
+}
+
+.ant-table-tbody > tr:hover > td {
+  background: #f5f5f5;
+}
+
+/* Status Tags */
+.ant-tag {
+  border-radius: 4px;
+  padding: 4px 12px;
+  font-weight: 500;
+}
+
+/* File Upload */
+.ant-upload {
+  width: 100%;
+}
+
+.ant-upload-dragger {
+  border-radius: 8px;
+  border: 2px dashed #d9d9d9;
+  transition: all 0.3s ease;
+}
+
+.ant-upload-dragger:hover {
+  border-color: #1890ff;
+  background: rgba(24, 144, 255, 0.04);
+}
+
+/* Alert Styles */
+.ant-alert {
+  border-radius: 8px;
+  margin-bottom: 20px;
+}
+
+/* Button Styles */
+.ant-btn-primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border: none;
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.ant-btn-primary:hover {
+  opacity: 0.9;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.ant-btn-primary:disabled {
+  background: #bfbfbf;
+  opacity: 0.6;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .student-justification-dashboard {
+    padding: 10px;
+  }
+
+  .dashboard-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .dashboard-header h1 {
+    font-size: 24px;
+  }
+
+  .filter-section {
+    width: 100%;
+  }
+
+  .filter-section select {
+    width: 100%;
+  }
+}
+
+/* Print Styles */
+@media print {
+  .dashboard-header button,
+  .ant-table-cell:last-child {
+    display: none;
+  }
+
+  .justification-card {
+    box-shadow: none;
+    border: 1px solid #d9d9d9;
+  }
+}
+
+/* Loading State */
+.ant-spin {
+  color: #667eea;
+}
+
+/* Empty State */
+.ant-empty-description {
+  color: #999;
+  font-size: 16px;
+}
+
+/* Icon Styles */
+.anticon {
+  margin-right: 8px;
+}
+
+.anticon-clock-circle {
+  color: #faad14;
+}
+
+.anticon-check-circle {
+  color: #52c41a;
+}
+
+.anticon-close-circle {
+  color: #f5222d;
+}
+
+.anticon-exclamation-circle {
+  color: #faad14;
+}

@@ -4,11 +4,11 @@ module.exports = (sequelize) => {
   const StudentRequest = sequelize.define('StudentRequest', {
     id: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
+      defaultValue: sequelize.literal('gen_random_uuid()'),
       primaryKey: true,
     },
     studentId: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: false,
     },
     type: {
@@ -36,7 +36,7 @@ module.exports = (sequelize) => {
       defaultValue: 'pending',
     },
     assignedTo: {
-      type: DataTypes.UUID,
+      type: DataTypes.INTEGER,
       allowNull: true,
     },
     department: {

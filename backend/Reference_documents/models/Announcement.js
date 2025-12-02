@@ -4,7 +4,7 @@ module.exports = (sequelize) => {
   const Announcement = sequelize.define('Announcement', {
     id: {
       type: DataTypes.UUID,
-      defaultValue: DataTypes.UUIDV4,
+      defaultValue: sequelize.literal('gen_random_uuid()'),
       primaryKey: true,
     },
     title: {

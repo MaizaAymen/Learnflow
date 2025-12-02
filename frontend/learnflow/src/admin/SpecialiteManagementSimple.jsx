@@ -38,11 +38,20 @@ const SpecialiteManagementSimple = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingSpecialite, setEditingSpecialite] = useState(null);
   const [form] = Form.useForm();
+  const [userRole, setUserRole] = useState(null);
+  const [userDepartement, setUserDepartement] = useState(null);
   const navigate = useNavigate();
   
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  // Get user role and department from localStorage
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setUserRole(user.role);
+    setUserDepartement(user.departement);
+  }, []);
 
   // Fetch all specialites
   const fetchSpecialites = async () => {
@@ -50,8 +59,14 @@ const SpecialiteManagementSimple = () => {
     try {
       const response = await fetch("http://localhost:3000/api/reference/specialites");
       if (response.ok) {
-        const data = await response.json();
+        let data = await response.json();
         console.log("Fetched specialites:", data);
+        
+        // Filter by department if user is chef_de_department
+        if (userRole === 'chef_de_department' && userDepartement) {
+          data = data.filter(s => s.departementId === userDepartement);
+        }
+        
         const formatted = data.map(s => ({
           ...s,
           departement_nom: s.departement?.name || "—"
@@ -82,13 +97,21 @@ const SpecialiteManagementSimple = () => {
   };
 
   useEffect(() => {
-    fetchSpecialites();
-    fetchDepartements();
-  }, []);
+    if (userRole) {
+      fetchSpecialites();
+      fetchDepartements();
+    }
+  }, [userRole, userDepartement]);
 
   // Handle create/update
   const handleSubmit = async (values) => {
     try {
+      // Chef de département can only manage their own department
+      if (userRole === 'chef_de_department' && values.departementId !== userDepartement) {
+        message.error("Vous ne pouvez gérer que les spécialités de votre département");
+        return;
+      }
+
       const url = editingSpecialite
         ? `http://localhost:3000/api/reference/specialites/${editingSpecialite.id}`
         : "http://localhost:3000/api/reference/specialites";
@@ -103,7 +126,7 @@ const SpecialiteManagementSimple = () => {
         body: JSON.stringify({
           name: values.name,
           description: values.description,
-          departementId: values.departementId,
+          departementId: userRole === 'chef_de_department' ? userDepartement : values.departementId,
         }),
       });
 
@@ -130,6 +153,15 @@ const SpecialiteManagementSimple = () => {
   // Handle delete
   const handleDelete = async (id) => {
     try {
+      // Chef de département can only delete specialties from their department
+      if (userRole === 'chef_de_department' && userDepartement) {
+        const specialite = specialites.find(s => s.id === id);
+        if (specialite && specialite.departementId !== userDepartement) {
+          message.error("Vous ne pouvez supprimer que les spécialités de votre département");
+          return;
+        }
+      }
+
       const response = await fetch(
         `http://localhost:3000/api/reference/specialites/${id}`,
         {
@@ -152,6 +184,13 @@ const SpecialiteManagementSimple = () => {
 
   // Handle edit
   const handleEdit = (specialite) => {
+    // Chef de département can only edit specialties from their department
+    if (userRole === 'chef_de_department' && userDepartement) {
+      if (specialite.departementId !== userDepartement) {
+        message.error("Vous ne pouvez éditer que les spécialités de votre département");
+        return;
+      }
+    }
     setEditingSpecialite(specialite);
     form.setFieldsValue({
       name: specialite.name,
@@ -385,21 +424,34 @@ const SpecialiteManagementSimple = () => {
             <Input placeholder="Entrez le nom de la spécialité" />
           </Form.Item>
 
-          <Form.Item
-            label="Département"
-            name="departementId"
-            rules={[
-              { required: true, message: "Please select a département!" },
-            ]}
-          >
-            <Select placeholder="Sélectionnez le département">
-              {departements.map(dept => (
-                <Option key={dept.id} value={dept.id}>
-                  {dept.name}
-                </Option>
-              ))}
-            </Select>
-          </Form.Item>
+          {/* Department field - only show and allow editing for admins */}
+          {userRole !== 'chef_de_department' && (
+            <Form.Item
+              label="Département"
+              name="departementId"
+              rules={[
+                { required: true, message: "Please select a département!" },
+              ]}
+            >
+              <Select placeholder="Sélectionnez le département">
+                {departements.map(dept => (
+                  <Option key={dept.id} value={dept.id}>
+                    {dept.name}
+                  </Option>
+                ))}
+              </Select>
+            </Form.Item>
+          )}
+
+          {/* For chef_de_department, set department value but don't show field */}
+          {userRole === 'chef_de_department' && (
+            <Form.Item
+              name="departementId"
+              hidden
+            >
+              <Input type="hidden" value={userDepartement} />
+            </Form.Item>
+          )}
 
           <Form.Item
             label="Description"

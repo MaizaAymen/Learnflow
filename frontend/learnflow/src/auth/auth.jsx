@@ -25,6 +25,7 @@ import {
   CheckCircleOutlined,
   ArrowLeftOutlined,
 } from "@ant-design/icons";
+import ProfileCompletionModal from '../components/ProfileCompletionModal';
 
 const { Option } = Select;
 
@@ -416,6 +417,10 @@ const Auth = () => {
   const [specialite, setSpecialite] = useState('');
   const [ville, setVille] = useState('');
   
+  // Profile Completion States
+  const [showProfileCompletion, setShowProfileCompletion] = useState(false);
+  const [loginUser, setLoginUser] = useState(null);
+  
   // Forgot Password States
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [currentStep, setCurrentStep] = useState(0); // 0: Email, 1: OTP, 2: New Password, 3: Success
@@ -461,8 +466,19 @@ const Auth = () => {
             if (data.user) {
               localStorage.setItem('user', JSON.stringify(data.user));
             }
-            alert("Login successful");
-            navigate("/");
+
+            // Check if profile is completed
+            const profileCompleted = data.profile_completed || (data.user && data.user.profile_completed);
+            
+            if (!profileCompleted) {
+              // Show profile completion modal
+              setLoginUser(data.user);
+              setShowProfileCompletion(true);
+            } else {
+              // Profile already complete, proceed to dashboard
+              alert("Login successful");
+              navigate("/");
+            }
           } else {
             alert(data.error || "Invalid credentials");
           }
@@ -471,6 +487,13 @@ const Auth = () => {
       console.error("Login error:", err);
       alert("Login failed");
     }
+  }
+
+  // Handle profile completion
+  const handleProfileCompletionComplete = () => {
+    setShowProfileCompletion(false);
+    alert("Login successful");
+    navigate("/");
   }
 
   // Register Handler
@@ -906,6 +929,17 @@ const Auth = () => {
 
   if (showForgotPassword) {
     return renderForgotPassword();
+  }
+
+  // Show profile completion modal when needed
+  if (showProfileCompletion && loginUser) {
+    return (
+      <ProfileCompletionModal
+        userId={loginUser.id}
+        userName={loginUser.prenom}
+        onComplete={handleProfileCompletionComplete}
+      />
+    );
   }
 
   return (

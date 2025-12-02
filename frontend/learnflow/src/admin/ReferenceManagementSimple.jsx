@@ -12,7 +12,8 @@ import {
   Layout,
   Menu,
   Breadcrumb,
-  Badge
+  Badge,
+  Tag
 } from "antd";
 import {
   BookOutlined,
@@ -93,9 +94,14 @@ const ReferenceManagementSimple = () => {
   const [loading, setLoading] = useState(true);
   const [collapsed, setCollapsed] = useState(false);
   const [selectedModule, setSelectedModule] = useState('dashboard');
+  const [userRole, setUserRole] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
+    // Get user role from localStorage
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setUserRole(user.role);
+
     // Simulate loading
     const timer = setTimeout(() => {
       setLoading(false);
@@ -361,6 +367,124 @@ const ReferenceManagementSimple = () => {
               </Card>
             </Col>
           ))}
+          
+          {/* Conditional: Teachers Module for Chef de Département */}
+          {userRole === 'chef_de_department' && (
+            <Col xs={24} sm={12} lg={8}>
+              <Card
+                className="data-card hover-lift"
+                style={{ height: '100%' }}
+                bodyStyle={{ padding: 'var(--space-6)', height: '100%' }}
+                actions={[
+                  <Button
+                    key="manage"
+                    type="primary"
+                    size="large"
+                    icon={<TeamOutlined />}
+                    onClick={() => navigate('/reference/users')}
+                    style={{ width: '80%' }}
+                  >
+                    Gérer
+                  </Button>,
+                  <Button
+                    key="assign"
+                    type="outline"
+                    size="large" 
+                    icon={<TeamOutlined />}
+                    onClick={() => {
+                      navigate('/reference/users');
+                      message.info(`Gestion des enseignants du département`);
+                    }}
+                    style={{ width: '80%', marginTop: 'var(--space-2)' }}
+                  >
+                    Assigner
+                  </Button>
+                ]}
+              >
+                <div style={{ 
+                  display: 'flex', 
+                  flexDirection: 'column', 
+                  height: '100%',
+                  minHeight: '200px'
+                }}>
+                  {/* Module Header */}
+                  <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    marginBottom: 'var(--space-4)' 
+                  }}>
+                    <div 
+                      style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: 'var(--radius-xl)',
+                        background: '#13c2c215',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        marginRight: 'var(--space-4)',
+                        fontSize: 'var(--font-size-xl)',
+                        color: '#13c2c2'
+                      }}
+                    >
+                      <TeamOutlined />
+                    </div>
+                    <div>
+                      <Title level={4} style={{ margin: 0, color: '#13c2c2' }}>
+                        7. Enseignants
+                      </Title>
+                      <Tag color="cyan">Chef de Département</Tag>
+                    </div>
+                  </div>
+
+                  {/* Description */}
+                  <Text 
+                    style={{ 
+                      color: 'var(--text-secondary)', 
+                      fontSize: 'var(--font-size-sm)',
+                      lineHeight: 'var(--line-height-relaxed)',
+                      marginBottom: 'var(--space-4)',
+                      flex: 1
+                    }}
+                  >
+                    Gérer les enseignants de votre département, assigner les matières, consulter les plannings et valider les capacités pédagogiques
+                  </Text>
+
+                  {/* Features */}
+                  <div>
+                    <Text 
+                      strong 
+                      style={{ 
+                        fontSize: 'var(--font-size-xs)', 
+                        color: 'var(--text-tertiary)',
+                        marginBottom: 'var(--space-2)',
+                        display: 'block'
+                      }}
+                    >
+                      FONCTIONNALITÉS CLÉS:
+                    </Text>
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 'var(--space-1)' }}>
+                      {['Lister', 'Assigner', 'Planning', 'Charge'].map((feature, index) => (
+                        <span
+                          key={index}
+                          style={{
+                            padding: '2px 6px',
+                            backgroundColor: '#13c2c210',
+                            color: '#13c2c2',
+                            fontSize: 'var(--font-size-xs)',
+                            borderRadius: 'var(--radius-sm)',
+                            border: '1px solid #13c2c230'
+                          }}
+                        >
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </Card>
+            </Col>
+          )}
         </Row>
 
         {/* Quick Access Section */}
@@ -400,6 +524,33 @@ const ReferenceManagementSimple = () => {
                 </Button>
               </Col>
             ))}
+            
+            {/* Quick Access for Teachers (Chef de Département) */}
+            {userRole === 'chef_de_department' && (
+              <Col xs={12} sm={8} md={6} lg={4}>
+                <Button
+                  size="large"
+                  block
+                  onClick={() => navigate('/reference/users')}
+                  className="hover-lift"
+                  style={{
+                    height: '64px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 'var(--space-1)',
+                    border: '2px solid #13c2c220',
+                    backgroundColor: '#13c2c205'
+                  }}
+                >
+                  <div style={{ fontSize: 'var(--font-size-lg)', color: '#13c2c2' }}>
+                    <TeamOutlined />
+                  </div>
+                  <Text style={{ fontSize: 'var(--font-size-xs)', color: '#13c2c2' }}>
+                    Enseignants
+                  </Text>
+                </Button>
+              </Col>
+            )}
           </Row>
         </Card>
             </div>

@@ -2,6 +2,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const router = express.Router();
 const { generateUUID } = require('../utils/uuidGenerator');
+const NotificationClient = require('../../Service de Notifications/services/NotificationClient');
 
 const secretKey = 'alex'; // Same as auth-service
 
@@ -462,6 +463,108 @@ router.post('/mark-student-absences', async (req, res) => {
     );
 
     console.log('✅ Created', createdAbsences.length, 'attendance records (only for non-present students)');
+
+    // 🔔 Send notifications to students about their absence
+    try {
+      // Collect all students by absence type
+      const absentStudentIds = [];
+      const excusedStudentIds = [];
+      const lateStudentIds = [];
+
+      createdAbsences.forEach(record => {
+        if (record.absence_type === 'absent') {
+          absentStudentIds.push(record.student_id);
+        } else if (record.absence_type === 'excused') {
+          excusedStudentIds.push(record.student_id);
+        } else if (record.absence_type === 'late' || record.absence_type === 'left_early') {
+          lateStudentIds.push(record.student_id);
+        }
+      });
+
+      // Send notification for absent students
+      if (absentStudentIds.length > 0) {
+        console.log(`📧 Notifying ${absentStudentIds.length} students about being marked absent`);
+        
+        // Send to each student individually to ensure delivery
+        for (const studentId of absentStudentIds) {
+          try {
+            await NotificationClient.send({
+              recipient_id: studentId,
+              type: 'absence_created',
+              title: '⚠️ You Have Been Marked Absent',
+              content: `You have been marked absent for a scheduled class. If this is an error, please submit an absence justification.`,
+              metadata: {
+                schedule_id,
+                absence_type: 'absent',
+                marked_by: enseignantId,
+                timestamp: new Date().toISOString()
+              },
+              priority: 'high',
+              action_url: `/absences`
+            });
+          } catch (err) {
+            console.warn(`⚠️ Failed to notify student ${studentId}:`, err.message);
+          }
+        }
+      }
+
+      // Send notification for excused students
+      if (excusedStudentIds.length > 0) {
+        console.log(`📧 Notifying ${excusedStudentIds.length} students about being marked as excused`);
+        
+        for (const studentId of excusedStudentIds) {
+          try {
+            await NotificationClient.send({
+              recipient_id: studentId,
+              type: 'absence_created',
+              title: '✋ Marked as Excused',
+              content: `You have been marked as excused for a scheduled class.`,
+              metadata: {
+                schedule_id,
+                absence_type: 'excused',
+                marked_by: enseignantId,
+                timestamp: new Date().toISOString()
+              },
+              priority: 'medium',
+              action_url: `/absences`
+            });
+          } catch (err) {
+            console.warn(`⚠️ Failed to notify student ${studentId}:`, err.message);
+          }
+        }
+      }
+
+      // Send notification for late/left_early students
+      if (lateStudentIds.length > 0) {
+        console.log(`📧 Notifying ${lateStudentIds.length} students about other absence status`);
+        
+        for (const studentId of lateStudentIds) {
+          try {
+            await NotificationClient.send({
+              recipient_id: studentId,
+              type: 'absence_created',
+              title: '⏰ Attendance Status Updated',
+              content: `Your attendance status has been updated for a scheduled class.`,
+              metadata: {
+                schedule_id,
+                absence_type: 'late',
+                marked_by: enseignantId,
+                timestamp: new Date().toISOString()
+              },
+              priority: 'medium',
+              action_url: `/absences`
+            });
+          } catch (err) {
+            console.warn(`⚠️ Failed to notify student ${studentId}:`, err.message);
+          }
+        }
+      }
+
+    } catch (notifError) {
+      console.warn('⚠️ Error in notification system:', notifError.message);
+      // Continue execution even if notifications fail
+    }
+
     res.status(201).json({
       message: 'Student absences marked successfully',
       count: createdAbsences.length,

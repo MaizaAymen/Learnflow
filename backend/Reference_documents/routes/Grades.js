@@ -1,5 +1,6 @@
 const express = require('express');
 const { uuidv4 } = require('../utils/uuidGenerator');
+const NotificationClient = require('../../Service de Notifications/services/NotificationClient');
 
 module.exports = (db, authenticate, logAudit) => {
   const router = express.Router();
@@ -151,6 +152,28 @@ module.exports = (db, authenticate, logAudit) => {
         newValues: grade.toJSON(),
       });
 
+      // 🔔 Send notification to student about grade update
+      try {
+        await NotificationClient.send({
+          recipient_id: grade.studentId,
+          type: 'grade_updated',
+          title: '📊 Grade Updated',
+          content: `Your grade has been updated: ${marks}/${grade.maxMarks} (${((marks / grade.maxMarks) * 100).toFixed(2)}%)${feedback ? ` - Feedback: ${feedback}` : ''}`,
+          metadata: {
+            grade_id: grade.id,
+            old_marks: marks - (req.body.marks - grade.marks),
+            new_marks: marks,
+            subject_id: grade.subjectId,
+            change_reason: changeReason,
+            timestamp: new Date().toISOString()
+          },
+          priority: 'high',
+          action_url: `/grades/${grade.id}`
+        });
+      } catch (error) {
+        console.warn('⚠️ Failed to send grade update notification:', error.message);
+      }
+
       res.json({ message: 'Grade updated successfully', grade });
     } catch (error) {
       console.error('Error updating grade:', error);
@@ -181,6 +204,28 @@ module.exports = (db, authenticate, logAudit) => {
         entityId: grade.id,
         description: `Published grade to student ${grade.studentId}`,
       });
+
+      // 🔔 Send notification to student about grade publication
+      try {
+        await NotificationClient.send({
+          recipient_id: grade.studentId,
+          type: 'grade_published',
+          title: '📢 Grade Published',
+          content: `Your grade has been published: ${grade.marks}/${grade.maxMarks} (${grade.percentage}%)`,
+          metadata: {
+            grade_id: grade.id,
+            marks: grade.marks,
+            percentage: grade.percentage,
+            subject_id: grade.subjectId,
+            published_by: req.user.id,
+            timestamp: new Date().toISOString()
+          },
+          priority: 'high',
+          action_url: `/grades/${grade.id}`
+        });
+      } catch (error) {
+        console.warn('⚠️ Failed to send grade publication notification:', error.message);
+      }
 
       res.json({ message: 'Grade published successfully', grade });
     } catch (error) {

@@ -34,7 +34,9 @@ const { Option } = Select;
 
 const DepartementManagement = () => {
   const [departements, setDepartements] = useState([]);
+  const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [teachersLoading, setTeachersLoading] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
   const [editingDepartement, setEditingDepartement] = useState(null);
   const [form] = Form.useForm();
@@ -43,6 +45,28 @@ const DepartementManagement = () => {
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  // Fetch all teachers
+  const fetchTeachers = async () => {
+    setTeachersLoading(true);
+    try {
+      const response = await fetch("http://localhost:3000/api/reference/teachers");
+      const data = await response.json();
+      if (response.ok) {
+        // Handle both array and object responses
+        const teachersArray = Array.isArray(data) ? data : (data.data || data.teachers || []);
+        setTeachers(teachersArray);
+      } else {
+        console.warn("Failed to fetch teachers:", data.message);
+        setTeachers([]); // Ensure teachers is always an array
+      }
+    } catch (error) {
+      console.error("Error fetching teachers:", error);
+      setTeachers([]); // Ensure teachers is always an array
+    } finally {
+      setTeachersLoading(false);
+    }
+  };
 
   // Fetch all departements
   const fetchDepartements = async () => {
@@ -65,6 +89,7 @@ const DepartementManagement = () => {
 
   useEffect(() => {
     fetchDepartements();
+    fetchTeachers();
   }, []);
 
   // Handle create/update
@@ -87,6 +112,39 @@ const DepartementManagement = () => {
       const data = await response.json();
       
       if (response.ok) {
+        // If a teacher was selected, update their role to "chef de department"
+        if (values.chef_departement_id) {
+          try {
+            console.log(`[Department] Updating teacher ${values.chef_departement_id} role to chef_de_department`);
+            
+            const roleUpdateResponse = await fetch(
+              `http://localhost:3000/api/reference/users/${values.chef_departement_id}/role`,
+              {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ 
+                  role: "chef_de_department"
+                }),
+              }
+            );
+            
+            const roleUpdateData = await roleUpdateResponse.json();
+            
+            if (roleUpdateResponse.ok) {
+              console.log(`[Department] Successfully updated teacher role to chef_de_department`, roleUpdateData);
+              message.success("Rôle du chef de département mis à jour!");
+            } else {
+              console.warn(`[Department] Failed to update teacher role:`, roleUpdateData);
+              message.warning("Département créé mais rôle du chef non mis à jour");
+            }
+          } catch (error) {
+            console.error("Error updating teacher role:", error);
+            message.warning("Département créé mais erreur lors de la mise à jour du rôle");
+          }
+        }
+
         message.success(
           editingDepartement 
             ? "Département updated successfully!"
@@ -96,6 +154,7 @@ const DepartementManagement = () => {
         setEditingDepartement(null);
         form.resetFields();
         fetchDepartements();
+        fetchTeachers(); // Refresh teachers list to reflect role changes
       } else {
         console.error("Error response:", data);
         message.error(data.error || data.message || "Operation failed");
@@ -440,16 +499,36 @@ const items1 = [
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
-                label="Chef de Département ID"
+                label="Chef de Département"
                 name="chef_departement_id"
                 rules={[
-                  { required: false, message: "Please enter chef departement ID!" },
+                  { required: false, message: "Please select a teacher!" },
                 ]}
               >
-                <InputNumber
-                  style={{ width: "100%" }}
-                  placeholder="ID du chef de département (optionnel)"
-                />
+                <Select
+                  placeholder="Sélectionnez un enseignant"
+                  allowClear
+                  loading={teachersLoading}
+                  optionLabelProp="label"
+                  filterOption={(input, option) =>
+                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                  }
+                >
+                  {teachers.map((teacher) => (
+                    <Option 
+                      key={teacher.id} 
+                      value={teacher.id}
+                      label={`${teacher.nom} ${teacher.prenom}`}
+                    >
+                      <div>
+                        <strong>{teacher.nom} {teacher.prenom}</strong>
+                        <div style={{ fontSize: '12px', color: '#666' }}>
+                          {teacher.email}
+                        </div>
+                      </div>
+                    </Option>
+                  ))}
+                </Select>
               </Form.Item>
             </Col>
             <Col span={12}>

@@ -61,6 +61,7 @@ const WeeklyTimetableViewContent = () => {
   const [selectedClass, setSelectedClass] = useState(null);
   const [error, setError] = useState(null);
   const [draggedSchedule, setDraggedSchedule] = useState(null);
+  const [filteredEnseignants, setFilteredEnseignants] = useState([]);
 
   const API_BASE = 'http://localhost:3000/api';
   const AUTH_API = 'http://localhost:4000/api';
@@ -584,6 +585,7 @@ const WeeklyTimetableViewContent = () => {
 
   const fetchSchedules = useCallback(async () => {
     try {
+      setLoading(true);
       const url = selectedClass 
         ? `${API_BASE}/calendar/schedules?classe_id=${selectedClass}`
         : `${API_BASE}/calendar/schedules`;
@@ -591,9 +593,18 @@ const WeeklyTimetableViewContent = () => {
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch schedules');
       const data = await response.json();
-      setSchedules(Array.isArray(data) ? data : []);
+      
+      // Ensure we have an array and filter out any null/undefined entries
+      const validSchedules = (Array.isArray(data) ? data : []).filter(s => s && s.id);
+      
+      setSchedules(validSchedules);
+      setError(null);
     } catch (error) {
+      console.error('Error fetching schedules:', error);
       setSchedules([]);
+      setError('Erreur lors du chargement des séances');
+    } finally {
+      setLoading(false);
     }
   }, [API_BASE, selectedClass]);
 
@@ -601,23 +612,34 @@ const WeeklyTimetableViewContent = () => {
     setLoading(true);
     setError(null);
     try {
+      // Fetch reference data in parallel
       await Promise.all([
         fetchClasses(),
         fetchMatieres(),
         fetchSalles(),
         fetchEnseignants()
       ]);
+      // Then fetch schedules after all reference data is ready
       await fetchSchedules();
     } catch (error) {
+      console.error('Error fetching data:', error);
       setError('Erreur lors du chargement des données');
     } finally {
       setLoading(false);
     }
   }, [fetchClasses, fetchMatieres, fetchSalles, fetchEnseignants, fetchSchedules]);
 
+  // Initial load on mount
   useEffect(() => {
     fetchAllData();
-  }, [fetchAllData]);
+  }, []);
+
+  // Refetch schedules when selectedClass changes
+  useEffect(() => {
+    if (classes.length > 0) {
+      fetchSchedules();
+    }
+  }, [selectedClass, fetchSchedules, classes.length]);
 
   const goToPreviousWeek = () => {
     setCurrentWeek(prev => prev.subtract(1, 'week'));
@@ -629,6 +651,43 @@ const WeeklyTimetableViewContent = () => {
 
   const goToCurrentWeek = () => {
     setCurrentWeek(dayjs());
+  };
+
+  // Handle matière selection - filter teachers by selected matière
+  const handleMatiereChange = async (matiereId) => {
+    form.setFieldValue('matiere_id', matiereId);
+    
+    if (!matiereId) {
+      setFilteredEnseignants(enseignants);
+      return;
+    }
+
+    try {
+      // Fetch teachers who teach this matière
+      const response = await fetch(`${API_BASE}/reference/matieres/${matiereId}`);
+      if (!response.ok) throw new Error('Failed to fetch matière details');
+      
+      const matiereData = await response.json();
+      console.log('Matière data:', matiereData);
+      
+      // If the matière has teachers assigned via MatiereEnseignant
+      // We need to get the teachers list from the API
+      const teachersResponse = await fetch(`${API_BASE}/reference/matieres/${matiereId}/enseignants`);
+      
+      if (teachersResponse.ok) {
+        const teachersData = await teachersResponse.json();
+        console.log('Teachers for matière:', teachersData);
+        // Filter enseignants list to only show those who teach this matière
+        const teacherIds = Array.isArray(teachersData) ? teachersData.map(t => t.id) : [];
+        const filtered = enseignants.filter(ens => teacherIds.includes(ens.id));
+        setFilteredEnseignants(filtered.length > 0 ? filtered : enseignants);
+      } else {
+        setFilteredEnseignants(enseignants);
+      }
+    } catch (error) {
+      console.error('Error filtering teachers:', error);
+      setFilteredEnseignants(enseignants);
+    }
   };
 
   const getWeekDates = useCallback(() => {
@@ -652,6 +711,9 @@ const WeeklyTimetableViewContent = () => {
         
         if (!startDate?.isValid()) return false;
         
+        // Check if schedule is cancelled
+        if (schedule.statut === 'annule') return false;
+        
         // Vérifier si la date est dans l'intervalle
         const isInRange = dayDate.isSameOrAfter(startDate, 'day') && 
                          (!endDate || !endDate.isValid() || dayDate.isSameOrBefore(endDate, 'day'));
@@ -659,12 +721,17 @@ const WeeklyTimetableViewContent = () => {
         // Vérifier le jour de la semaine
         const dayMatches = schedule.day_of_week === day;
         
-        if (!isInRange || !dayMatches || schedule.statut === 'annule') {
+        if (!isInRange || !dayMatches) {
           return false;
         }
         
-        // For time matching: check if schedule start time falls within this slot's time range
-        const scheduleStartTime = schedule.start_time?.substring(0, 5);
+        // For time matching: normalize both times to HH:MM format
+        const scheduleStartTime = schedule.start_time 
+          ? schedule.start_time.substring(0, 5) 
+          : null;
+        
+        if (!scheduleStartTime) return false;
+        
         const slotStartMinutes = parseInt(timeSlot.start.split(':')[0]) * 60 + parseInt(timeSlot.start.split(':')[1]);
         const slotEndMinutes = parseInt(timeSlot.end.split(':')[0]) * 60 + parseInt(timeSlot.end.split(':')[1]);
         const scheduleStartMinutes = parseInt(scheduleStartTime.split(':')[0]) * 60 + parseInt(scheduleStartTime.split(':')[1]);
@@ -675,6 +742,7 @@ const WeeklyTimetableViewContent = () => {
         return timeMatches;
       } catch (error) {
         // Schedule check error - continue
+        console.warn('Error in getScheduleForSlot:', error);
         return false;
       }
     });
@@ -811,6 +879,7 @@ const WeeklyTimetableViewContent = () => {
   const handleModalCancel = () => {
     setModalVisible(false);
     setSelectedSchedule(null);
+    setFilteredEnseignants([]);
     form.resetFields();
   };
 
@@ -1020,10 +1089,19 @@ const WeeklyTimetableViewContent = () => {
       
       message.success(modalMode === 'create' ? 'Séance créée avec succès' : 'Séance modifiée avec succès');
       handleModalCancel();
-      await fetchAllData();
+      
+      // Delay slightly to ensure backend has processed
+      setTimeout(() => {
+        fetchSchedules();
+      }, 300);
       
     } catch (error) {
-      // Silently handle error, show user-friendly message
+      // Handle validation errors from form
+      if (error.errorFields) {
+        // Form validation error - let Ant Design handle it
+        return;
+      }
+      // Handle API errors
       const errorMsg = error.message || 'Une erreur est survenue';
       const conflictMsg = errorMsg.includes('409') ? 'Conflit d\'horaire détecté' : errorMsg;
       message.error(conflictMsg);
@@ -1044,9 +1122,14 @@ const WeeklyTimetableViewContent = () => {
       }
 
       message.success('Séance supprimée avec succès');
-      await fetchAllData();
+      
+      // Fetch schedules after deletion
+      setTimeout(() => {
+        fetchSchedules();
+      }, 300);
     } catch (error) {
-      // Silently handle errors
+      console.error('Error deleting schedule:', error);
+      message.error('Erreur lors de la suppression');
     } finally {
       setLoading(false);
     }
@@ -1073,6 +1156,7 @@ const WeeklyTimetableViewContent = () => {
     
     if (!dayDate) {
       message.error('Date invalide');
+      setDraggedSchedule(null);
       return;
     }
 
@@ -1124,8 +1208,6 @@ const WeeklyTimetableViewContent = () => {
       );
 
       if (conflicts.length > 0 || teacherConflict || groupConflict || roomConflict) {
-        setDraggedSchedule(null);
-        
         // Prepare all conflict messages
         const allConflicts = [
           ...conflicts,
@@ -1243,6 +1325,7 @@ const WeeklyTimetableViewContent = () => {
           ),
           okText: 'OK',
         });
+        setDraggedSchedule(null);
         return;
       }
 
@@ -1266,12 +1349,18 @@ const WeeklyTimetableViewContent = () => {
       }
 
       message.success('Séance déplacée avec succès');
+      
+      // Reset drag state BEFORE fetching to prevent stale state
       setDraggedSchedule(null);
-      await fetchAllData();
+      
+      // Fetch all data to refresh the calendar
+      await fetchSchedules();
+      
     } catch (error) {
       const errorMsg = error.message || 'Erreur lors du déplacement';
       const conflictMsg = errorMsg.includes('409') ? 'Conflit d\'horaire détecté' : errorMsg;
       message.error(conflictMsg);
+      setDraggedSchedule(null);
     } finally {
       setLoading(false);
     }
@@ -1567,7 +1656,11 @@ const WeeklyTimetableViewContent = () => {
                 label="Matière" 
                 rules={[{ required: true, message: 'Veuillez sélectionner une matière' }]}
               >
-                <Select placeholder="Sélectionner une matière" showSearch>
+                <Select 
+                  placeholder="Sélectionner une matière" 
+                  showSearch
+                  onChange={handleMatiereChange}
+                >
                   {matieres.map(matiere => (
                     <Option key={matiere.id} value={matiere.id}>
                       {matiere.nom || matiere.name}
@@ -1582,7 +1675,7 @@ const WeeklyTimetableViewContent = () => {
                 rules={[{ required: true, message: 'Veuillez sélectionner un enseignant' }]}
               >
                 <Select placeholder="Sélectionner un enseignant" showSearch>
-                  {enseignants.map(ens => (
+                  {(filteredEnseignants.length > 0 ? filteredEnseignants : enseignants).map(ens => (
                     <Option key={ens.id} value={ens.id}>
                       {ens.prenom} {ens.nom}
                     </Option>

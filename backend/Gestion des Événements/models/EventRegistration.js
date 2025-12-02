@@ -3,7 +3,16 @@ const sequelize = require('../../auth-service/config');
 
 const EventRegistration = sequelize.define('EventRegistration', {
   id: { type: DataTypes.INTEGER, primaryKey: true, autoIncrement: true },
-  event_id: { type: DataTypes.INTEGER, allowNull: false },
+  event_id: { 
+    type: DataTypes.INTEGER, 
+    allowNull: false,
+    references: {
+      model: 'evenement',
+      key: 'id'
+    },
+    onDelete: 'CASCADE',
+    onUpdate: 'CASCADE'
+  },
   student_id: { type: DataTypes.INTEGER, allowNull: false },
   status: { type: DataTypes.ENUM('registered', 'attended', 'cancelled'), allowNull: false, defaultValue: 'registered' },
   registered_at: { type: DataTypes.DATE, allowNull: false, defaultValue: DataTypes.NOW },

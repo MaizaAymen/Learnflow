@@ -20,7 +20,9 @@ import {
   Empty,
   Drawer,
   Descriptions,
-  Spin
+  Spin,
+  List,
+  Divider
 } from "antd";
 import {
   PlusOutlined,
@@ -31,6 +33,7 @@ import {
   LaptopOutlined,
   EyeOutlined,
   UndoOutlined,
+  BookOutlined,
 } from "@ant-design/icons";
 
 const { Content, Sider } = Layout;
@@ -44,6 +47,8 @@ const NiveauManagement = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [editingNiveau, setEditingNiveau] = useState(null);
   const [form] = Form.useForm();
+  const [userRole, setUserRole] = useState(null);
+  const [userDepartement, setUserDepartement] = useState(null);
   const navigate = useNavigate();
   const [searchText, setSearchText] = useState("");
   const [filteredNiveaux, setFilteredNiveaux] = useState([]);
@@ -51,10 +56,21 @@ const NiveauManagement = () => {
   const [drawerVisible, setDrawerVisible] = useState(false);
   const [lastDeletedNiveau, setLastDeletedNiveau] = useState(null);
   const [specialitesDropdownLoading, setSpecialitesDropdownLoading] = useState(false);
+  const [subjectsModalVisible, setSubjectsModalVisible] = useState(false);
+  const [selectedNiveauForSubjects, setSelectedNiveauForSubjects] = useState(null);
+  const [subjects, setSubjects] = useState([]);
+  const [subjectsLoading, setSubjectsLoading] = useState(false);
   
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
+
+  // Get user role and department from localStorage
+  useEffect(() => {
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    setUserRole(user.role);
+    setUserDepartement(user.departement);
+  }, []);
 
   // Fetch all niveaux
   const fetchNiveaux = async () => {
@@ -63,7 +79,14 @@ const NiveauManagement = () => {
       const response = await fetch("http://localhost:3000/api/reference/niveaux");
       const data = await response.json();
       if (response.ok) {
-        const formatted = data.map(n => ({
+        let filteredData = data;
+        
+        // Filter by department if user is chef_de_department
+        if (userRole === 'chef_de_department' && userDepartement) {
+          filteredData = data.filter(n => n.specialite && n.specialite.departementId === userDepartement);
+        }
+        
+        const formatted = filteredData.map(n => ({
           ...n,
           specialite_nom: n.specialite?.name || "—",
           departement_nom: n.specialite?.departement?.name || "—"
@@ -84,14 +107,25 @@ const NiveauManagement = () => {
   const fetchSpecialites = async () => {
     try {
       const response = await fetch("http://localhost:3000/api/reference/specialites");
-      const data = await response.json();
+      let data = await response.json();
       if (response.ok) {
+        // Filter by department if user is chef_de_department
+        if (userRole === 'chef_de_department' && userDepartement) {
+          data = data.filter(s => s.departementId === userDepartement);
+        }
         setSpecialites(data);
       }
     } catch (error) {
       console.error("Error fetching specialites:", error);
     }
   };
+
+  useEffect(() => {
+    if (userRole) {
+      fetchNiveaux();
+      fetchSpecialites();
+    }
+  }, [userRole, userDepartement]);
 
   useEffect(() => {
     fetchNiveaux();
@@ -113,6 +147,15 @@ const NiveauManagement = () => {
       setFilteredNiveaux(filtered);
     }
   }, [searchText, niveaux]);
+
+  // Check for duplicate niveau names within the same specialite
+  const checkDuplicateNiveau = (name, specialiteId, currentNiveauId) => {
+    return niveaux.some(niveau => 
+      niveau.name?.toLowerCase() === name.toLowerCase() &&
+      niveau.specialiteId === specialiteId &&
+      (!currentNiveauId || niveau.id !== currentNiveauId)
+    );
+  };
 
   // Handle create/update
   const handleSubmit = async (values) => {
@@ -190,6 +233,16 @@ const NiveauManagement = () => {
   const handleDelete = async (id) => {
     try {
       const deletedNiveau = niveaux.find(n => n.id === id);
+      
+      // Chef de département can only delete niveaux from their department
+      if (userRole === 'chef_de_department' && userDepartement) {
+        const niveauDepId = deletedNiveau?.specialite?.departementId;
+        if (niveauDepId !== userDepartement) {
+          message.error("Vous ne pouvez supprimer que les niveaux de votre département");
+          return;
+        }
+      }
+      
       const previousNiveaux = niveaux;
 
       const response = await fetch(
@@ -237,6 +290,14 @@ const NiveauManagement = () => {
 
   // Handle edit
   const handleEdit = (niveau) => {
+    // Chef de département can only edit niveaux from their department
+    if (userRole === 'chef_de_department' && userDepartement) {
+      const niveauDepId = niveau.specialite?.departementId;
+      if (niveauDepId !== userDepartement) {
+        message.error("Vous ne pouvez éditer que les niveaux de votre département");
+        return;
+      }
+    }
     setEditingNiveau(niveau);
     form.setFieldsValue({
       name: niveau.name,
@@ -257,6 +318,27 @@ const NiveauManagement = () => {
     setEditingNiveau(null);
     form.resetFields();
     setModalVisible(true);
+  };
+
+  // Fetch subjects for a specific niveau
+  const handleViewSubjects = async (niveau) => {
+    setSelectedNiveauForSubjects(niveau);
+    setSubjectsLoading(true);
+    try {
+      const response = await fetch(`http://localhost:3000/api/reference/matieres/filter/niveau/${niveau.id}`);
+      const data = await response.json();
+      if (response.ok) {
+        setSubjects(Array.isArray(data) ? data : []);
+        setSubjectsModalVisible(true);
+      } else {
+        message.error(data.message || "Failed to fetch subjects");
+      }
+    } catch (error) {
+      console.error("Error fetching subjects:", error);
+      message.error("Error fetching subjects");
+    } finally {
+      setSubjectsLoading(false);
+    }
   };
 
   const columns = [
@@ -293,10 +375,10 @@ const NiveauManagement = () => {
     {
       title: "Actions",
       key: "actions",
-      width: 200,
+      width: 250,
       fixed: 'right',
       render: (_, record) => (
-        <Space size="small">
+        <Space size="small" wrap>
           <Button
             type="primary"
             ghost
@@ -305,6 +387,15 @@ const NiveauManagement = () => {
             onClick={() => handleQuickView(record)}
             title="Quick View"
           />
+          <Button
+            type="primary"
+            icon={<BookOutlined />}
+            size="small"
+            onClick={() => handleViewSubjects(record)}
+            title="Afficher les matières"
+          >
+            Matières
+          </Button>
           <Button
             type="primary"
             icon={<EditOutlined />}
@@ -625,6 +716,75 @@ const items1 = [
           <Spin />
         )}
       </Drawer>
+
+      {/* Subjects Modal */}
+      <Modal
+        title={selectedNiveauForSubjects ? `Matières du Niveau: ${selectedNiveauForSubjects.name}` : "Matières"}
+        open={subjectsModalVisible}
+        onCancel={() => {
+          setSubjectsModalVisible(false);
+          setSelectedNiveauForSubjects(null);
+          setSubjects([]);
+        }}
+        footer={[
+          <Button key="close" type="primary" onClick={() => {
+            setSubjectsModalVisible(false);
+            setSelectedNiveauForSubjects(null);
+            setSubjects([]);
+          }}>
+            Fermer
+          </Button>
+        ]}
+        width={700}
+      >
+        {subjectsLoading ? (
+          <div style={{ textAlign: 'center', padding: '50px 0' }}>
+            <Spin size="large" />
+          </div>
+        ) : subjects.length > 0 ? (
+          <div>
+            <div style={{ marginBottom: 16, color: '#666' }}>
+              {subjects.length} matière(s) assignée(s) à ce niveau
+            </div>
+            <List
+              dataSource={subjects}
+              renderItem={(subject) => (
+                <List.Item
+                  key={subject.id}
+                  style={{
+                    padding: '12px 16px',
+                    borderBottom: '1px solid #f0f0f0',
+                  }}
+                >
+                  <List.Item.Meta
+                    title={<span style={{ fontWeight: 'bold' }}>{subject.name}</span>}
+                    description={
+                      <div>
+                        <div>
+                          <strong>Code:</strong> {subject.code || 'N/A'}
+                        </div>
+                        <div>
+                          <strong>Crédits:</strong> {subject.credits || 'N/A'}
+                        </div>
+                        {subject.description && (
+                          <div>
+                            <strong>Description:</strong> {subject.description}
+                          </div>
+                        )}
+                      </div>
+                    }
+                  />
+                </List.Item>
+              )}
+            />
+          </div>
+        ) : (
+          <Empty
+            description="Aucune matière assignée à ce niveau"
+            style={{ marginTop: 24 }}
+          />
+        )}
+      </Modal>
     </Layout>
   );
 };

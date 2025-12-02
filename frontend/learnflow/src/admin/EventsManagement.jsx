@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Button, Form, Input, Select, DatePicker, Switch, message, Modal, Spin, Space, Tag, Card, Empty, Drawer, Table, Badge } from 'antd';
-import { DeleteOutlined, EditOutlined, PlusOutlined, TeamOutlined } from '@ant-design/icons';
+import { Button, Form, Input, Select, DatePicker, Switch, message, Modal, Spin, Space, Tag, Card, Empty, Drawer, Table, Badge, Upload } from 'antd';
+import { DeleteOutlined, EditOutlined, PlusOutlined, TeamOutlined, UploadOutlined, FilePdfOutlined, DownloadOutlined, EyeOutlined } from '@ant-design/icons';
 import EventsAPI from '../services/EventsAPI';
 import dayjs from 'dayjs';
 import './EventsManagement.css';
@@ -65,7 +65,10 @@ function EventsManagement() {
   const [participantsDrawerVisible, setParticipantsDrawerVisible] = useState(false);
   const [selectedEventParticipants, setSelectedEventParticipants] = useState(null);
   const [participantsLoading, setParticipantsLoading] = useState(false);
-  const eventsAPI = new EventsAPI();
+  const [uploadedFile, setUploadedFile] = useState(null);
+  const [pdfModalVisible, setPdfModalVisible] = useState(false);
+  const [selectedPdfUrl, setSelectedPdfUrl] = useState(null);
+  const eventsAPI = React.useMemo(() => new EventsAPI(), []);
 
   // Fetch events on component mount and when filters change
   useEffect(() => {
@@ -88,66 +91,116 @@ function EventsManagement() {
   const handleCreateClick = () => {
     setEditingEvent(null);
     form.resetFields();
+    setUploadedFile(null);
     setModalVisible(true);
   };
 
   const handleEditClick = (event) => {
     setEditingEvent(event);
-    form.setFieldsValue({
-      title: event.title,
-      type: event.type,
-      visibility: event.visibility,
-      description: event.description,
-      start_date: dayjs(event.start_date),
-      end_date: event.end_date ? dayjs(event.end_date) : null,
-      is_all_day: event.is_all_day,
-      departement_id: event.departement_id
-    });
+    // Use setTimeout to ensure modal is rendered before setting form values
+    setTimeout(() => {
+      form.setFieldsValue({
+        title: event.title,
+        type: event.type,
+        visibility: event.visibility,
+        description: event.description || '',
+        start_date: dayjs(event.start_date),
+        end_date: event.end_date ? dayjs(event.end_date) : undefined,
+        is_all_day: event.is_all_day || false,
+        departement_id: event.departement_id || undefined
+      });
+    }, 100);
     setModalVisible(true);
   };
 
   const handleDeleteClick = (event) => {
-    Modal.confirm({
-      title: 'Confirmer la suppression',
-      content: `Êtes-vous sûr de vouloir supprimer l'événement "${event.title}" ?`,
-      okText: 'Oui',
-      cancelText: 'Non',
-      okButtonProps: { danger: true },
-      onOk: async () => {
-        try {
-          await eventsAPI.deleteEvent(event.id);
-          message.success('Événement supprimé avec succès');
-          fetchEvents();
-        } catch (error) {
-          message.error('Erreur lors de la suppression');
-          console.error(error);
-        }
-      }
-    });
+    console.log('Delete button clicked for event ID:', event.id, 'Title:', event.title);
+    
+    // Test: directly call delete without modal first
+    if (window.confirm(`Êtes-vous sûr de vouloir supprimer l'événement "${event.title}" ?`)) {
+      console.log('User confirmed deletion, calling deleteEventAsync');
+      deleteEventAsync(event.id);
+    } else {
+      console.log('User cancelled deletion');
+    }
+  };
+
+  const deleteEventAsync = async (eventId) => {
+    try {
+      console.log('deleteEventAsync called with eventId:', eventId);
+      setLoading(true);
+      console.log('Calling eventsAPI.deleteEvent(' + eventId + ')');
+      const response = await eventsAPI.deleteEvent(eventId);
+      console.log('Delete succeeded, response:', response);
+      message.success('Événement supprimé avec succès!');
+      console.log('Refreshing event list...');
+      await fetchEvents();
+      console.log('Event list refreshed');
+      setLoading(false);
+    } catch (error) {
+      console.error('Delete failed - error caught:', error);
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error.message);
+      setLoading(false);
+      message.error('Erreur: ' + (error.message || 'Impossible de supprimer l\'événement'));
+      throw error;
+    }
   };
 
   const handleSubmit = async (values) => {
     try {
-      const payload = {
-        ...values,
-        start_date: values.start_date.toISOString(),
-        end_date: values.end_date ? values.end_date.toISOString() : null
-      };
+      // Create FormData to handle file upload
+      const formData = new FormData();
+      
+      // Add text fields - only add non-empty values
+      formData.append('title', values.title || '');
+      formData.append('type', values.type || '');
+      formData.append('visibility', values.visibility || '');
+      formData.append('description', values.description || '');
+      
+      // Handle dates
+      if (values.start_date) {
+        formData.append('start_date', values.start_date.toISOString());
+      }
+      
+      // Only append end_date if it exists and is a valid dayjs object
+      if (values.end_date && values.end_date.isValid && values.end_date.isValid()) {
+        formData.append('end_date', values.end_date.toISOString());
+      } else if (!values.end_date) {
+        // Explicitly clear end_date if not provided
+        formData.append('end_date', '');
+      }
+      
+      formData.append('is_all_day', values.is_all_day === true);
+      formData.append('departement_id', values.departement_id || '');
+      formData.append('created_by', 1); // Default admin user ID
+      
+      // Add file if uploaded
+      if (uploadedFile) {
+        formData.append('pdf', uploadedFile);
+      }
 
       if (editingEvent) {
-        await eventsAPI.updateEvent(editingEvent.id, payload);
+        console.log('Updating event with ID:', editingEvent.id);
+        await eventsAPI.updateEventWithFile(editingEvent.id, formData);
         message.success('Événement modifié avec succès');
       } else {
-        await eventsAPI.createEvent(payload);
+        console.log('Creating new event');
+        await eventsAPI.createEventWithFile(formData);
         message.success('Événement créé avec succès');
       }
 
+      // Close modal and reset form
       setModalVisible(false);
+      setEditingEvent(null);
+      setUploadedFile(null);
       form.resetFields();
-      fetchEvents();
+      
+      // Refetch events
+      await fetchEvents();
     } catch (error) {
-      message.error('Erreur lors de l\'enregistrement');
-      console.error(error);
+      message.error('Erreur lors de l\'enregistrement: ' + (error.message || 'Erreur inconnue'));
+      console.error('Submit error:', error);
     }
   };
 
@@ -165,13 +218,23 @@ function EventsManagement() {
     }
   };
 
+  const handleViewPdf = (pdfPath) => {
+    setSelectedPdfUrl(`http://localhost:3004${pdfPath}`);
+    setPdfModalVisible(true);
+  };
+
   return (
     <div className="events-management">
       <div className="events-header">
         <h1>Gestion des Événements</h1>
-        <Button type="primary" icon={<PlusOutlined />} onClick={handleCreateClick} size="large">
-          Nouvel Événement
-        </Button>
+       <Button 
+  style={{ backgroundColor: '#1f1f1f', borderColor: '#1f1f1f', color: '#fff' }} 
+  icon={<PlusOutlined />} 
+  onClick={handleCreateClick} 
+  size="large"
+>
+  Nouvel Événement
+</Button>
       </div>
 
       <Card className="events-filters">
@@ -213,7 +276,7 @@ function EventsManagement() {
                     <Button icon={<TeamOutlined />} onClick={() => handleViewParticipants(event)}>
                       Voir participants ({event.participant_count || 0})
                     </Button>
-                    <Button type="primary" icon={<EditOutlined />} onClick={() => handleEditClick(event)}>
+                    <Button   style={{ backgroundColor: '#414141ff', borderColor: '#1f1f1f', color: '#fff' }}  icon={<EditOutlined />} onClick={() => handleEditClick(event)}>
                       Modifier
                     </Button>
                     <Button danger icon={<DeleteOutlined />} onClick={() => handleDeleteClick(event)}>
@@ -245,6 +308,45 @@ function EventsManagement() {
                       <strong>Département ID:</strong> {event.departement_id}
                     </div>
                   )}
+
+                  {event.pdf_path && (
+                    <div className="event-pdf" style={{ marginTop: '15px', padding: '12px', backgroundColor: '#f0f5ff', borderRadius: '4px', border: '1px solid #91d5ff' }}>
+                      <Space direction="vertical" style={{ width: '100%' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <FilePdfOutlined style={{ fontSize: '20px', color: '#ff4d4f' }} />
+                          <strong style={{ fontSize: '14px' }}>Fichier PDF:</strong>
+                        </div>
+                        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                          <Button 
+                                                     
+                            style={{ backgroundColor: '#b5b5b5ff', borderColor: '#1f1f1f', color: '#fff' }} 
+                            size="small" 
+                            icon={<EyeOutlined />}
+                            onClick={() => handleViewPdf(event.pdf_path)}
+                          >
+                            Aperçu
+                          </Button>
+                          <Button 
+                            size="small" 
+                            icon={<DownloadOutlined />}
+                            onClick={() => {
+                              const link = document.createElement('a');
+                              link.href = `http://localhost:3004${event.pdf_path}`;
+                              link.download = event.pdf_filename || 'document.pdf';
+                              document.body.appendChild(link);
+                              link.click();
+                              document.body.removeChild(link);
+                            }}
+                          >
+                            Télécharger
+                          </Button>
+                          <span style={{ fontSize: '12px', color: '#666', marginLeft: 'auto' }}>
+                            {event.pdf_filename}
+                          </span>
+                        </div>
+                      </Space>
+                    </div>
+                  )}
                 </div>
 
                 <div className="event-footer">
@@ -259,9 +361,15 @@ function EventsManagement() {
       <Modal
         title={editingEvent ? 'Modifier l\'événement' : 'Créer un nouvel événement'}
         open={modalVisible}
-        onCancel={() => setModalVisible(false)}
+        onCancel={() => {
+          setModalVisible(false);
+          setEditingEvent(null);
+          setUploadedFile(null);
+          form.resetFields();
+        }}
         footer={null}
         width={700}
+        destroyOnClose={true}
       >
         <Form
           form={form}
@@ -330,6 +438,33 @@ function EventsManagement() {
             <Input type="number" placeholder="ID du département" />
           </Form.Item>
 
+          <Form.Item
+            label="Fichier PDF (optionnel)"
+          >
+            <Upload
+              maxCount={1}
+              accept=".pdf"
+              beforeUpload={(file) => {
+                if (file.type !== 'application/pdf') {
+                  message.error('Seuls les fichiers PDF sont acceptés');
+                  return false;
+                }
+                const maxSize = 10 * 1024 * 1024; // 10MB
+                if (file.size > maxSize) {
+                  message.error('La taille du fichier ne doit pas dépasser 10MB');
+                  return false;
+                }
+                setUploadedFile(file);
+                return false;
+              }}
+              onRemove={() => {
+                setUploadedFile(null);
+              }}
+            >
+              <Button icon={<UploadOutlined />}>Télécharger un PDF</Button>
+            </Upload>
+          </Form.Item>
+
           <Form.Item>
             <Space>
               <Button type="primary" htmlType="submit">
@@ -392,6 +527,42 @@ function EventsManagement() {
           </Spin>
         )}
       </Drawer>
+
+      <Modal
+        title="Aperçu du PDF"
+        open={pdfModalVisible}
+        onCancel={() => setPdfModalVisible(false)}
+        footer={[
+          <Button key="download" icon={<DownloadOutlined />} onClick={() => {
+            const link = document.createElement('a');
+            link.href = selectedPdfUrl;
+            link.download = 'document.pdf';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+          }}>
+            Télécharger
+          </Button>,
+          <Button key="close" onClick={() => setPdfModalVisible(false)}>
+            Fermer
+          </Button>
+        ]}
+        width={900}
+        style={{ top: 20 }}
+      >
+        {selectedPdfUrl && (
+          <iframe
+            src={`${selectedPdfUrl}#toolbar=0`}
+            style={{
+              width: '100%',
+              height: '600px',
+              border: 'none',
+              borderRadius: '4px'
+            }}
+            title="PDF Viewer"
+          />
+        )}
+      </Modal>
     </div>
   );
 }

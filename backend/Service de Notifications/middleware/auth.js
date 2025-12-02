@@ -3,6 +3,7 @@ const jwt = require('jsonwebtoken');
 /**
  * Authentication Middleware
  * Extracts and verifies JWT token from cookies or Authorization header
+ * IMPORTANT: Must match the secretKey used in auth-service (currently "alex")
  */
 const authenticateToken = (req, res, next) => {
   try {
@@ -18,9 +19,11 @@ const authenticateToken = (req, res, next) => {
       return next();
     }
 
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key');
+    // Verify token using the SAME secret as auth-service
+    // Must match: backend/auth-service/routes/authRoutes.js secretKey = "alex"
+    const decoded = jwt.verify(token, 'alex');
     req.user = decoded;
+    console.log('✅ Token verified successfully for user:', decoded.id);
     next();
   } catch (error) {
     console.warn('⚠️ Token verification failed:', error.message);

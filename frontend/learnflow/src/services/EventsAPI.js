@@ -17,6 +17,15 @@ export class EventsAPI {
     return response.json();
   }
 
+  async createEventWithFile(formData) {
+    const response = await fetch(`${this.baseURL}`, {
+      method: 'POST',
+      body: formData
+    });
+    if (!response.ok) throw new Error('Failed to create event');
+    return response.json();
+  }
+
   async getEvents(filters = {}) {
     const params = new URLSearchParams();
     if (filters.type) params.append('type', filters.type);
@@ -50,12 +59,35 @@ export class EventsAPI {
     return response.json();
   }
 
+  async updateEventWithFile(id, formData) {
+    try {
+      const response = await fetch(`${this.baseURL}/${id}`, {
+        method: 'PUT',
+        body: formData
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Update event error response:', errorData);
+        throw new Error(errorData.error || `HTTP ${response.status}: Failed to update event`);
+      }
+      
+      return response.json();
+    } catch (error) {
+      console.error('Update event API error:', error);
+      throw error;
+    }
+  }
+
   async deleteEvent(id) {
     const response = await fetch(`${this.baseURL}/${id}`, {
       method: 'DELETE',
       headers: { 'Content-Type': 'application/json' }
     });
-    if (!response.ok) throw new Error('Failed to delete event');
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || 'Failed to delete event');
+    }
     return response.json();
   }
 

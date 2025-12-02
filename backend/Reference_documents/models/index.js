@@ -20,6 +20,8 @@ const Absence = require('./Absence');
 const Rattrapage = require('./Rattrapage');
 const Student = require('./Student');
 const StudentAbsence = require('./StudentAbsence');
+const AbsenceJustification = require('./AbsenceJustification');
+const StudentElimination = require('./StudentElimination');
 
 // Import User model from auth-service for cross-schema relationships
 // Students are users with role='etudiant'
@@ -448,8 +450,104 @@ Student.belongsTo(Niveau, {
 });
 
 // ============================================================================
-// EXPORTS
+// ABSENCE JUSTIFICATION RELATIONSHIPS
 // ============================================================================
+
+// StudentAbsence → AbsenceJustification (One-to-One)
+StudentAbsence.hasOne(AbsenceJustification, {
+  foreignKey: 'student_absence_id',
+  as: 'justification',
+  onDelete: 'CASCADE',
+  constraints: false
+});
+AbsenceJustification.belongsTo(StudentAbsence, {
+  foreignKey: 'student_absence_id',
+  allowNull: false,
+  as: 'studentAbsence',
+  constraints: false
+});
+
+// User (Student) → AbsenceJustification (One-to-Many)
+User.hasMany(AbsenceJustification, {
+  foreignKey: 'student_id',
+  as: 'justifications',
+  constraints: false
+});
+AbsenceJustification.belongsTo(User, {
+  foreignKey: 'student_id',
+  allowNull: false,
+  as: 'student',
+  constraints: false
+});
+
+// Schedule → AbsenceJustification (One-to-Many)
+Schedule.hasMany(AbsenceJustification, {
+  foreignKey: 'schedule_id',
+  as: 'justifications',
+  constraints: false
+});
+AbsenceJustification.belongsTo(Schedule, {
+  foreignKey: 'schedule_id',
+  allowNull: false,
+  as: 'schedule',
+  constraints: false
+});
+
+// Matière → AbsenceJustification (One-to-Many)
+Matiere.hasMany(AbsenceJustification, {
+  foreignKey: 'matiere_id',
+  as: 'justifications',
+  constraints: false
+});
+AbsenceJustification.belongsTo(Matiere, {
+  foreignKey: 'matiere_id',
+  as: 'matiere',
+  constraints: false
+});
+
+// Classe → AbsenceJustification (One-to-Many)
+Classe.hasMany(AbsenceJustification, {
+  foreignKey: 'classe_id',
+  as: 'justifications',
+  constraints: false
+});
+AbsenceJustification.belongsTo(Classe, {
+  foreignKey: 'classe_id',
+  as: 'classe',
+  constraints: false
+});
+
+// ============================================================================
+// STUDENT ELIMINATION RELATIONSHIPS
+// ============================================================================
+
+// User (Student) → StudentElimination (One-to-Many)
+User.hasMany(StudentElimination, {
+  foreignKey: 'student_id',
+  as: 'eliminations',
+  constraints: false
+});
+StudentElimination.belongsTo(User, {
+  foreignKey: 'student_id',
+  allowNull: false,
+  as: 'student',
+  constraints: false
+});
+
+// Matière → StudentElimination (One-to-Many)
+Matiere.hasMany(StudentElimination, {
+  foreignKey: 'matiere_id',
+  as: 'eliminations',
+  constraints: false
+});
+StudentElimination.belongsTo(Matiere, {
+  foreignKey: 'matiere_id',
+  allowNull: false,
+  as: 'matiere',
+  constraints: false
+});
+
+
 
 // Import new professional feature models (factory functions)
 const Grade = require('./Grade')(sequelize);
@@ -462,6 +560,142 @@ const Project = require('./Project')(sequelize);
 const AuditLog = require('./AuditLog')(sequelize);
 const Announcement = require('./Announcement')(sequelize);
 const Comment = require('./Comment')(sequelize);
+
+// Import service feature models (factory functions)
+const Book = require('./Book')(sequelize);
+const BookBorrowing = require('./BookBorrowing')(sequelize);
+const BookReservation = require('./BookReservation')(sequelize);
+const HelpDesk = require('./HelpDesk')(sequelize);
+const HelpDeskMessage = require('./HelpDeskMessage')(sequelize);
+const FAQ = require('./FAQ')(sequelize);
+const Feedback = require('./Feedback')(sequelize);
+const CourseFeedback = require('./CourseFeedback')(sequelize);
+const TeacherFeedback = require('./TeacherFeedback')(sequelize);
+const Survey = require('./Survey')(sequelize);
+const SurveyQuestion = require('./SurveyQuestion')(sequelize);
+const SurveyResponse = require('./SurveyResponse')(sequelize);
+const ChatSupport = require('./ChatSupport')(sequelize);
+const ChatMessage = require('./ChatMessage')(sequelize);
+
+// ============================================================================
+// LIBRARY SERVICE: Book, BookBorrowing, BookReservation
+// ============================================================================
+
+// BookBorrowing → Book (Many-to-One)
+BookBorrowing.belongsTo(Book, {
+  foreignKey: 'bookId',
+  allowNull: false,
+  as: 'book',
+  constraints: false
+});
+Book.hasMany(BookBorrowing, {
+  foreignKey: 'bookId',
+  as: 'borrowings',
+  constraints: false
+});
+
+// BookReservation → Book (Many-to-One)
+BookReservation.belongsTo(Book, {
+  foreignKey: 'bookId',
+  allowNull: false,
+  as: 'book',
+  constraints: false
+});
+Book.hasMany(BookReservation, {
+  foreignKey: 'bookId',
+  as: 'reservations',
+  constraints: false
+});
+
+// ============================================================================
+// SUPPORT SERVICE: HelpDesk, HelpDeskMessage
+// ============================================================================
+
+// HelpDeskMessage → HelpDesk (Many-to-One)
+HelpDeskMessage.belongsTo(HelpDesk, {
+  foreignKey: 'ticketId',
+  allowNull: false,
+  as: 'ticket',
+  constraints: false
+});
+HelpDesk.hasMany(HelpDeskMessage, {
+  foreignKey: 'ticketId',
+  as: 'messages',
+  constraints: false
+});
+
+// ============================================================================
+// SURVEY SERVICE: Survey, SurveyQuestion, SurveyResponse
+// ============================================================================
+
+// SurveyQuestion → Survey (Many-to-One)
+SurveyQuestion.belongsTo(Survey, {
+  foreignKey: 'surveyId',
+  allowNull: false,
+  as: 'survey',
+  constraints: false
+});
+Survey.hasMany(SurveyQuestion, {
+  foreignKey: 'surveyId',
+  as: 'questions',
+  constraints: false
+});
+
+// SurveyResponse → Survey (Many-to-One)
+SurveyResponse.belongsTo(Survey, {
+  foreignKey: 'surveyId',
+  allowNull: false,
+  as: 'survey',
+  constraints: false
+});
+Survey.hasMany(SurveyResponse, {
+  foreignKey: 'surveyId',
+  as: 'responses',
+  constraints: false
+});
+
+// SurveyResponse → SurveyQuestion (Many-to-One)
+SurveyResponse.belongsTo(SurveyQuestion, {
+  foreignKey: 'questionId',
+  allowNull: false,
+  as: 'question',
+  constraints: false
+});
+SurveyQuestion.hasMany(SurveyResponse, {
+  foreignKey: 'questionId',
+  as: 'responses',
+  constraints: false
+});
+
+// ============================================================================
+// CHAT SUPPORT SERVICE: ChatSupport, ChatMessage
+// ============================================================================
+
+// ChatMessage → ChatSupport (Many-to-One)
+ChatMessage.belongsTo(ChatSupport, {
+  foreignKey: 'chatSupportId',
+  allowNull: false,
+  as: 'chatRoom',
+  constraints: false
+});
+ChatSupport.hasMany(ChatMessage, {
+  foreignKey: 'chatSupportId',
+  as: 'messages',
+  constraints: false
+});
+
+// ChatMessage → User (Many-to-One) - for author
+ChatMessage.belongsTo(User, {
+  foreignKey: 'userId',
+  allowNull: false,
+  as: 'author',
+  constraints: false
+});
+User.hasMany(ChatMessage, {
+  foreignKey: 'userId',
+  as: 'chatMessages',
+  constraints: false
+});
 
 module.exports = {
   Niveau,
@@ -480,6 +714,8 @@ module.exports = {
   Rattrapage,
   Student,
   StudentAbsence,
+  AbsenceJustification,
+  StudentElimination,
   User, // Students are Users with role='etudiant'
   // New professional feature models
   Grade,
@@ -491,5 +727,20 @@ module.exports = {
   Project,
   AuditLog,
   Announcement,
-  Comment
+  Comment,
+  // Service feature models
+  Book,
+  BookBorrowing,
+  BookReservation,
+  HelpDesk,
+  HelpDeskMessage,
+  FAQ,
+  Feedback,
+  CourseFeedback,
+  TeacherFeedback,
+  Survey,
+  SurveyQuestion,
+  SurveyResponse,
+  ChatSupport,
+  ChatMessage
 };

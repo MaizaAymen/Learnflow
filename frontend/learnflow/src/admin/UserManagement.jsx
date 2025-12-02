@@ -40,9 +40,11 @@ import {
   CheckCircleOutlined,
   WarningOutlined,
   DragOutlined,
+  BookOutlined,
 } from "@ant-design/icons";
 import moment from "moment";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
+import TeacherMatiereAssignment from "../components/TeacherMatiereAssignment.jsx";
 
 const { Content, Sider } = Layout;
 const { Option } = Select;
@@ -72,6 +74,10 @@ const UserManagement = () => {
   const [randomSeed, setRandomSeed] = useState(null);
   const [kanbanData, setKanbanData] = useState({});
   const [assignForm] = Form.useForm();
+  
+  // Teacher matière assignment state
+  const [matiereAssignmentModalVisible, setMatiereAssignmentModalVisible] = useState(false);
+  const [selectedTeacherForMatieres, setSelectedTeacherForMatieres] = useState(null);
   
   const {
     token: { colorBgContainer, borderRadiusLG },
@@ -112,6 +118,12 @@ const UserManagement = () => {
         break;
       case 'show-admins':
         filtered = usersData.filter(user => user.role === 'admin');
+        break;
+      case 'show-department-heads':
+        // Show users who are marked as department heads OR have chef_de_department role
+        filtered = usersData.filter(user => 
+          user.role === 'chef_de_department' || user.is_department_head === true
+        );
         break;
       case 'show-users':
       default:
@@ -404,6 +416,13 @@ const UserManagement = () => {
     fetchUsers();
   }, []);
 
+  // Apply filter whenever users data or selectedFilter changes
+  useEffect(() => {
+    if (users && users.length > 0) {
+      applyFilter(users, selectedFilter);
+    }
+  }, [selectedFilter, users]);
+
   // Handle URL parameter changes
   useEffect(() => {
     const tab = searchParams.get('tab');
@@ -566,17 +585,35 @@ const UserManagement = () => {
       key: "role",
       width: 100,
       render: (role) => {
-        let color = role === "admin" ? "geekblue" : role === "enseignant" ? "green" : "orange";
+        let color;
+        if (role === "admin") color = "geekblue";
+        else if (role === "enseignant") color = "green";
+        else if (role === "chef_de_department") color = "purple";
+        else color = "orange";
         return <Tag color={color}>{role?.toUpperCase()}</Tag>;
       },
     },
     {
       title: "Actions",
       key: "actions",
-      width: 150,
+      width: 200,
       fixed: 'right',
       render: (_, record) => (
         <Space size="small">
+          {selectedFilter === 'show-teachers' && (
+            <Button
+              type="default"
+              icon={<BookOutlined />}
+              size="small"
+              title="Assign Matières"
+              onClick={() => {
+                setSelectedTeacherForMatieres(record);
+                setMatiereAssignmentModalVisible(true);
+              }}
+            >
+              Matières
+            </Button>
+          )}
           <Button
             type="primary"
             icon={<EditOutlined />}
@@ -616,6 +653,7 @@ const items2 = [
       { key: 'show-users', label: 'Afficher les etudiants' },
       { key: 'show-teachers', label: 'Afficher les enseignants' },
       { key: 'show-admins', label: 'Afficher les administrateurs' },
+      { key: 'show-department-heads', label: 'Afficher les chefs de département' },
     ],
   },
   {
@@ -1313,6 +1351,20 @@ const items2 = [
           </Form.Item>
         </Form>
       </Modal>
+
+      {/* Teacher Matière Assignment Modal */}
+      <TeacherMatiereAssignment
+        visible={matiereAssignmentModalVisible}
+        onCancel={() => {
+          setMatiereAssignmentModalVisible(false);
+          setSelectedTeacherForMatieres(null);
+        }}
+        onSuccess={() => {
+          fetchUsers();
+        }}
+        teacher={selectedTeacherForMatieres}
+        departement={selectedTeacherForMatieres?.departement}
+      />
     </Layout>
   );
 };
