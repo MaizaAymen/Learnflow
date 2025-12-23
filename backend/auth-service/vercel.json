@@ -1,6 +1,7 @@
 {
   "version": 2,
   "name": "learnflow-auth",
+  "installCommand": "npm install",
   "builds": [
     {
       "src": "server.js",
