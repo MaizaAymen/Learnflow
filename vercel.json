@@ -21,12 +21,12 @@
       "maxDuration": 30
     }
   },
-  "env": [
-    "DATABASE_URL",
-    "JWT_SECRET",
-    "FRONTEND_URL",
-    "NODE_ENV"
-  ],
+  "env": {
+    "DATABASE_URL": "@database_url",
+    "JWT_SECRET": "@jwt_secret",
+    "FRONTEND_URL": "@frontend_url",
+    "NODE_ENV": "production"
+  },
   "headers": [
     {
       "source": "/api/(.*)",
