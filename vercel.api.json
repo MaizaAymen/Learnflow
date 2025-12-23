@@ -1,0 +1,65 @@
+{
+  "version": 2,
+  "name": "learnflow-api",
+  "builds": [
+    {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "functions": {
+    "api/auth/index.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "api/events/index.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "api/messaging/index.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    },
+    "api/notifications/index.js": {
+      "memory": 1024,
+      "maxDuration": 30
+    }
+  },
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Access-Control-Allow-Origin",
+          "value": "*"
+        },
+        {
+          "key": "Access-Control-Allow-Methods",
+          "value": "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+        },
+        {
+          "key": "Access-Control-Allow-Headers",
+          "value": "Content-Type, Authorization"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/auth/(.*)",
+      "destination": "/api/auth/index.js"
+    },
+    {
+      "source": "/api/events/(.*)",
+      "destination": "/api/events/index.js"
+    },
+    {
+      "source": "/api/messaging/(.*)",
+      "destination": "/api/messaging/index.js"
+    },
+    {
+      "source": "/api/notifications/(.*)",
+      "destination": "/api/notifications/index.js"
+    }
+  ]
+}
