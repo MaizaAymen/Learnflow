@@ -3,6 +3,7 @@
   "buildCommand": "npm run build",
   "outputDirectory": "frontend/learnflow/dist",
   "framework": "vite",
+  "installCommand": "npm install --legacy-peer-deps",
   "functions": {
     "api/auth/[...route].js": {
       "memory": 1024,
