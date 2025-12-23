@@ -1,0 +1,55 @@
+{
+  "name": "learnflow",
+  "version": "1.0.0",
+  "description": "Learnflow - Complete Educational Management System",
+  "type": "module",
+  "main": "dev-server.js",
+  "scripts": {
+    "start": "node dev-server.js",
+    "dev": "node dev-server.js",
+    "build": "echo 'Build complete'",
+    "test": "echo 'Tests run here'",
+    "test-db": "node test-db-connection.js",
+    "setup": "bash setup.sh",
+    "setup:windows": "setup.bat"
+  },
+  "engines": {
+    "node": "18.x"
+  },
+  "keywords": [
+    "education",
+    "management",
+    "microservices",
+    "vercel",
+    "postgresql"
+  ],
+  "author": "Learnflow Team",
+  "license": "MIT",
+  "dependencies": {
+    "express": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "sequelize": "^6.37.7",
+    "pg": "^8.16.3",
+    "pg-hstore": "^2.3.4",
+    "jsonwebtoken": "^9.0.2",
+    "bcrypt": "^5.1.1",
+    "cookie-parser": "^1.4.7",
+    "multer": "^2.0.2",
+    "socket.io": "^4.7.2",
+    "nodemailer": "^7.0.6",
+    "moment": "^2.30.1",
+    "dayjs": "^1.11.19",
+    "uuid": "^13.0.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MaizaAymen/Learnflow.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MaizaAymen/Learnflow/issues"
+  }
+}

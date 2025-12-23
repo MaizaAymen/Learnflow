@@ -32,7 +32,7 @@ module.exports = (sequelize) => {
       allowNull: true,
     },
     replies: {
-      type: DataTypes.JSON,
+      type: DataTypes.JSON, 
       defaultValue: [],
     },
     likes: {

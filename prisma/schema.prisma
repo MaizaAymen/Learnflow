@@ -1,0 +1,226 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ========================================
+// AUTHENTICATION & USERS
+// ========================================
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String   // hashed with bcrypt
+  firstName String?
+  lastName  String?
+  avatar    String?
+  role      Role     @default(STUDENT)
+  status    Status   @default(ACTIVE)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  ownedEvents    Event[]
+  registrations  EventRegistration[]
+  conversations  Conversation[]
+  messages       Message[]
+  notifications  Notification[]
+  sentMessages   DirectMessage[] @relation("sender")
+  receivedMessages DirectMessage[] @relation("receiver")
+
+  @@index([email])
+  @@index([role])
+  @@index([status])
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+  DEPARTMENT_HEAD
+}
+
+enum Status {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+// ========================================
+// EVENTS & REGISTRATION
+// ========================================
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  location    String?
+  capacity    Int?
+  attendees   Int      @default(0)
+  
+  creatorId   String
+  creator     User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  registrations EventRegistration[]
+
+  @@index([creatorId])
+  @@index([startDate])
+}
+
+model EventRegistration {
+  id        String   @id @default(cuid())
+  userId    String
+  eventId   String
+  status    RegistrationStatus @default(REGISTERED)
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, eventId])
+  @@index([userId])
+  @@index([eventId])
+  @@index([status])
+}
+
+enum RegistrationStatus {
+  REGISTERED
+  ATTENDED
+  CANCELLED
+  NO_SHOW
+}
+
+// ========================================
+// MESSAGING
+// ========================================
+
+model Conversation {
+  id        String   @id @default(cuid())
+  title     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  participants DirectMessage[] @relation("conversation")
+  messages     Message[]
+
+  @@index([createdAt])
+}
+
+model Message {
+  id             String   @id @default(cuid())
+  content        String
+  conversationId String
+  userId         String
+  
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  isRead         Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([conversationId])
+  @@index([userId])
+  @@index([isRead])
+}
+
+model DirectMessage {
+  id         String   @id @default(cuid())
+  senderId   String
+  receiverId String
+  message    String
+  isRead     Boolean  @default(false)
+  
+  sender     User     @relation("sender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User     @relation("receiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  
+  conversationId String
+  conversation   Conversation @relation("conversation", fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([isRead])
+  @@index([conversationId])
+}
+
+// ========================================
+// NOTIFICATIONS
+// ========================================
+
+model Notification {
+  id      String   @id @default(cuid())
+  userId  String
+  title   String
+  message String
+  type    NotificationType
+  isRead  Boolean  @default(false)
+  
+  user    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([isRead])
+  @@index([type])
+}
+
+enum NotificationType {
+  EVENT_REGISTRATION
+  MESSAGE
+  ANNOUNCEMENT
+  SYSTEM
+  REMINDER
+}
+
+// ========================================
+// CALENDAR & SCHEDULES
+// ========================================
+
+model CalendarEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([startTime])
+}
+
+// ========================================
+// ANNOUNCEMENTS
+// ========================================
+
+model Announcement {
+  id      String   @id @default(cuid())
+  title   String
+  content String
+  author  String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
+}
