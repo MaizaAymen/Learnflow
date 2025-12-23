@@ -59,6 +59,3 @@ app.use((err, req, res, next) => {
 
 // For Vercel serverless, export the app
 module.exports = app;
-    process.exit(1);
-  });
-}
