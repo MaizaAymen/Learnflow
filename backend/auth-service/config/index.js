@@ -1,22 +1,47 @@
 const { Sequelize } = require('sequelize');
+require('dotenv').config();
 
-const sequelize = new Sequelize(
-  'auth_service', // la base
-  'postgres',     // user
-  'aymen',        // password
-  {
-    host: 'localhost',
+// Use DATABASE_URL from environment variable (for production) or fallback to local
+const databaseUrl = process.env.DATABASE_URL;
+
+let sequelize;
+
+if (databaseUrl) {
+  // Production: Use DATABASE_URL from Render
+  sequelize = new Sequelize(databaseUrl, {
     dialect: 'postgres',
-    port: 5432,
+    logging: process.env.NODE_ENV === 'development' ? console.log : false,
+    dialectOptions: {
+      ssl: {
+        require: true,
+        rejectUnauthorized: false
+      }
+    },
     define: {
-      schema: 'auth'   //  toutes les tables iront dans auth
+      schema: 'auth'
     }
-  }
-);
+  });
+} else {
+  // Local development
+  sequelize = new Sequelize(
+    'auth_service',
+    'postgres',
+    'aymen',
+    {
+      host: 'localhost',
+      dialect: 'postgres',
+      port: 5432,
+      define: {
+        schema: 'auth'
+      }
+    }
+  );
+}
 
-sequelize.authenticate().then(()=>{
-    console.log('Connected to auth_service database');
-}).catch((err)=>{
-    console.log('Error: '+ err);
-})
+sequelize.authenticate().then(() => {
+  console.log('✅ Connected to database');
+}).catch((err) => {
+  console.log('❌ Database connection error: ' + err);
+});
+
 module.exports = sequelize;
