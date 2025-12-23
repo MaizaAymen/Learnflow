@@ -4,6 +4,7 @@
   "description": "Notification service for Learnflow - handles internal platform notifications",
   "main": "server.js",
   "scripts": {
+    "build": "echo 'Backend service - no build needed'",
     "start": "node server.js",
     "dev": "nodemon server.js"
   },
