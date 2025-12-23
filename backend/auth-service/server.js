@@ -3,8 +3,10 @@ require('dotenv').config();
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
-// Explicitly require pg for Vercel serverless bundling (Sequelize uses dynamic require)
-require('pg');
+// Explicitly require pg and pg-hstore for Vercel serverless bundling
+// Sequelize uses dynamic require which bundlers can't detect
+const pg = require('pg');
+require('pg-hstore');
 
 const app = express();
 
@@ -26,17 +28,19 @@ app.use(cors({
   allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
-// Health check endpoint
+// Health check endpoint - always available
 app.get('/', (req, res) => {
-  res.json({ status: 'ok', service: 'auth-service', env: process.env.NODE_ENV });
+  res.json({ status: 'ok', service: 'auth-service', env: process.env.NODE_ENV, pgLoaded: !!pg });
 });
 
 app.get('/api/auth/health', (req, res) => {
   res.json({ status: 'ok', service: 'auth-service' });
 });
 
-// Only load routes if not in a crash-debug mode
+// Load routes with error handling
 let authRoutes, departmentHeadRoutes, sequelize, User;
+let routesLoaded = false;
+let loadError = null;
 
 try {
   sequelize = require("./config");
@@ -46,11 +50,17 @@ try {
   
   app.use("/api/auth", authRoutes);
   app.use("/api/department-head", departmentHeadRoutes);
+  routesLoaded = true;
   console.log("✅ Routes loaded successfully");
 } catch (error) {
   console.error("❌ Failed to load routes:", error.message);
-  app.get('/api/auth/*', (req, res) => {
-    res.status(500).json({ error: 'Routes failed to load', message: error.message });
+  loadError = error.message;
+}
+
+// Fallback error route if routes failed to load (Express 5 compatible syntax)
+if (!routesLoaded) {
+  app.use('/api', (req, res) => {
+    res.status(500).json({ error: 'Routes failed to load', message: loadError });
   });
 }
 
