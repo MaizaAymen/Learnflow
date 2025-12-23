@@ -2,20 +2,37 @@ const express = require("express");
 const sequelize = require("../config");
 const utilisateur = require("../models/userModel");
 const bodyParser = require("body-parser");
-const bcrypt = require("bcrypt");
+const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const sendEmail = require("../config/mail");
 const router = express.Router();
-const secretKey = "alex";
+const secretKey = process.env.JWT_SECRET || "alex";
 const multer = require("multer");
 const csv = require("csv-parser");
 const fs = require("fs");
 const XLSX = require("xlsx");
 const { send } = require("process");
-const NotificationClient = require("../../Service de Notifications/services/NotificationClient");
 
-// Import models for automatic class assignment and student absence handling
-const { Specialite, Niveau, Classe, Student } = require("../../Reference_documents/models");
+// Optional imports - gracefully handle if not available in serverless environment
+let NotificationClient = null;
+let Specialite = null, Niveau = null, Classe = null, Student = null;
+
+try {
+  NotificationClient = require("../../Service de Notifications/services/NotificationClient");
+} catch (error) {
+  console.warn("⚠️ NotificationClient not available:", error.message);
+  NotificationClient = { sendNotification: () => Promise.resolve() };
+}
+
+try {
+  const models = require("../../Reference_documents/models");
+  Specialite = models.Specialite;
+  Niveau = models.Niveau;
+  Classe = models.Classe;
+  Student = models.Student;
+} catch (error) {
+  console.warn("⚠️ Reference models not available:", error.message);
+}
 
 // UUID generator for student absence records
 const crypto = require('crypto');
