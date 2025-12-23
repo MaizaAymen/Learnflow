@@ -3,6 +3,9 @@ require('dotenv').config();
 const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
+// Explicitly require pg for Vercel serverless bundling (Sequelize uses dynamic require)
+require('pg');
+
 const app = express();
 
 app.use(express.json());
