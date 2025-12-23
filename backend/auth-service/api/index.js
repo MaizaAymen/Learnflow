@@ -43,10 +43,10 @@ let routesLoaded = false;
 let loadError = null;
 
 try {
-  sequelize = require("./config");
-  User = require("./models/userModel");
-  authRoutes = require("./routes/authRoutes");
-  departmentHeadRoutes = require("./routes/departmentHeadRoutes");
+  sequelize = require("../config");
+  User = require("../models/userModel");
+  authRoutes = require("../routes/authRoutes");
+  departmentHeadRoutes = require("../routes/departmentHeadRoutes");
   
   app.use("/api/auth", authRoutes);
   app.use("/api/department-head", departmentHeadRoutes);
