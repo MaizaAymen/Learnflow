@@ -5,7 +5,7 @@ import { useState, useEffect } from 'react';
  * Handles all API calls to the calendar system
  */
 export class CalendarAPI {
-  constructor(baseURL = 'http://localhost:3000/api/calendar') {
+  constructor(baseURL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api') + '/calendar') {
     this.baseURL = baseURL;
   }
 

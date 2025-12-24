@@ -8,6 +8,8 @@ import {
   Row,
   Tag,
   Typography,
+
+const API_BASE = import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000';
   Divider,
   Space,
   Button,
@@ -50,7 +52,7 @@ const Profile = () => {
   
   useEffect(() => {
     setProfileLoading(true);
-    fetch("http://localhost:4000/api/auth/profile", {
+    fetch(`${API_BASE}/api/auth/profile`, {
         method: "GET",
         headers: { "Content-Type": "application/json" },
         credentials:'include',
@@ -128,7 +130,7 @@ const handleCompleteProfile = (values) => {
     // Remove image field from request body since it's handled separately
     delete requestBody.image;
     
-    fetch("http://localhost:4000/api/auth/completeprofile", {
+    fetch(`${API_BASE}/api/auth/completeprofile`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
@@ -178,7 +180,7 @@ const uploadProfileImage = (file) => {
     formData.append('photo', file);
     formData.append('userId', profile.id);
 
-    fetch("http://localhost:4000/api/auth/upload-profile-photo", {
+    fetch(`${API_BASE}/api/auth/upload-profile-photo`, {
       method: "POST",
       body: formData,
       credentials: 'include'

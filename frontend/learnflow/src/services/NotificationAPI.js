@@ -3,7 +3,7 @@
  * Handles all API calls to the notifications microservice
  */
 
-const NOTIFICATIONS_BASE_URL = 'http://localhost:3005/api';
+const NOTIFICATIONS_BASE_URL = import.meta.env.VITE_NOTIFICATIONS_URL || 'http://localhost:3000/api/notifications';
 
 // Helper to get current user ID from localStorage
 function getUserId() {

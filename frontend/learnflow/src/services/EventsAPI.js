@@ -3,7 +3,7 @@
  * Handles all API calls to the events microservice
  */
 export class EventsAPI {
-  constructor(baseURL = 'http://localhost:3004/api/events') {
+  constructor(baseURL = import.meta.env.VITE_EVENTS_URL || 'http://localhost:3000/api/events') {
     this.baseURL = baseURL;
   }
 

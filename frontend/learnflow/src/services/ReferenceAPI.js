@@ -1,5 +1,5 @@
 // API Service for Reference Data Management
-const API_BASE_URL = 'http://localhost:3001/api/reference';
+const API_BASE_URL = (import.meta.env.VITE_API_URL || 'http://localhost:3000/api') + '/reference';
 
 class ReferenceAPI {
   // Generic API call method
