@@ -10,7 +10,10 @@
     "build": "npm install",
     "test": "node test-db-connection.js",
     "setup": "bash setup.sh",
-    "setup:windows": "setup.bat"
+    "setup:windows": "setup.bat",
+    "migrate:data": "node migrate-data-to-production.js",
+    "verify:data": "node verify-migration.js",
+    "check:data": "node check-production-data.js"
   },
   "engines": {
     "node": "18.x"
@@ -25,24 +28,26 @@
   "author": "Learnflow Team",
   "license": "MIT",
   "dependencies": {
-    "express": "^5.1.0",
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.2",
-    "sequelize": "^6.37.7",
-    "pg": "^8.16.3",
-    "pg-hstore": "^2.3.4",
-    "jsonwebtoken": "^9.0.2",
+    "@prisma/client": "^5.22.0",
     "bcrypt": "^5.1.1",
     "cookie-parser": "^1.4.7",
-    "multer": "^2.0.2",
-    "socket.io": "^4.7.2",
-    "nodemailer": "^7.0.6",
-    "moment": "^2.30.1",
+    "cors": "^2.8.5",
     "dayjs": "^1.11.19",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.2",
+    "moment": "^2.30.1",
+    "multer": "^2.0.2",
+    "nodemailer": "^7.0.6",
+    "pg": "^8.16.3",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.7",
+    "socket.io": "^4.7.2",
     "uuid": "^13.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "prisma": "^5.22.0"
   },
   "repository": {
     "type": "git",
