@@ -104,7 +104,7 @@ function App() {
           console.log('User role from localStorage:', role);
         } else {
           // Fallback: try to fetch from auth service
-          const response = await fetch('http://localhost:3000/api/auth/profile', {
+          const response = await fetch(`${import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000'}/api/auth/profile`, {
             credentials: 'include'
           });
           if (response.ok) {

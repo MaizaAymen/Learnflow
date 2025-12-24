@@ -15,7 +15,7 @@ const GroupChatByClass = ({ onCreateGroup, onClose }) => {
   const fetchClasses = async () => {
     setLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/reference/classes', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/reference/classes`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem('token')}`
         }

@@ -41,7 +41,7 @@ const ClassCalendarContent = () => {
       setLoading(true);
 
       // Fetch class info
-      const classeRes = await fetch(`http://localhost:3000/api/reference/classes/${classeId}`);
+      const classeRes = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/reference/classes/${classeId}`);
       if (classeRes.ok) {
         const classeData = await classeRes.json();
         setClasse(classeData);
@@ -49,7 +49,7 @@ const ClassCalendarContent = () => {
 
       // Fetch schedules for this class
       const schedulesRes = await fetch(
-        `http://localhost:3000/api/calendar/schedules?classe_id=${classeId}`
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/calendar/schedules?classe_id=${classeId}`
       );
       if (!schedulesRes.ok) {
         throw new Error('Failed to fetch schedules');
@@ -59,8 +59,8 @@ const ClassCalendarContent = () => {
 
       // Fetch reference data for modal
       const [sallesRes, matieresRes, enseignantsRes] = await Promise.all([
-        fetch('http://localhost:3000/api/reference/salles'),
-        fetch('http://localhost:3000/api/reference/matieres'),
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/reference/salles`),
+        fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/reference/matieres`),
         fetch(`${import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000'}/api/auth/users?role=enseignant`)
       ]);
 
@@ -240,7 +240,7 @@ const ClassCalendarContent = () => {
   const handleDeleteSchedule = async (scheduleId) => {
     try {
       setLoading(true);
-      const response = await fetch(`http://localhost:3000/api/calendar/schedules/${scheduleId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/calendar/schedules/${scheduleId}`, {
         method: 'DELETE'
       });
 
@@ -306,7 +306,7 @@ const ClassCalendarContent = () => {
         date_fin: draggedSchedule.date_fin
       };
 
-      const response = await fetch(`http://localhost:3000/api/calendar/schedules/${draggedSchedule.id}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/calendar/schedules/${draggedSchedule.id}`, {
         method: 'PUT',
         headers: { 
           'Content-Type': 'application/json',

@@ -80,7 +80,7 @@ const ClasseManagementSimple = () => {
 const fetchClasses = async () => {
   setLoading(true);
   try {
-    const response = await fetch("http://localhost:3000/api/reference/classes");
+    const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/reference/classes`);
     const data = await response.json();
     console.log("Fetched all classes:", data);
     console.log("User Role:", userRole);
@@ -148,9 +148,10 @@ const fetchClasses = async () => {
   // Handle create/update
   const handleSubmit = async (values) => {
     try {
+      const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
       const url = editingClasse
-        ? `http://localhost:3000/api/reference/classes/${editingClasse.id}`
-        : "http://localhost:3000/api/reference/classes";
+        ? `${API_BASE}/reference/classes/${editingClasse.id}`
+        : `${API_BASE}/reference/classes`;
       
       const method = editingClasse ? "PUT" : "POST";
       
@@ -200,7 +201,7 @@ const fetchClasses = async () => {
       }
 
       const response = await fetch(
-        `http://localhost:3000/api/reference/classes/${id}`,
+        `${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/reference/classes/${id}`,
         {
           method: "DELETE",
         }

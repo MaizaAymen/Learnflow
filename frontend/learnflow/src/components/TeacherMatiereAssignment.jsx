@@ -41,7 +41,7 @@ const TeacherMatiereAssignment = ({
   const fetchDepartmentMatieres = async () => {
     setMatieresLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/reference/matieres');
+      const response = await fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:3000/api'}/reference/matieres`);
       const data = await response.json();
       
       if (Array.isArray(data)) {
