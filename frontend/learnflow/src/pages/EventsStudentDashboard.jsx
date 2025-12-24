@@ -45,7 +45,7 @@ function EventsStudentDashboard() {
   useEffect(() => {
     const fetchCurrentUser = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/auth/profile', {
+        const response = await fetch(`${import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000'}/api/auth/profile`, {
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include'
         });

@@ -26,7 +26,7 @@ const DocumentRepository = ({ courseId: propCourseId }) => {
       } else {
         // Try to get courseId from multiple sources
         try {
-          const response = await fetch('http://localhost:4000/api/auth/profile', {
+          const response = await fetch(`${import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000'}/api/auth/profile`, {
             headers: getAuthHeaders(),
             credentials: 'include'
           });

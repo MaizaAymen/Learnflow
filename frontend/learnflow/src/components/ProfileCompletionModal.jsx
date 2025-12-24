@@ -21,7 +21,7 @@ const ProfileCompletionModal = ({ userId, userName, onComplete }) => {
       formData.append('photo', fileList[0].originFileObj);
       formData.append('userId', userId);
 
-      const response = await fetch('http://localhost:4000/api/auth/upload-profile-photo', {
+      const response = await fetch(`${import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000'}/api/auth/upload-profile-photo`, {
         method: 'POST',
         body: formData,
         credentials: 'include'

@@ -61,7 +61,7 @@ const ClassCalendarContent = () => {
       const [sallesRes, matieresRes, enseignantsRes] = await Promise.all([
         fetch('http://localhost:3000/api/reference/salles'),
         fetch('http://localhost:3000/api/reference/matieres'),
-        fetch('http://localhost:4000/api/auth/users?role=enseignant')
+        fetch(`${import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000'}/api/auth/users?role=enseignant`)
       ]);
 
       if (sallesRes.ok) setSalles(await sallesRes.json());

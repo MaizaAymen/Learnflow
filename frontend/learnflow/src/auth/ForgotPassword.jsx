@@ -44,7 +44,7 @@ const ForgotPassword = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        "http://localhost:4000/api/auth/forgot-password",
+        `${import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000'}/api/auth/forgot-password`,
         {
           method: "POST",
           headers: {
@@ -80,7 +80,7 @@ const ForgotPassword = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        "http://localhost:4000/api/auth/verify-otp",
+        `${import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000'}/api/auth/verify-otp`,
         {
           method: "POST",
           headers: {
@@ -120,7 +120,7 @@ const ForgotPassword = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        "http://localhost:4000/api/auth/reset-password",
+        `${import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000'}/api/auth/reset-password`,
         {
           method: "POST",
           headers: {
@@ -168,7 +168,7 @@ const ForgotPassword = () => {
     setLoading(true);
     try {
       const response = await fetch(
-        "http://localhost:4000/api/auth/resend-otp",
+        `${import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000'}/api/auth/resend-otp`,
         {
           method: "POST",
           headers: {

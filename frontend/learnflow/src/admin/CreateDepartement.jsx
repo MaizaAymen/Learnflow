@@ -70,7 +70,7 @@ const CreateDepartment = () => {
   } = theme.useToken();
 
   const handleLogout = () => {
-    fetch("http://localhost:4000/api/auth/logout", {
+    fetch(`${import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000'}/api/auth/logout`, {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },

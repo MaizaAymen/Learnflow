@@ -248,7 +248,7 @@ const fetchClasses = async () => {
     setLoadingStudents(true);
     
     try {
-      const response = await fetch("http://localhost:4000/api/auth/getallstudents");
+      const response = await fetch(`${import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000'}/api/auth/getallstudents`);
       
       if (response.ok) {
         const data = await response.json();

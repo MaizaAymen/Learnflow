@@ -550,7 +550,7 @@ const uploadProfileImage = (file) => {
                 <Col>
                   <Avatar 
                     size={100} 
-                    src={profile.image ? `http://localhost:4000${profile.image}` : null}
+                    src={profile.image ? `${API_BASE}${profile.image}` : null}
                     icon={<UserOutlined />}
                     className="status-online hover-glow"
                     style={{ 
@@ -630,7 +630,7 @@ const uploadProfileImage = (file) => {
                   <div style={{ marginTop: '8px' }}>
                     <Avatar 
                       size={80}
-                      src={profile.image ? `http://localhost:4000${profile.image}` : null}
+                      src={profile.image ? `${API_BASE}${profile.image}` : null}
                       icon={<UserOutlined />}
                       style={{ 
                         backgroundColor: '#1890ff',

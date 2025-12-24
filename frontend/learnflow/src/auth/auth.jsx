@@ -27,6 +27,8 @@ import {
 } from "@ant-design/icons";
 import ProfileCompletionModal from '../components/ProfileCompletionModal';
 
+const API_BASE = import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000';
+
 const { Option } = Select;
 
 const villes = [
@@ -451,7 +453,7 @@ const Auth = () => {
   // Login Handler
   const handleLogin = () => {
     try {
-      fetch("http://localhost:4000/api/auth/login", {
+      fetch(`${API_BASE}/api/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
@@ -513,7 +515,7 @@ const Auth = () => {
       ville: villeString
     });
 
-    fetch("http://localhost:4000/api/auth/register", {
+    fetch(`${API_BASE}/api/auth/register`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       credentials: 'include',
@@ -538,7 +540,7 @@ const Auth = () => {
   const handleRequestOTP = async (values) => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:4000/api/auth/forgot-password", {
+      const response = await fetch(`${API_BASE}/api/auth/forgot-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: values.email }),
@@ -566,7 +568,7 @@ const Auth = () => {
   const handleVerifyOTP = async (values) => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:4000/api/auth/verify-otp", {
+      const response = await fetch(`${API_BASE}/api/auth/verify-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -600,7 +602,7 @@ const Auth = () => {
 
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:4000/api/auth/reset-password", {
+      const response = await fetch(`${API_BASE}/api/auth/reset-password`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -642,7 +644,7 @@ const Auth = () => {
   const handleResendOTP = async () => {
     setLoading(true);
     try {
-      const response = await fetch("http://localhost:4000/api/auth/resend-otp", {
+      const response = await fetch(`${API_BASE}/api/auth/resend-otp`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email: forgotPasswordEmail }),
