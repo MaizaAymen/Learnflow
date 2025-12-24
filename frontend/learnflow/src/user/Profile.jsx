@@ -8,8 +8,6 @@ import {
   Row,
   Tag,
   Typography,
-
-const API_BASE = import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000';
   Divider,
   Space,
   Button,
@@ -40,6 +38,7 @@ import {
 import StudentAbsencesTab from './StudentAbsencesTab';
 
 const { Title, Text, Paragraph } = Typography;
+const API_BASE = import.meta.env.VITE_AUTH_URL?.replace('/auth', '') || 'http://localhost:3000';
 const { Option } = Select;
 const { TextArea } = Input;
 
