@@ -16,10 +16,8 @@ if (databaseUrl) {
         require: true,
         rejectUnauthorized: false
       }
-    },
-    define: {
-      schema: 'auth'
     }
+    // Removed schema definition - tables are in public schema
   });
 } else {
   // Local development
